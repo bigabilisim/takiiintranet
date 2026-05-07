@@ -1,0 +1,10 @@
+.env
+/vendor/
+/tmp/
+/storage/logs/*
+/storage/uploads/*
+/storage/*.json
+!/storage/release-notes.json
+!/storage/templates.json
+!/storage/logs/.gitkeep
+!/storage/uploads/.gitkeep

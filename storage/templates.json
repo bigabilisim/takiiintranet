@@ -1,0 +1,29 @@
+{
+    "version": 1,
+    "templates": [
+        {
+            "id": "TPL-MAIL-1001",
+            "type": "mail",
+            "name": "Yillik izin onay maili",
+            "description": "Yoneticilere giden izin onay e-postasi icin temel sablon.",
+            "html": "<section class=\"mail-shell\">\n  <div class=\"mail-header\">Kanso Intranet</div>\n  <h1>Yillik izin talebiniz onay bekliyor</h1>\n  <p>Merhaba {{manager_name}}, {{employee_name}} tarafindan olusturulan izin talebi onayinizi bekliyor.</p>\n  <div class=\"mail-summary\">\n    <strong>{{leave_dates}}</strong>\n    <span>{{leave_days}} gun</span>\n  </div>\n  <a class=\"mail-button\" href=\"{{approval_link}}\">Talebi incele ve onayla</a>\n  <p class=\"mail-note\">Bu link 96 saat boyunca gecerlidir.</p>\n</section>",
+            "css": ".mail-shell { max-width: 640px; margin: 0 auto; padding: 32px; font-family: Arial, sans-serif; color: #1f2428; background: #ffffff; }\n.mail-header { margin-bottom: 22px; color: #2f6f62; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }\n.mail-shell h1 { margin: 0 0 14px; font-size: 28px; line-height: 1.15; }\n.mail-shell p { color: #5f666d; line-height: 1.55; }\n.mail-summary { display: grid; gap: 4px; margin: 22px 0; padding: 16px; border-left: 4px solid #4a68a8; background: #eef3ff; }\n.mail-button { display: inline-block; padding: 13px 18px; border-radius: 8px; background: #1f2428; color: #ffffff; text-decoration: none; font-weight: 800; }\n.mail-note { font-size: 12px; }",
+            "project_data": null,
+            "created_at": "2026-05-03 09:00",
+            "updated_at": "2026-05-03 09:00",
+            "updated_by": "System"
+        },
+        {
+            "id": "TPL-REPORT-1001",
+            "type": "report",
+            "name": "Aylik IK izin raporu",
+            "description": "IK ve departman amirleri icin aylik izin ozeti raporu.",
+            "html": "<section class=\"report-shell\">\n  <header>\n    <span>IK Raporu</span>\n    <h1>Aylik izin ozeti</h1>\n    <p>{{report_month}} donemi</p>\n  </header>\n  <div class=\"report-metrics\">\n    <div><span>Toplam talep</span><strong>{{total_requests}}</strong></div>\n    <div><span>Onaylanan</span><strong>{{approved_requests}}</strong></div>\n    <div><span>Bekleyen</span><strong>{{pending_requests}}</strong></div>\n  </div>\n  <table>\n    <thead><tr><th>Departman</th><th>Kullanilan</th><th>Bekleyen</th></tr></thead>\n    <tbody>\n      <tr><td>Product</td><td>{{product_used}}</td><td>{{product_pending}}</td></tr>\n      <tr><td>People</td><td>{{people_used}}</td><td>{{people_pending}}</td></tr>\n    </tbody>\n  </table>\n</section>",
+            "css": ".report-shell { padding: 34px; font-family: Arial, sans-serif; color: #1f2428; background: #f8faf8; }\n.report-shell header { margin-bottom: 24px; }\n.report-shell header span { color: #2f6f62; font-size: 12px; font-weight: 800; text-transform: uppercase; }\n.report-shell h1 { margin: 6px 0; font-size: 34px; }\n.report-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }\n.report-metrics div { padding: 16px; border: 1px solid #d7ddd8; border-radius: 8px; background: #ffffff; }\n.report-metrics span { display: block; color: #6c7076; font-size: 12px; }\n.report-metrics strong { font-size: 26px; }\n.report-shell table { width: 100%; border-collapse: collapse; background: #ffffff; }\n.report-shell th, .report-shell td { padding: 14px; border-bottom: 1px solid #d7ddd8; text-align: left; }",
+            "project_data": null,
+            "created_at": "2026-05-03 09:00",
+            "updated_at": "2026-05-03 09:00",
+            "updated_by": "System"
+        }
+    ]
+}

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="<?= htmlspecialchars($currentLocale, ENT_QUOTES, 'UTF-8') ?>">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1f2428">
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Core\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="<?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <?php $pageTitle = isset($title) ? $t((string) $title) : $appName; ?>
+    <title><?= htmlspecialchars($pageTitle . ' | ' . $appName, ENT_QUOTES, 'UTF-8') ?></title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="<?= htmlspecialchars($asset('icon.svg'), ENT_QUOTES, 'UTF-8') ?>" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="<?= htmlspecialchars($asset('apple-touch-icon.png'), ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars($asset('app.css'), ENT_QUOTES, 'UTF-8') ?>">
+    <?php if (!empty($grapesjsAssets)): ?>
+        <link rel="stylesheet" href="https://unpkg.com/grapesjs/dist/css/grapes.min.css">
+    <?php endif; ?>
+</head>
+<body>
+    <div class="app-shell <?= $user ? 'is-authenticated' : 'is-guest' ?>">
+        <aside class="sidebar" aria-label="<?= htmlspecialchars($t('nav.primary'), ENT_QUOTES, 'UTF-8') ?>">
+            <a class="brand" href="/">
+                <span class="brand-mark">K</span>
+                <span>
+                    <strong><?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?></strong>
+                    <small><?= htmlspecialchars($t('app.subtitle'), ENT_QUOTES, 'UTF-8') ?></small>
+                </span>
+            </a>
+
+            <?php if ($user): ?>
+                <nav class="nav-list">
+                    <a class="nav-item" href="/">
+                        <span class="nav-code">DB</span>
+                        <?= htmlspecialchars($t('nav.dashboard'), ENT_QUOTES, 'UTF-8') ?>
+                    </a>
+                    <?php if ($auth->can('admin.company.manage')): ?>
+                        <a class="nav-item" href="/admin/access">
+                            <span class="nav-code">AC</span>
+                            <?= htmlspecialchars($t('nav.access'), ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                        <a class="nav-item" href="/admin/versions">
+                            <span class="nav-code">VR</span>
+                            <?= htmlspecialchars($t('nav.versions'), ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                    <?php endif; ?>
+                    <?php foreach ($modules as $module): ?>
+                        <?php if ($auth->can($module['permission'])): ?>
+                            <?php
+                                $moduleSlug = (string) $module['slug'];
+                                $moduleBadgeCount = (int) ($moduleBadges[$moduleSlug] ?? 0);
+                                $moduleBadgeTemplate = $moduleSlug === 'messages'
+                                    ? $t('messages.unread_badge', ['count' => '__count__'])
+                                    : '';
+                            ?>
+                            <a
+                                class="nav-item"
+                                href="/module/<?= htmlspecialchars($moduleSlug, ENT_QUOTES, 'UTF-8') ?>"
+                                data-module-nav="<?= htmlspecialchars($moduleSlug, ENT_QUOTES, 'UTF-8') ?>"
+                                <?= $moduleBadgeTemplate !== '' ? 'data-badge-template="' . htmlspecialchars($moduleBadgeTemplate, ENT_QUOTES, 'UTF-8') . '"' : '' ?>
+                            >
+                                <span class="nav-code"><?= htmlspecialchars($module['code'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span><?= htmlspecialchars($t($module['title_key']), ENT_QUOTES, 'UTF-8') ?></span>
+                                <?php if ($moduleBadgeCount > 0): ?>
+                                    <strong
+                                        class="nav-badge"
+                                        data-module-badge="<?= htmlspecialchars($moduleSlug, ENT_QUOTES, 'UTF-8') ?>"
+                                        aria-label="<?= htmlspecialchars($t('messages.unread_badge', ['count' => $moduleBadgeCount]), ENT_QUOTES, 'UTF-8') ?>"
+                                    >
+                                        <?= htmlspecialchars((string) $moduleBadgeCount, ENT_QUOTES, 'UTF-8') ?>
+                                    </strong>
+                                <?php endif; ?>
+                            </a>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </nav>
+            <?php endif; ?>
+
+            <div class="locale-switcher" aria-label="<?= htmlspecialchars($t('nav.language'), ENT_QUOTES, 'UTF-8') ?>">
+                <?php foreach ($availableLocales as $locale => $label): ?>
+                    <a
+                        class="<?= $locale === $currentLocale ? 'is-active' : '' ?>"
+                        href="?lang=<?= htmlspecialchars($locale, ENT_QUOTES, 'UTF-8') ?>"
+                        title="<?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                        <?= htmlspecialchars(strtoupper(substr($locale, 0, 2)), ENT_QUOTES, 'UTF-8') ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </aside>
+
+        <main class="main-panel">
+            <?php if ($user): ?>
+                <header class="topbar">
+                    <div>
+                        <p><?= htmlspecialchars($user['department'], ENT_QUOTES, 'UTF-8') ?></p>
+                        <strong><?= htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8') ?></strong>
+                    </div>
+                    <div class="topbar-actions">
+                        <div class="pwa-control">
+                            <span data-pwa-status><?= htmlspecialchars($t('pwa.status.loading'), ENT_QUOTES, 'UTF-8') ?></span>
+                            <button
+                                class="button ghost"
+                                type="button"
+                                data-pwa-enable
+                                data-enabled-label="<?= htmlspecialchars($t('pwa.enabled'), ENT_QUOTES, 'UTF-8') ?>"
+                                data-disabled-label="<?= htmlspecialchars($t('pwa.enable'), ENT_QUOTES, 'UTF-8') ?>"
+                                data-ready-text="<?= htmlspecialchars($t('pwa.status.ready'), ENT_QUOTES, 'UTF-8') ?>"
+                                data-idle-text="<?= htmlspecialchars($t('pwa.status.idle'), ENT_QUOTES, 'UTF-8') ?>"
+                                data-unsupported-text="<?= htmlspecialchars($t('pwa.status.unsupported'), ENT_QUOTES, 'UTF-8') ?>"
+                                data-denied-text="<?= htmlspecialchars($t('pwa.status.denied'), ENT_QUOTES, 'UTF-8') ?>"
+                                data-error-text="<?= htmlspecialchars($t('pwa.status.error'), ENT_QUOTES, 'UTF-8') ?>"
+                            ><?= htmlspecialchars($t('pwa.enable'), ENT_QUOTES, 'UTF-8') ?></button>
+                            <button
+                                class="button ghost"
+                                type="button"
+                                hidden
+                                data-pwa-test
+                                data-sending-text="<?= htmlspecialchars($t('pwa.status.sending'), ENT_QUOTES, 'UTF-8') ?>"
+                                data-sent-text="<?= htmlspecialchars($t('pwa.status.sent'), ENT_QUOTES, 'UTF-8') ?>"
+                            ><?= htmlspecialchars($t('pwa.test'), ENT_QUOTES, 'UTF-8') ?></button>
+                        </div>
+                        <form method="post" action="/logout">
+                            <?= $csrf() ?>
+                            <button class="button ghost" type="submit"><?= htmlspecialchars($t('nav.logout'), ENT_QUOTES, 'UTF-8') ?></button>
+                        </form>
+                    </div>
+                </header>
+            <?php endif; ?>
+
+            <?= $content ?>
+        </main>
+    </div>
+    <?php if (!empty($grapesjsAssets)): ?>
+        <script src="https://unpkg.com/grapesjs" defer></script>
+        <?php if (!empty($reportExporterAssets)): ?>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js" defer></script>
+        <?php endif; ?>
+        <script src="<?= htmlspecialchars($asset('templates-editor.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
+    <?php endif; ?>
+    <script src="<?= htmlspecialchars($asset('pwa.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
+    <script src="<?= htmlspecialchars($asset('app.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
+</body>
+</html>
