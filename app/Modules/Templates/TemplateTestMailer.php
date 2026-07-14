@@ -179,7 +179,7 @@ class TemplateTestMailer
         }
 
         return array_merge($common, [
-            '{{manager_name}}' => 'Admin User',
+            '{{manager_name}}' => 'Bilal Bozduman',
             '{{employee_name}}' => 'Erdi Oz',
             '{{requester_department}}' => 'Product',
             '{{leave_dates}}' => date('Y-m-d', strtotime('+14 days')) . ' - ' . date('Y-m-d', strtotime('+18 days')),

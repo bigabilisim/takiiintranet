@@ -2,13 +2,26 @@
 
 namespace App\Modules\Messaging;
 
+use App\Core\StateStore;
+
 class MessageStore
 {
     private const VERSION = 2;
+    private const STATE_KEY = 'messages';
+    private array $users;
 
-    public function __construct(private readonly array $users)
-    {
+    public function __construct(
+        array $users,
+        private readonly StateStore $stateStore,
+    ) {
+        $this->users = $users;
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $this->data();
+    }
+
+    public function replaceDirectoryUsers(array $users): void
+    {
+        $this->users = $users;
     }
 
     public function recipients(string $currentEmail): array
@@ -198,6 +211,8 @@ class MessageStore
 
     public function togglePin(string $email, string $counterpartEmail): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+
         if (!isset($this->users[$counterpartEmail]) || $counterpartEmail === $email) {
             return ['ok' => false, 'message' => 'messages.flash.invalid_pin'];
         }
@@ -222,6 +237,7 @@ class MessageStore
 
     public function send(array $sender, array $input): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $toEmail = trim((string) ($input['to_email'] ?? ''));
         $subject = trim((string) ($input['subject'] ?? ''));
         $body = trim((string) ($input['body'] ?? ''));
@@ -261,6 +277,7 @@ class MessageStore
 
     public function delete(string $id, array $actor, bool $isAdmin = false): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $actorEmail = (string) ($actor['email'] ?? '');
         $data = $this->data();
 
@@ -288,6 +305,7 @@ class MessageStore
 
     public function restore(string $id, array $actor): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $data = $this->data();
 
         foreach ($data['messages'] as $index => $message) {
@@ -309,6 +327,7 @@ class MessageStore
 
     public function markRead(string $id, string $email): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $data = $this->data();
 
         foreach ($data['messages'] as $index => $message) {
@@ -327,6 +346,8 @@ class MessageStore
 
     public function markThreadRead(string $email, string $counterpartEmail): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+
         if (!isset($this->users[$counterpartEmail]) || $counterpartEmail === $email) {
             return ['ok' => false, 'message' => 'messages.flash.not_found'];
         }
@@ -348,6 +369,70 @@ class MessageStore
         }
 
         return ['ok' => true, 'message' => $changed ? 'messages.flash.thread_read' : 'messages.flash.read'];
+    }
+
+    public function migrateUserIdentity(string $oldIdentity, string $newIdentity): array
+    {
+        if ($oldIdentity === '' || $newIdentity === '' || $oldIdentity === $newIdentity) {
+            return ['messages' => 0, 'pins' => 0];
+        }
+
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $data = $this->data();
+        $messageReferences = 0;
+
+        foreach ($data['messages'] as $index => $message) {
+            foreach (['from_email', 'to_email', 'deleted_by_email', 'restored_by_email'] as $field) {
+                if ((string) ($message[$field] ?? '') !== $oldIdentity) {
+                    continue;
+                }
+
+                $data['messages'][$index][$field] = $newIdentity;
+                $messageReferences++;
+            }
+        }
+
+        $pins = is_array($data['pinned_conversations'] ?? null) ? $data['pinned_conversations'] : [];
+        $pinReferences = 0;
+
+        if (array_key_exists($oldIdentity, $pins)) {
+            $sourcePins = is_array($pins[$oldIdentity]) ? $pins[$oldIdentity] : [];
+            $targetPins = is_array($pins[$newIdentity] ?? null) ? $pins[$newIdentity] : [];
+            unset($pins[$oldIdentity]);
+            $pins[$newIdentity] = array_values(array_unique(array_filter(
+                array_merge($targetPins, $sourcePins),
+                static fn (mixed $identity): bool => is_string($identity) && $identity !== $newIdentity
+            )));
+            $pinReferences++;
+        }
+
+        foreach ($pins as $owner => $contacts) {
+            if (!is_array($contacts)) {
+                $pins[$owner] = [];
+                continue;
+            }
+
+            foreach ($contacts as $index => $contact) {
+                if ((string) $contact !== $oldIdentity) {
+                    continue;
+                }
+
+                $contacts[$index] = $newIdentity;
+                $pinReferences++;
+            }
+
+            $pins[$owner] = array_values(array_unique(array_filter(
+                $contacts,
+                static fn (mixed $identity): bool => is_string($identity) && $identity !== (string) $owner
+            )));
+        }
+
+        if ($messageReferences > 0 || $pinReferences > 0) {
+            $data['pinned_conversations'] = $pins;
+            $this->saveData($data);
+        }
+
+        return ['messages' => $messageReferences, 'pins' => $pinReferences];
     }
 
     private function messagesFor(string $field, string $email): array
@@ -434,27 +519,12 @@ class MessageStore
 
     private function loadData(): array
     {
-        $path = $this->dataPath();
-
-        if (!is_file($path)) {
-            return [];
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-
-        return is_array($decoded) ? $decoded : [];
+        return $this->stateStore->read(self::STATE_KEY, $this->dataPath());
     }
 
     private function saveData(array $data): void
     {
-        $path = $this->dataPath();
-        $directory = dirname($path);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $this->stateStore->write(self::STATE_KEY, $this->dataPath(), $data);
     }
 
     private function dataPath(): string

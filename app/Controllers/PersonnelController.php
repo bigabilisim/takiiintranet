@@ -9,8 +9,10 @@ use App\Core\Csrf;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
+use App\Core\UserIdentityMigrationService;
 use App\Core\UserProfileStore;
 use App\Core\View;
+use App\Modules\Shift\ShiftStore;
 
 class PersonnelController
 {
@@ -20,6 +22,8 @@ class PersonnelController
         private readonly UserProfileStore $userProfiles,
         private readonly AccessControl $accessControl,
         private readonly AuditLogStore $auditLog,
+        private readonly ShiftStore $shiftStore,
+        private readonly UserIdentityMigrationService $identityMigration,
     ) {
     }
 
@@ -33,14 +37,20 @@ class PersonnelController
             return new Response($this->view->render('errors/404', ['title' => '404']), 404);
         }
 
+        $personnel = $this->sortedProfiles();
+
         return new Response($this->view->render('personnel/index', [
             'title' => 'module.personnel.title',
-            'personnel' => $this->sortedProfiles(),
-            'departments' => $this->accessControl->departments(),
+            'personnel' => $personnel,
+            'departments' => $this->visibleDepartmentNames(),
+            'departmentOptions' => $this->visibleDepartmentOptions(),
             'canWritePersonnel' => $this->auth->can('personnel.write'),
             'canDeletePersonnel' => $this->auth->can('personnel.delete'),
             'canExportPersonnel' => $this->canExport(),
             'deletableEmails' => $this->deletableEmails(),
+            'personnelGroupCounts' => $this->personnelGroupCounts($personnel),
+            'shiftOptions' => $this->shiftStore->enabledTemplates(),
+            'shiftTemplates' => $this->shiftStore->templates(),
         ]));
     }
 
@@ -100,6 +110,12 @@ class PersonnelController
             return Response::redirect('/module/personnel');
         }
 
+        if (!$this->canUseDepartment((string) $request->input('department', ''))) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
+
         $result = $this->userProfiles->createProfile($request->all());
 
         if ($result['ok']) {
@@ -125,7 +141,20 @@ class PersonnelController
 
         $profileKey = (string) $request->input('profile_key', $request->input('email'));
         $before = $this->userProfiles->find($profileKey);
-        $result = $this->userProfiles->updateProfile($profileKey, $request->all());
+
+        if ($before !== null && !$this->canViewProfile($before)) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
+
+        if (!$this->canUseDepartment((string) $request->input('department', (string) ($before['department'] ?? '')))) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
+
+        $result = $this->identityMigration->updateProfile($profileKey, $request->all());
 
         if ($result['ok']) {
             $updatedProfileKey = (string) ($result['profile_key'] ?? $profileKey);
@@ -137,6 +166,8 @@ class PersonnelController
                 'after_department' => (string) ($after['department'] ?? ''),
                 'before_email' => (string) ($result['old_email'] ?? ($before['email'] ?? '')),
                 'after_email' => (string) ($result['new_email'] ?? ($after['email'] ?? '')),
+                'identity_migrated' => !empty($result['identity_migrated']) ? 'yes' : 'no',
+                'identity_references' => is_array($result['migration'] ?? null) ? $result['migration'] : [],
             ]);
         }
 
@@ -154,6 +185,12 @@ class PersonnelController
         $email = (string) $request->input('profile_key', $request->input('email'));
         $before = $this->userProfiles->find($email);
         $currentUser = $this->auth->user() ?? [];
+
+        if ($before !== null && !$this->canViewProfile($before)) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
 
         if (($currentUser['email'] ?? '') === $email) {
             Session::flash('error', 'personnel.flash.delete_self_blocked');
@@ -208,14 +245,199 @@ class PersonnelController
 
     private function sortedProfiles(): array
     {
-        $profiles = array_values($this->userProfiles->users());
+        $profiles = array_map(function (array $profile): array {
+            $profile['personnel_group'] = $this->personnelGroup($profile);
 
-        usort($profiles, fn (array $a, array $b): int => strcmp(
-            (string) ($a['name'] ?? ''),
-            (string) ($b['name'] ?? '')
-        ));
+            return $profile;
+        }, array_values(array_filter(
+            $this->userProfiles->users(),
+            fn (array $profile): bool => $this->canViewProfile($profile)
+        )));
+
+        usort($profiles, function (array $a, array $b): int {
+            $groupComparison = $this->personnelGroupOrder((string) ($a['personnel_group'] ?? 'office'))
+                <=> $this->personnelGroupOrder((string) ($b['personnel_group'] ?? 'office'));
+
+            if ($groupComparison !== 0) {
+                return $groupComparison;
+            }
+
+            return strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+        });
 
         return $profiles;
+    }
+
+    private function canViewProfile(array $profile): bool
+    {
+        $viewer = $this->auth->user() ?? [];
+        $permissions = is_array($viewer['permissions'] ?? null) ? $viewer['permissions'] : [];
+
+        if (in_array('*', $permissions, true) || in_array('admin.company.manage', $permissions, true) || in_array('leave.request.manage.hr', $permissions, true)) {
+            return true;
+        }
+
+        $viewerKey = (string) ($viewer['email'] ?? '');
+        $profileKey = (string) ($profile['profile_key'] ?? ($profile['email'] ?? ''));
+
+        if ($viewerKey !== '' && $profileKey !== '' && $viewerKey === $profileKey) {
+            return true;
+        }
+
+        $viewerDepartment = (string) ($viewer['department'] ?? '');
+        $profileDepartment = (string) ($profile['department'] ?? '');
+
+        if (in_array('leave.request.approve.department', $permissions, true)) {
+            if ($viewerDepartment !== '' && $profileDepartment !== '' && $viewerDepartment === $profileDepartment) {
+                return true;
+            }
+
+            $policy = $this->accessControl->departmentPolicy($profileDepartment);
+
+            foreach (['manager_1_email', 'manager_2_email'] as $managerKey) {
+                if ($viewerKey !== '' && (string) ($policy[$managerKey] ?? '') === $viewerKey) {
+                    return true;
+                }
+            }
+        }
+
+        return $this->personnelGroupFromDepartment($viewerDepartment) === $this->personnelGroupFromDepartment($profileDepartment);
+    }
+
+    private function visibleDepartmentNames(): array
+    {
+        $departments = [];
+
+        foreach ($this->sortedProfiles() as $profile) {
+            $department = (string) ($profile['department'] ?? '');
+
+            if ($department !== '') {
+                $departments[$department] = $department;
+            }
+        }
+
+        $departments = array_values($departments);
+        sort($departments);
+
+        return $departments;
+    }
+
+    private function visibleDepartmentOptions(): array
+    {
+        $visible = array_fill_keys($this->visibleDepartmentNames(), true);
+
+        return array_values(array_filter(
+            $this->accessControl->departmentOptions(),
+            static fn (array $department): bool => isset($visible[(string) ($department['name'] ?? '')])
+        ));
+    }
+
+    private function canUseDepartment(string $department): bool
+    {
+        $department = trim($department);
+
+        if ($department === '') {
+            return true;
+        }
+
+        $viewer = $this->auth->user() ?? [];
+        $permissions = is_array($viewer['permissions'] ?? null) ? $viewer['permissions'] : [];
+
+        if (in_array('*', $permissions, true) || in_array('admin.company.manage', $permissions, true) || in_array('leave.request.manage.hr', $permissions, true)) {
+            return true;
+        }
+
+        return in_array($department, $this->visibleDepartmentNames(), true);
+    }
+
+    private function personnelGroupCounts(array $profiles): array
+    {
+        $counts = [
+            'all' => count($profiles),
+            'office' => 0,
+            'blue' => 0,
+            'system' => 0,
+        ];
+
+        foreach ($profiles as $profile) {
+            $group = (string) ($profile['personnel_group'] ?? 'office');
+
+            if (!array_key_exists($group, $counts)) {
+                $group = 'office';
+            }
+
+            $counts[$group]++;
+        }
+
+        return $counts;
+    }
+
+    private function personnelGroup(array $profile): string
+    {
+        $role = $this->normalizeGroupText((string) ($profile['role'] ?? ''));
+        $department = $this->normalizeGroupText((string) ($profile['department'] ?? ''));
+        $email = $this->normalizeGroupText((string) ($profile['email'] ?? ''));
+
+        if (
+            str_contains($role, 'system')
+            || str_contains($role, 'admin')
+            || str_contains($department, 'system')
+            || str_contains($department, 'sistem')
+            || str_contains($email, 'example.com')
+        ) {
+            return 'system';
+        }
+
+        if (
+            str_contains($department, 'mavi')
+            || str_contains($department, 'blue')
+            || str_contains($department, 'gazileri')
+            || preg_match('/(^|\\s|_)bc($|\\s|_)/', $department) === 1
+        ) {
+            return 'blue';
+        }
+
+        return 'office';
+    }
+
+    private function personnelGroupOrder(string $group): int
+    {
+        return match ($group) {
+            'office' => 0,
+            'blue' => 1,
+            'system' => 2,
+            default => 0,
+        };
+    }
+
+    private function personnelGroupFromDepartment(string $department): string
+    {
+        return $this->personnelGroup([
+            'role' => '',
+            'department' => $department,
+            'email' => '',
+        ]);
+    }
+
+    private function normalizeGroupText(string $value): string
+    {
+        $value = strtr($value, [
+            'İ' => 'i',
+            'I' => 'i',
+            'ı' => 'i',
+            'Ş' => 's',
+            'ş' => 's',
+            'Ğ' => 'g',
+            'ğ' => 'g',
+            'Ü' => 'u',
+            'ü' => 'u',
+            'Ö' => 'o',
+            'ö' => 'o',
+            'Ç' => 'c',
+            'ç' => 'c',
+        ]);
+
+        return strtolower(trim($value));
     }
 
     private function deletableEmails(): array

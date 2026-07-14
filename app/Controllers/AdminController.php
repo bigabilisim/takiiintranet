@@ -11,6 +11,7 @@ use App\Core\ReleaseNoteStore;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\Translator;
+use App\Core\UserIdentityMigrationService;
 use App\Core\UserProfileStore;
 use App\Core\View;
 use App\Modules\Leave\LeaveStore;
@@ -28,6 +29,7 @@ class AdminController
         private readonly LeaveStore $leaveStore,
         private readonly PushNotificationStore $pushStore,
         private readonly Translator $translator,
+        private readonly UserIdentityMigrationService $identityMigration,
     ) {
     }
 
@@ -46,6 +48,10 @@ class AdminController
             'users' => $this->accessControl->users(),
             'permissionCatalog' => $this->accessControl->permissionCatalog(),
             'departments' => $this->accessControl->departments(),
+            'departmentOptions' => $this->accessControl->departmentOptions(),
+            'departmentHierarchy' => $this->accessControl->departmentHierarchy(),
+            'departmentParents' => $this->accessControl->departmentParents(),
+            'departmentChildCounts' => $this->accessControl->departmentChildCounts(),
             'departmentUserCounts' => $this->accessControl->departmentUserCounts(),
             'departmentPolicies' => $this->accessControl->departmentPolicies(),
             'auditLogs' => $this->auditLog->recent(12),
@@ -66,6 +72,7 @@ class AdminController
             'title' => 'nav.versions',
             'releases' => $this->releaseNotes->all(),
             'mailDigest' => $this->releaseNotes->mailDigest(6),
+            'mailRecipients' => $this->releaseNotes->mailRecipients(),
         ]));
     }
 
@@ -79,7 +86,7 @@ class AdminController
         $permissions = $request->input('permissions', []);
         $permissions = is_array($permissions) ? $permissions : [];
 
-        $profileResult = $this->userProfiles->updateProfile($email, $request->all());
+        $profileResult = $this->identityMigration->updateProfile($email, $request->all());
 
         if (!$profileResult['ok']) {
             Session::flash('error', $profileResult['message']);
@@ -87,7 +94,8 @@ class AdminController
             return Response::redirect('/admin/access');
         }
 
-        $this->accessControl->setUserPermissions($email, $permissions);
+        $updatedIdentity = (string) ($profileResult['profile_key'] ?? $email);
+        $this->accessControl->setUserPermissions($updatedIdentity, $permissions);
         Session::flash('success', 'admin.flash.user_profile_saved');
 
         return Response::redirect('/admin/access');
@@ -133,11 +141,15 @@ class AdminController
             return Response::redirect('/login');
         }
 
-        $result = $this->accessControl->createDepartment((string) $request->input('department_name'));
+        $result = $this->accessControl->createDepartment(
+            (string) $request->input('department_name'),
+            (string) $request->input('parent_department')
+        );
 
         if ($result['ok']) {
             $this->auditLog->record($this->auth->user() ?? [], 'department.created', 'department', (string) ($result['department'] ?? ''), [
                 'department' => (string) ($result['department'] ?? ''),
+                'parent' => (string) ($result['parent'] ?? ''),
             ]);
         }
 
@@ -158,6 +170,7 @@ class AdminController
         $this->auditLog->record($this->auth->user() ?? [], $result['ok'] ? 'department.deleted' : 'department.delete_blocked', 'department', $department, [
             'department' => $department,
             'user_count' => (string) ($result['user_count'] ?? 0),
+            'child_count' => (string) ($result['child_count'] ?? 0),
             'result' => $result['ok'] ? 'ok' : 'blocked',
         ]);
 

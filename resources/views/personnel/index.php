@@ -10,6 +10,65 @@ $formatDays = static function (mixed $value): string {
 
     return rtrim(rtrim(number_format($number, 2, '.', ''), '0'), '.');
 };
+$personnelGroupCounts = is_array($personnelGroupCounts ?? null) ? $personnelGroupCounts : [];
+$personnelGroups = [
+    'all' => ['label' => 'personnel.group.all', 'class' => 'all'],
+    'office' => ['label' => 'personnel.group.office', 'class' => 'office'],
+    'blue' => ['label' => 'personnel.group.blue', 'class' => 'blue'],
+    'system' => ['label' => 'personnel.group.system', 'class' => 'system'],
+];
+$workforceAssignments = [
+    'hr' => ['label' => 'personnel.assignment.hr', 'hint' => 'personnel.assignment.hr_hint'],
+    'hr_assistant' => ['label' => 'personnel.assignment.hr_assistant', 'hint' => 'personnel.assignment.hr_assistant_hint'],
+    'manager' => ['label' => 'personnel.assignment.manager', 'hint' => 'personnel.assignment.manager_hint'],
+    'shift_planner' => ['label' => 'personnel.assignment.shift_planner', 'hint' => 'personnel.assignment.shift_planner_hint'],
+    'weekend_duty' => ['label' => 'personnel.assignment.weekend_duty', 'hint' => 'personnel.assignment.weekend_duty_hint'],
+];
+$personnelGroupLabel = static fn (string $group): string => $personnelGroups[$group]['label'] ?? $personnelGroups['office']['label'];
+$departmentOptions = is_array($departmentOptions ?? null) ? $departmentOptions : array_map(
+    static fn (string $department): array => ['name' => $department, 'label' => $department, 'parent' => '', 'level' => 0],
+    $departments
+);
+$departmentOptionNames = array_column($departmentOptions, 'name');
+$departmentOptionLabel = static function (string $department) use (&$departmentOptions): string {
+    foreach ($departmentOptions as $option) {
+        if (($option['name'] ?? '') === $department) {
+            return (string) ($option['label'] ?? $department);
+        }
+    }
+
+    return $department;
+};
+$departmentSelectOptions = static function (string $currentDepartment) use ($departmentOptions, $departmentOptionNames, $departmentOptionLabel): array {
+    $options = $departmentOptions;
+
+    if ($currentDepartment !== '' && !in_array($currentDepartment, $departmentOptionNames, true)) {
+        $options[] = [
+            'name' => $currentDepartment,
+            'label' => $departmentOptionLabel($currentDepartment),
+            'parent' => '',
+            'level' => 0,
+        ];
+    }
+
+    return $options;
+};
+$shiftTemplates = is_array($shiftTemplates ?? null) ? $shiftTemplates : [];
+$shiftOptions = is_array($shiftOptions ?? null) ? $shiftOptions : [];
+$shiftOptionKeys = array_map(static fn (array $shiftOption): string => (string) ($shiftOption['key'] ?? ''), $shiftOptions);
+$shiftMap = [];
+
+foreach ($shiftTemplates as $shiftTemplate) {
+    $shiftMap[(string) ($shiftTemplate['key'] ?? '')] = $shiftTemplate;
+}
+
+$shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
+    if ($shiftKey !== '' && isset($shiftMap[$shiftKey])) {
+        return (string) ($shiftMap[$shiftKey]['name'] ?? $shiftKey);
+    }
+
+    return $t('personnel.shift_unassigned');
+};
 ?>
 
 <section class="page-header">
@@ -45,6 +104,19 @@ $formatDays = static function (mixed $value): string {
                     autocomplete="off"
                 >
             </label>
+            <div class="personnel-group-filters" aria-label="<?= htmlspecialchars($t('personnel.group_filter'), ENT_QUOTES, 'UTF-8') ?>">
+                <?php foreach ($personnelGroups as $groupKey => $groupMeta): ?>
+                    <button
+                        class="personnel-group-filter personnel-group-filter--<?= htmlspecialchars($groupMeta['class'], ENT_QUOTES, 'UTF-8') ?> <?= $groupKey === 'all' ? 'is-active' : '' ?>"
+                        type="button"
+                        data-personnel-group-filter="<?= htmlspecialchars($groupKey, ENT_QUOTES, 'UTF-8') ?>"
+                        aria-pressed="<?= $groupKey === 'all' ? 'true' : 'false' ?>"
+                    >
+                        <span><?= htmlspecialchars($t($groupMeta['label']), ENT_QUOTES, 'UTF-8') ?></span>
+                        <strong><?= htmlspecialchars((string) ($personnelGroupCounts[$groupKey] ?? 0), ENT_QUOTES, 'UTF-8') ?></strong>
+                    </button>
+                <?php endforeach; ?>
+            </div>
             <span><?= htmlspecialchars($t('personnel.permission_hint'), ENT_QUOTES, 'UTF-8') ?></span>
             <?php if ($canExportPersonnel): ?>
                 <a class="button compact" href="/personnel/export/xlsx"><?= htmlspecialchars($t('personnel.export_xlsx'), ENT_QUOTES, 'UTF-8') ?></a>
@@ -87,9 +159,10 @@ $formatDays = static function (mixed $value): string {
                         <span><?= htmlspecialchars($t('admin.profile.department'), ENT_QUOTES, 'UTF-8') ?></span>
                         <select name="department" required>
                             <option value=""><?= htmlspecialchars($t('admin.not_specified'), ENT_QUOTES, 'UTF-8') ?></option>
-                            <?php foreach ($departments as $departmentOption): ?>
-                                <option value="<?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8') ?>
+                            <?php foreach ($departmentOptions as $departmentOption): ?>
+                                <?php $departmentOptionName = (string) ($departmentOption['name'] ?? ''); ?>
+                                <option value="<?= htmlspecialchars($departmentOptionName, ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars((string) ($departmentOption['label'] ?? $departmentOptionName), ENT_QUOTES, 'UTF-8') ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -108,6 +181,40 @@ $formatDays = static function (mixed $value): string {
                             <?php foreach ($employmentTypes as $employmentType): ?>
                                 <option value="<?= htmlspecialchars($employmentType, ENT_QUOTES, 'UTF-8') ?>" <?= $employmentType === 'full_time' ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($t('admin.employment.' . $employmentType), ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                </div>
+
+                <strong class="profile-section-title"><?= htmlspecialchars($t('personnel.assignment_title'), ENT_QUOTES, 'UTF-8') ?></strong>
+                <div class="personnel-assignment-heading">
+                    <small><?= htmlspecialchars($t('personnel.assignment_hint'), ENT_QUOTES, 'UTF-8') ?></small>
+                </div>
+                <div class="profile-assignment-grid">
+                    <?php foreach ($workforceAssignments as $assignmentKey => $assignmentMeta): ?>
+                        <label class="profile-assignment-card">
+                            <input type="checkbox" name="workforce_roles[]" value="<?= htmlspecialchars($assignmentKey, ENT_QUOTES, 'UTF-8') ?>">
+                            <span>
+                                <strong><?= htmlspecialchars($t($assignmentMeta['label']), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <small><?= htmlspecialchars($t($assignmentMeta['hint']), ENT_QUOTES, 'UTF-8') ?></small>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+
+                <strong class="profile-section-title"><?= htmlspecialchars($t('personnel.shift_title'), ENT_QUOTES, 'UTF-8') ?></strong>
+                <div class="personnel-assignment-heading">
+                    <small><?= htmlspecialchars($t('personnel.shift_hint'), ENT_QUOTES, 'UTF-8') ?></small>
+                </div>
+                <div class="profile-grid">
+                    <label>
+                        <span><?= htmlspecialchars($t('personnel.column.shift'), ENT_QUOTES, 'UTF-8') ?></span>
+                        <select name="shift_key">
+                            <option value=""><?= htmlspecialchars($t('personnel.shift_unassigned'), ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php foreach ($shiftOptions as $shiftOption): ?>
+                                <option value="<?= htmlspecialchars((string) ($shiftOption['key'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars((string) ($shiftOption['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -220,20 +327,31 @@ $formatDays = static function (mixed $value): string {
             <span><?= htmlspecialchars($t('personnel.column.person'), ENT_QUOTES, 'UTF-8') ?></span>
             <span><?= htmlspecialchars($t('admin.profile.department'), ENT_QUOTES, 'UTF-8') ?></span>
             <span><?= htmlspecialchars($t('admin.profile.role'), ENT_QUOTES, 'UTF-8') ?></span>
+            <span><?= htmlspecialchars($t('personnel.column.shift'), ENT_QUOTES, 'UTF-8') ?></span>
             <span><?= htmlspecialchars($t('admin.profile.pdks_id'), ENT_QUOTES, 'UTF-8') ?></span>
             <span><?= htmlspecialchars($t('leave.balance.remaining'), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
 
+        <?php $currentPersonnelGroup = null; ?>
         <?php foreach ($personnel as $profile): ?>
             <?php
                 $profileKey = (string) ($profile['profile_key'] ?? ($profile['email'] ?? ''));
                 $email = (string) ($profile['email'] ?? '');
                 $emailLabel = $email !== '' ? $email : $t('personnel.email_none');
-                $currentDepartmentOptions = array_values(array_unique(array_filter(array_merge(
-                    $departments,
-                    [(string) ($profile['department'] ?? '')]
-                ))));
-                sort($currentDepartmentOptions);
+                $profileGroup = (string) ($profile['personnel_group'] ?? 'office');
+                $profileGroup = array_key_exists($profileGroup, $personnelGroups) && $profileGroup !== 'all' ? $profileGroup : 'office';
+                $profileGroupClass = $personnelGroups[$profileGroup]['class'];
+                $profileGroupLabel = $t($personnelGroupLabel($profileGroup));
+                $profileShiftKey = (string) ($profile['shift_key'] ?? '');
+                $profileShiftLabel = $shiftLabel($profileShiftKey);
+                $profileWorkforceRoles = is_array($profile['workforce_roles'] ?? null)
+                    ? array_values(array_intersect(array_keys($workforceAssignments), $profile['workforce_roles']))
+                    : [];
+                $profileWorkforceLabels = array_map(
+                    static fn (string $role): string => $t($workforceAssignments[$role]['label']),
+                    $profileWorkforceRoles
+                );
+                $currentDepartmentOptions = $departmentSelectOptions((string) ($profile['department'] ?? ''));
                 $canDeleteThisProfile = $canDeletePersonnel && !empty($deletableEmails[$profileKey]);
                 $searchText = trim(implode(' ', [
                     $profileKey,
@@ -244,17 +362,45 @@ $formatDays = static function (mixed $value): string {
                     (string) ($profile['last_name'] ?? ''),
                     (string) ($profile['department'] ?? ''),
                     (string) ($profile['role'] ?? ''),
+                    $profileShiftLabel,
                     (string) ($profile['pdks_id'] ?? ''),
+                    $profileGroupLabel,
+                    implode(' ', $profileWorkforceLabels),
                 ]));
             ?>
-            <details class="personnel-table-row" data-personnel-row data-personnel-search="<?= htmlspecialchars($searchText, ENT_QUOTES, 'UTF-8') ?>">
+            <?php if ($currentPersonnelGroup !== $profileGroup): ?>
+                <?php $currentPersonnelGroup = $profileGroup; ?>
+                <div
+                    class="personnel-group-header personnel-group-header--<?= htmlspecialchars($profileGroupClass, ENT_QUOTES, 'UTF-8') ?>"
+                    data-personnel-group-header
+                    data-personnel-group="<?= htmlspecialchars($profileGroup, ENT_QUOTES, 'UTF-8') ?>"
+                >
+                    <span><?= htmlspecialchars($profileGroupLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                    <strong><?= htmlspecialchars($t('personnel.group_count', ['count' => (string) ($personnelGroupCounts[$profileGroup] ?? 0)]), ENT_QUOTES, 'UTF-8') ?></strong>
+                </div>
+            <?php endif; ?>
+            <details
+                class="personnel-table-row personnel-table-row--<?= htmlspecialchars($profileGroupClass, ENT_QUOTES, 'UTF-8') ?>"
+                data-personnel-row
+                data-personnel-group="<?= htmlspecialchars($profileGroup, ENT_QUOTES, 'UTF-8') ?>"
+                data-personnel-search="<?= htmlspecialchars($searchText, ENT_QUOTES, 'UTF-8') ?>"
+            >
                 <summary>
                     <span>
+                        <em class="personnel-group-chip personnel-group-chip--<?= htmlspecialchars($profileGroupClass, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($profileGroupLabel, ENT_QUOTES, 'UTF-8') ?></em>
                         <strong><?= htmlspecialchars((string) ($profile['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
                         <small><?= htmlspecialchars($emailLabel, ENT_QUOTES, 'UTF-8') ?></small>
+                        <?php if ($profileWorkforceRoles !== []): ?>
+                            <span class="personnel-assignment-badges">
+                                <?php foreach ($profileWorkforceRoles as $assignmentRole): ?>
+                                    <em><?= htmlspecialchars($t($workforceAssignments[$assignmentRole]['label']), ENT_QUOTES, 'UTF-8') ?></em>
+                                <?php endforeach; ?>
+                            </span>
+                        <?php endif; ?>
                     </span>
                     <span><?= htmlspecialchars((string) ($profile['department'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                     <span><?= htmlspecialchars((string) ($profile['role'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                    <span><?= htmlspecialchars($profileShiftLabel, ENT_QUOTES, 'UTF-8') ?></span>
                     <span><?= htmlspecialchars((string) ($profile['pdks_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                     <span><?= htmlspecialchars($formatDays($profile['leave_opening_remaining_days'] ?? 0), ENT_QUOTES, 'UTF-8') ?></span>
                 </summary>
@@ -286,8 +432,9 @@ $formatDays = static function (mixed $value): string {
                                 <span><?= htmlspecialchars($t('admin.profile.department'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <select name="department" required>
                                     <?php foreach ($currentDepartmentOptions as $departmentOption): ?>
-                                        <option value="<?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8') ?>" <?= ($profile['department'] ?? '') === $departmentOption ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8') ?>
+                                        <?php $departmentOptionName = (string) ($departmentOption['name'] ?? ''); ?>
+                                        <option value="<?= htmlspecialchars($departmentOptionName, ENT_QUOTES, 'UTF-8') ?>" <?= ($profile['department'] ?? '') === $departmentOptionName ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars((string) ($departmentOption['label'] ?? $departmentOptionName), ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -307,6 +454,51 @@ $formatDays = static function (mixed $value): string {
                                     <?php foreach ($employmentTypes as $employmentType): ?>
                                         <option value="<?= htmlspecialchars($employmentType, ENT_QUOTES, 'UTF-8') ?>" <?= ($profile['employment_type'] ?? '') === $employmentType ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($t('admin.employment.' . $employmentType), ENT_QUOTES, 'UTF-8') ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                        </div>
+
+                        <strong class="profile-section-title"><?= htmlspecialchars($t('personnel.assignment_title'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        <div class="personnel-assignment-heading">
+                            <small><?= htmlspecialchars($t('personnel.assignment_hint'), ENT_QUOTES, 'UTF-8') ?></small>
+                        </div>
+                        <div class="profile-assignment-grid">
+                            <?php foreach ($workforceAssignments as $assignmentKey => $assignmentMeta): ?>
+                                <label class="profile-assignment-card">
+                                    <input
+                                        type="checkbox"
+                                        name="workforce_roles[]"
+                                        value="<?= htmlspecialchars($assignmentKey, ENT_QUOTES, 'UTF-8') ?>"
+                                        <?= in_array($assignmentKey, $profileWorkforceRoles, true) ? 'checked' : '' ?>
+                                    >
+                                    <span>
+                                        <strong><?= htmlspecialchars($t($assignmentMeta['label']), ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <small><?= htmlspecialchars($t($assignmentMeta['hint']), ENT_QUOTES, 'UTF-8') ?></small>
+                                    </span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <strong class="profile-section-title"><?= htmlspecialchars($t('personnel.shift_title'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        <div class="personnel-assignment-heading">
+                            <small><?= htmlspecialchars($t('personnel.shift_hint'), ENT_QUOTES, 'UTF-8') ?></small>
+                        </div>
+                        <div class="profile-grid">
+                            <label>
+                                <span><?= htmlspecialchars($t('personnel.column.shift'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <select name="shift_key">
+                                    <option value=""><?= htmlspecialchars($t('personnel.shift_unassigned'), ENT_QUOTES, 'UTF-8') ?></option>
+                                    <?php if ($profileShiftKey !== '' && !in_array($profileShiftKey, $shiftOptionKeys, true)): ?>
+                                        <option value="<?= htmlspecialchars($profileShiftKey, ENT_QUOTES, 'UTF-8') ?>" selected>
+                                            <?= htmlspecialchars($profileShiftLabel, ENT_QUOTES, 'UTF-8') ?>
+                                        </option>
+                                    <?php endif; ?>
+                                    <?php foreach ($shiftOptions as $shiftOption): ?>
+                                        <?php $shiftOptionKey = (string) ($shiftOption['key'] ?? ''); ?>
+                                        <option value="<?= htmlspecialchars($shiftOptionKey, ENT_QUOTES, 'UTF-8') ?>" <?= $profileShiftKey === $shiftOptionKey ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars((string) ($shiftOption['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -425,6 +617,7 @@ $formatDays = static function (mixed $value): string {
                         <span><?= htmlspecialchars($t('personnel.readonly_notice'), ENT_QUOTES, 'UTF-8') ?></span>
                         <strong><?= htmlspecialchars((string) ($profile['phone'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong>
                         <strong><?= htmlspecialchars((string) ($profile['started_on'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></strong>
+                        <strong><?= htmlspecialchars($profileShiftLabel, ENT_QUOTES, 'UTF-8') ?></strong>
                     </div>
                 <?php endif; ?>
             </details>

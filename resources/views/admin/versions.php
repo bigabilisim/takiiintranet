@@ -19,6 +19,10 @@
             <input type="text" value="<?= htmlspecialchars((string) ($mailDigest['subject'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" readonly>
         </label>
         <label>
+            <span><?= htmlspecialchars($t('versions.mail_recipients'), ENT_QUOTES, 'UTF-8') ?></span>
+            <input type="text" value="<?= htmlspecialchars(implode(', ', (array) ($mailRecipients ?? ($mailDigest['recipients'] ?? []))), ENT_QUOTES, 'UTF-8') ?>" readonly>
+        </label>
+        <label>
             <span><?= htmlspecialchars($t('versions.mail_body'), ENT_QUOTES, 'UTF-8') ?></span>
             <textarea rows="18" readonly><?= htmlspecialchars((string) ($mailDigest['body'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
         </label>

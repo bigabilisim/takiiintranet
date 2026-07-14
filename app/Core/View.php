@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Modules\Leave\LeaveStore;
 use App\Modules\Messaging\MessageStore;
 
 class View
@@ -13,6 +14,7 @@ class View
         private readonly array $appConfig,
         private readonly array $modules,
         private readonly ?MessageStore $messageStore = null,
+        private readonly ?LeaveStore $leaveStore = null,
     ) {
     }
 
@@ -53,6 +55,7 @@ class View
         $auth = $this->auth;
         $modules = $this->modules;
         $moduleBadges = $this->moduleBadges($user);
+        $leaveBookSignatureAlerts = $this->leaveBookSignatureAlerts($user);
         $flashError = Session::pullFlash('error');
         $flashSuccess = Session::pullFlash('success');
 
@@ -75,5 +78,14 @@ class View
         return [
             'messages' => $unreadMessages,
         ];
+    }
+
+    private function leaveBookSignatureAlerts(?array $user): array
+    {
+        if ($user === null || $this->leaveStore === null || !$this->auth->can('module.leave.access')) {
+            return [];
+        }
+
+        return $this->leaveStore->pendingLeaveBookSignatureAlertsForUser($user);
     }
 }

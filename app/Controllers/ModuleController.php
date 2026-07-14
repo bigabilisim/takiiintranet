@@ -51,7 +51,7 @@ class ModuleController
         return match ($slug) {
             'leave' => [
                 ['id' => 'LV-1042', 'owner' => 'Erdi Oz', 'amount' => '5 days', 'state_key' => 'status.waiting_manager'],
-                ['id' => 'LV-1043', 'owner' => 'HR User', 'amount' => '2 days', 'state_key' => 'status.approved'],
+                ['id' => 'LV-1043', 'owner' => 'Yeşim Dingil Ekici', 'amount' => '2 days', 'state_key' => 'status.approved'],
             ],
             'budget' => [
                 ['id' => 'BG-2026-PROD', 'owner' => 'Product', 'amount' => '$420,000', 'state_key' => 'status.active'],

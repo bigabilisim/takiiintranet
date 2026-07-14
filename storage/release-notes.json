@@ -1,7 +1,150 @@
 {
     "version": 1,
-    "current_version": "v0.30.0",
+    "current_version": "v0.73.0",
     "entries": [
+        {
+            "version": "v0.43.0",
+            "title": "RD Long Term departman adi duzeltildi",
+            "released_at": "2026-05-14 09:45",
+            "status": "completed",
+            "changes": [
+                "RD Long Term departman adi standart hale getirildi.",
+                "Personel profili, departman izin semasi ve audit log kayitlarindaki departman referanslari yeni adla esitlendi.",
+                "Canli veri ve surum notlari yeni departman adiyla yayinlanacak hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.42.0",
+            "title": "IK icin alt departman izin yetki menusu eklendi",
+            "released_at": "2026-05-14 09:30",
+            "status": "completed",
+            "changes": [
+                "IK kullanicilarinin admin yetkisine gerek duymadan alt departman izin onay akislarini yonetebilecegi ayri Izin yetkileri menusu eklendi.",
+                "Yeni menude alt departman ekleme, mevcut departmani ust departmana baglama, alt departman silme ve yonetici/IK onaycisi atama islemleri alt departman odakli hale getirildi.",
+                "Alt departman izin yetkisi guncellendiginde bekleyen izin talepleri yeni akisa senkronlanacak ve ilgili onay bildirimleri yenilenecek hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.41.0",
+            "title": "Alt departman yapisi eklendi",
+            "released_at": "2026-05-14 09:05",
+            "status": "completed",
+            "changes": [
+                "Departmanlara ust departman secimi eklenerek ana departman ve alt departman hiyerarsisi kurulabilir hale getirildi.",
+                "Personel ve yetki ekranlarindaki departman secimleri hiyerarsik etiketlerle gosterildi.",
+                "Alt departman izin talepleri icin onay akisi, kendi semasi yoksa ana departman semasini kullanacak sekilde guclendirildi."
+            ]
+        },
+        {
+            "version": "v0.40.0",
+            "title": "Departman yoneticisi atama akisi netlestirildi",
+            "released_at": "2026-05-14 08:41",
+            "status": "completed",
+            "changes": [
+                "Departman izin semasindaki onayci alanlari departman yoneticisi, ikinci yonetici ve IK onaycisi olarak netlestirildi.",
+                "Departman yoneticisi olarak atanan kullaniciya izin onay yetkisi otomatik tamamlanacak hale getirildi.",
+                "Departman yonetici secimlerinde ad ve e-posta birlikte gosterildi; PWA varlik cache surumu yenilendi."
+            ]
+        },
+        {
+            "version": "v0.39.0",
+            "title": "Admin e-posta adresi guncellendi",
+            "released_at": "2026-05-14 08:23",
+            "status": "completed",
+            "changes": [
+                "Bilal Bozduman System Admin hesabi bilal@bigabilisim.com e-posta adresine tasindi.",
+                "Eski admin e-posta referanslari aktif veri kayitlarinda yeni adrese esitlendi.",
+                "Departman onay yoneticisi ve varsayilan giris e-posta alanlari yeni admin adresini kullanacak hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.38.0",
+            "title": "Personel listesi renklendirildi ve filtrelendi",
+            "released_at": "2026-05-14 08:15",
+            "status": "completed",
+            "changes": [
+                "Personel listesi ofis/beyaz yaka, mavi yaka ve sistem kayitlari olarak siralanacak hale getirildi.",
+                "Personel ekranina grup filtreleri ve grup bazli kayit sayilari eklendi.",
+                "Personel satirlari ve grup basliklari daha okunur renklerle ayrildi; PWA varlik cache surumu yenilendi."
+            ]
+        },
+        {
+            "version": "v0.37.0",
+            "title": "Admin gecici sifresi yenilendi",
+            "released_at": "2026-05-14 08:07",
+            "status": "completed",
+            "changes": [
+                "System Admin hesabi icin yeni gecici sifre olusturuldu.",
+                "Yeni sifre personel profilinde hashli olarak saklandi; duz metin sifre storage dosyalarina yazilmadi.",
+                "Giris bilgisi kayitli admin e-posta adresine iletildi."
+            ]
+        },
+        {
+            "version": "v0.36.0",
+            "title": "Yandex SMTP mail sunucusu tanimlandi",
+            "released_at": "2026-05-14 07:55",
+            "status": "completed",
+            "changes": [
+                "Canli ortamda sifre sifirlama mail tasiyicisi Yandex SMTP uzerinden gonderilecek sekilde ayarlandi.",
+                "SMTP host, SSL 465 portu, gonderici adresi ve kimlik dogrulama ayarlari canli .env dosyasina islendi.",
+                "Sifremi unuttum akisi yeni SMTP ayariyla tekrar dogrulandi."
+            ]
+        },
+        {
+            "version": "v0.35.0",
+            "title": "Sifremi unuttum mail gonderimi guclendirildi",
+            "released_at": "2026-05-14 07:48",
+            "status": "completed",
+            "changes": [
+                "Sifre sifirlama mailinde SMTP tasiyici destegi eklendi.",
+                "PHP mail fonksiyonu kapaliysa sendmail fallback ile gonderim denenir hale getirildi.",
+                "Mail gonderimi basarisiz olursa hata nedeni outbox kaydinda gorulebilir hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.34.0",
+            "title": "Aylin Kulali giris bilgileri gonderildi",
+            "released_at": "2026-05-13 15:58",
+            "status": "completed",
+            "changes": [
+                "Aylin Kulali kullanicisi icin yeni gecici sifre olusturuldu.",
+                "Yeni sifre personel kaydina hashli olarak islendi; duz metin sifre storage dosyalarina yazilmadi.",
+                "Kullanici adi ve gecici sifre Outlook uzerinden ilgili kullaniciya mail olarak iletildi."
+            ]
+        },
+        {
+            "version": "v0.33.0",
+            "title": "HR e-posta adresi guncellendi",
+            "released_at": "2026-05-12 10:41",
+            "status": "completed",
+            "changes": [
+                "Yesim Dingil Ekici ana giris e-posta adresi y.ekici@takii.com.tr olarak guncellendi.",
+                "Personel profili, yetki kaydi, departman onay semalari ve bekleyen izin atamalari yeni adrese tasindi.",
+                "Mevcut sifre hash kaydi korunarak eski e-posta anahtari sistemden temizlendi."
+            ]
+        },
+        {
+            "version": "v0.32.0",
+            "title": "Sifremi unuttum akisi eklendi",
+            "released_at": "2026-05-12 10:33",
+            "status": "completed",
+            "changes": [
+                "Giris ekranina Sifremi unuttum baglantisi eklendi.",
+                "Kayitli e-posta adresleri icin 2 saatlik sifre sifirlama tokeni ve yeni sifre belirleme ekrani hazirlandi.",
+                "Sifre sifirlama maili native mail veya outbox kuyrugu uzerinden gonderilebilir hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.31.0",
+            "title": "HR kullanici sifresi yenilendi",
+            "released_at": "2026-05-12 10:24",
+            "status": "completed",
+            "changes": [
+                "Yesim Dingil Ekici kullanicisi icin yeni gecici sifre olusturuldu.",
+                "Yeni sifre personel kaydina hashli olarak islendi; duz metin sifre storage dosyalarina yazilmadi.",
+                "Giris bilgisi Outlook uzerinden ilgili kullaniciya mail olarak iletildi."
+            ]
+        },
         {
             "version": "v0.30.0",
             "title": "GitHub yayin paketi guvenli hale getirildi",
@@ -10,7 +153,6 @@
             "changes": [
                 "GitHub reposu icin canli personel, izin, mesaj, bildirim ve audit storage verileri takip disina alindi.",
                 "Gecici test ve canli kontrol ciktisi ureten tmp klasoru repo disinda birakildi.",
-                "Varsayilan admin ve HR giris bilgileri ortam degiskenleriyle degistirilebilir hale getirildi.",
                 "Kod, dokuman, migration, PWA dosyalari, surum notlari ve varsayilan sablonlar yayinlanabilir paket olarak ayrildi."
             ]
         },
@@ -20,8 +162,8 @@
             "released_at": "2026-05-06 19:09",
             "status": "completed",
             "changes": [
-                "Eski HR ornek e-postasiyla tanimli HR User profil kaydi sistemden kaldirildi.",
-                "HR cekirdek kullanicisi ve izin onay politikasi hr@example.com e-posta adresine tasindi.",
+                "Eski HR ornek e-postasiyla tanimli Yesim Dingil Ekici profil kaydi sistemden kaldirildi.",
+                "HR cekirdek kullanicisi ve izin onay politikasi y.ekici@takii.com.tr e-posta adresine tasindi.",
                 "Bekleyen izin onaylari, mesaj alicilari ve yetki kayitlari yeni HR e-posta adresiyle esitlendi."
             ]
         },
@@ -33,7 +175,7 @@
             "changes": [
                 "Outlook uzerinden gelen dogumgunu tablosu Excel eki sisteme alindi.",
                 "Exceldeki 78 dogum tarihi satiri personel profilleriyle eslestirildi ve 79 profil kaydina dogum tarihi islendi.",
-                "Yaklasik isim farklari ve HR User icin bulunan cift profil anahtari kontrollu sekilde eslestirildi."
+                "Yaklasik isim farklari ve Yesim Dingil Ekici icin bulunan cift profil anahtari kontrollu sekilde eslestirildi."
             ]
         },
         {
@@ -53,7 +195,7 @@
             "released_at": "2026-05-06 17:37",
             "status": "completed",
             "changes": [
-                "HR User HR profiline personel okuma, duzenleme, silme ve export yetkileri kalici olarak sabitlendi.",
+                "Yesim Dingil Ekici HR profiline personel okuma, duzenleme, silme ve export yetkileri kalici olarak sabitlendi.",
                 "Yetki ekrani kaydinda HR profilinden personel tam yetkileri yanlislikla dusurulse bile sistem bu yetkileri otomatik geri ekleyecek hale getirildi.",
                 "Canli yetki storage dosyasi yeni AccessControl surumune tasindi."
             ]
@@ -181,13 +323,13 @@
         },
         {
             "version": "v0.11.0",
-            "title": "Ofis departmani Beyaz Yaka yapildi",
+            "title": "Takii Ofis departmani Beyaz Yaka yapildi",
             "released_at": "2026-05-05 18:35",
             "status": "completed",
             "changes": [
-                "Ofis departmanindaki 57 personel Beyaz Yaka departmanina tasindi.",
-                "Personel acilis kaynak alanlarinda Ofis degeri Beyaz Yaka olarak guncellendi.",
-                "Departman izin/yetki politikasindaki Ofis kaydi Beyaz Yaka adina tasindi."
+                "Takii Ofis departmanindaki 57 personel Beyaz Yaka departmanina tasindi.",
+                "Personel acilis kaynak alanlarinda Takii Ofis degeri Beyaz Yaka olarak guncellendi.",
+                "Departman izin/yetki politikasindaki Takii Ofis kaydi Beyaz Yaka adina tasindi."
             ]
         },
         {
@@ -196,7 +338,7 @@
             "released_at": "2026-05-05 18:45",
             "status": "completed",
             "changes": [
-                "125 personel e-posta adresindeki eski internal domain @company.example olarak degistirildi.",
+                "125 personel e-posta adresindeki eski internal domain @takii.com.tr olarak degistirildi.",
                 "Personel storage anahtarlari ve email alanlari yeni domainle esitlendi.",
                 "Yetki storage kayitlari yeni e-posta adresleriyle uyumlu hale getirildi."
             ]
@@ -220,7 +362,7 @@
             "changes": [
                 "Mevcut Excel kaynakli personel kayitlari silindi ve yeni parolali Excel dosyasindan 91 personel yeniden olusturuldu.",
                 "Cekirdek sistem kullanicilari korunarak toplam profil sayisi 95 olarak guncellendi.",
-                "Yeni personel e-postalari @company.example domainiyle uretildi ve yetki kayitlari yeni listeye gore temizlendi."
+                "Yeni personel e-postalari @takii.com.tr domainiyle uretildi ve yetki kayitlari yeni listeye gore temizlendi."
             ]
         },
         {
@@ -236,11 +378,11 @@
         },
         {
             "version": "v0.16.0",
-            "title": "HR personel yonetim yetkileri",
+            "title": "Dingil Ekici personel yonetim yetkileri",
             "released_at": "2026-05-05 19:25",
             "status": "completed",
             "changes": [
-                "HR User profiline Personel modulu erisimi sabitlendi.",
+                "Yesim Dingil Ekici profiline Personel modulu erisimi sabitlendi.",
                 "Personel duzenleme yetkisi personnel.write aktif hale getirildi.",
                 "Personel silme yetkisi personnel.delete aktif hale getirildi."
             ]
@@ -258,12 +400,12 @@
         },
         {
             "version": "v0.18.0",
-            "title": "Demo Employee personel kaydi silindi",
+            "title": "Mina Demir personel kaydi silindi",
             "released_at": "2026-05-06 08:26",
             "status": "completed",
             "changes": [
-                "Demo Employee / employee@example.com demo kullanicisi ve personel kaydi sistemden kaldirildi.",
-                "Demo Employee referansli izin, mesaj ve mail outbox kayitlari temizlendi.",
+                "Mina Demir / employee@example.com demo kullanicisi ve personel kaydi sistemden kaldirildi.",
+                "Mina Demir referansli izin, mesaj ve mail outbox kayitlari temizlendi.",
                 "Config demo kullanicilarindan employee@example.com cikarilarak kaydin yeniden olusmasi engellendi."
             ]
         },
@@ -274,7 +416,7 @@
             "status": "completed",
             "changes": [
                 "Personel ekranina yetkili HR kullanicilarinin CSV indirebilecegi export butonu eklendi.",
-                "Yeni personnel.export yetkisi tanimlandi ve HR User HR profiline verildi.",
+                "Yeni personnel.export yetkisi tanimlandi ve Yesim Dingil Ekici HR profiline verildi.",
                 "Export islemi audit log tarafinda personnel.exported aksiyonu ile kayda alinmaya baslandi."
             ]
         },
@@ -286,7 +428,7 @@
             "changes": [
                 "Personel kartlarina duzenlenebilir e-posta alani eklendi.",
                 "Mavi yaka olarak degerlendirilen BC departmanlarindaki personellerin e-posta alanlari bosaltildi.",
-                "Beyaz yaka personel e-postalari ad.soyad@company.example standardina gore yeniden duzenlendi.",
+                "Beyaz yaka personel e-postalari ad.soyad@takii.com.tr standardina gore yeniden duzenlendi.",
                 "Sistem kullanicilari eski giris adresleri korunarak standart personel e-postalariyla da gorunur hale getirildi."
             ]
         },
@@ -296,7 +438,7 @@
             "released_at": "2026-05-06 10:16",
             "status": "completed",
             "changes": [
-                "Ornek personel e-posta adresi yeni standart formata tasindi.",
+                "AYTUG DEVREN personel kaydi aytug.devren@takii.com.tr adresinden a.devren@takii.com.tr adresine tasindi.",
                 "Personel profilindeki gorunen e-posta alani yeni standart adrese guncellendi.",
                 "Yetki kaydi yeni e-posta anahtariyla esitlendi."
             ]
@@ -307,7 +449,7 @@
             "released_at": "2026-05-06 10:17",
             "status": "completed",
             "changes": [
-                "Mavi yaka disindaki personel e-postalari ilkharf.soyad@company.example formatina toplu olarak tasindi.",
+                "Mavi yaka disindaki personel e-postalari ilkharf.soyad@takii.com.tr formatina toplu olarak tasindi.",
                 "Ayni soyad/ad kombinasyonlarinda cakisma olmamasi icin tekrar eden adreslere sirali ek kullanildi.",
                 "Personel profil anahtarlari ve yetki kayitlari yeni e-posta standardiyla esitlendi."
             ]
@@ -332,6 +474,365 @@
                 "Personel ekranina ad, e-posta, departman, unvan ve PDKS alanlarinda calisan arama kutusu eklendi.",
                 "Arama eslesmeyen personel satirlarini kademeli olarak soluklastirip gizleyecek sekilde tasarlandi.",
                 "PWA cache versiyonu guncellenerek yeni arama JS ve CSS dosyalarinin istemcilere alinmasi saglandi."
+            ]
+        },
+        {
+            "version": "v0.44.0",
+            "title": "Izin onay mail gonderimi duzeltildi",
+            "released_at": "2026-05-14 16:00",
+            "status": "completed",
+            "changes": [
+                "Izin onay maili artik sadece outbox kaydina dusmekle kalmayip canli SMTP tasiyicisi uzerinden gonderilecek hale getirildi.",
+                "Izin mail kayitlarina queued, sent, failed/invalid recipient durumlari ve tasiyici bilgisi eklendi.",
+                "Aylin Kulali izin talebi icin bekleyen departman onay maili yeniden gonderilecek sekilde hazirlandi."
+            ]
+        },
+        {
+            "version": "v0.45.0",
+            "title": "Panel icinden izin onayi eklendi",
+            "released_at": "2026-05-14 16:18",
+            "status": "completed",
+            "changes": [
+                "Izin merkezine yetkili yonetici ve IK kullanicilarinin gorebilecegi bekleyen panel onaylari bolumu eklendi.",
+                "Yetkili kullanici kendi asamasindaki izin talebini platformdan onaylayabilir veya reddedebilir hale getirildi.",
+                "Platform onayi sonraki asamaya gectiginde mevcut mail ve web push bildirim akisi korunacak sekilde baglandi.",
+                "PWA varlik cache surumu yenilendi."
+            ]
+        },
+        {
+            "version": "v0.46.0",
+            "title": "Izin onay mailleri butonlu hale getirildi",
+            "released_at": "2026-05-14 16:10",
+            "status": "completed",
+            "changes": [
+                "Izin onay e-postalarinda onay ve red URLleri duz metin olarak gosterilmeden HTML butonlar uzerinden sunulacak hale getirildi.",
+                "Mail govdesinde token gecerliliginin 96 saat oldugu ve son gecerlilik tarihi korunarak gosterildi.",
+                "HTML desteklemeyen e-posta istemcileri icin ciplak link gostermeyen panel onayi yonlendirmesi eklendi."
+            ]
+        },
+        {
+            "version": "v0.47.0",
+            "title": "Aylin Kulali bekleyen izin kaydi temizlendi",
+            "released_at": "2026-05-14 16:29",
+            "status": "completed",
+            "changes": [
+                "Aylin Kulali icin 1. yonetici onayinda bekleyen LV-2026-1004 izin talebi aktif izin kayitlarindan kaldirildi.",
+                "Silme islemi audit log kaydina leave.request_deleted aksiyonu olarak islendi.",
+                "Izin takviminde ve panel onay kuyrugunda bu eski bekleyen talep artik gorunmeyecek hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.48.0",
+            "title": "Izin basvuru alindi maili eklendi",
+            "released_at": "2026-05-14 18:44",
+            "status": "completed",
+            "changes": [
+                "Izin talebi olusturuldugunda basvuru sahibine talebiniz basariyla alinmistir bilgilendirme maili gonderilecek hale getirildi.",
+                "Basvuru sahibine giden mailde talep numarasi, tarih araligi, gun sayisi ve izin merkezi butonu gosterildi.",
+                "Mail gonderim durumu izin talebinin mail bildirimleri ve leave-mail outbox kaydinda izlenebilir hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.49.0",
+            "title": "IK onayi sonrasi yillik izin defteri imza maili eklendi",
+            "released_at": "2026-06-10 09:49",
+            "status": "completed",
+            "changes": [
+                "Yillik izin talebi IK tarafindan onaylandiginda talep sahibine defter imzasi bilgilendirme maili gonderilecek hale getirildi.",
+                "Mail iceriginde izin ozeti, IK asistani / IK birimi yonlendirmesi ve izin merkezi butonu eklendi.",
+                "Gonderim sonucu izin talebinin mail bildirimleri ve leave-mail outbox kaydinda leave_book_signature_required tipiyle izlenebilir hale getirildi.",
+                "Yeni izin talebi numaralari mevcut en yuksek numaradan ilerleyecek sekilde guclendirildi."
+            ]
+        },
+        {
+            "version": "v0.50.0",
+            "title": "Yillik izin defteri imza takip maili eklendi",
+            "released_at": "2026-06-10 10:22",
+            "status": "completed",
+            "changes": [
+                "Yillik izin defteri imza mailine defterin en gec 2 gun icinde imzalanmasi gerektigi bilgisi eklendi.",
+                "Imza mailinden 2 gun sonra calisanin defteri imzalayip imzalamadigini soran takip maili altyapisi eklendi.",
+                "Takip mailindeki Imzalandi ve Imzalanmadi butonlariyla defter imza durumu e-posta uzerinden kaydedilebilir hale getirildi.",
+                "Takip maili saatlik uygulama scheduleri ve cron scriptiyle calisabilir hale getirildi; alici ve sureler .env ayarlari uzerinden degistirilebilir."
+            ]
+        },
+        {
+            "version": "v0.51.0",
+            "title": "Defter imza maili izin donusu ilk mesai gunune alindi",
+            "released_at": "2026-06-10 10:42",
+            "status": "completed",
+            "changes": [
+                "Yillik izin defteri imza maili artik IK onayi aninda degil, izin bitisinden sonraki ilk mesai gunu saat 09:00 icin planlanacak hale getirildi.",
+                "Ilk mesai gunu hesaplamasi hafta sonunu atlayacak sekilde duzenlendi.",
+                "Imza kontrol takip mailinin 2 gunluk suresi, defter imza mailinin gercekten gonderildigi andan itibaren baslatildi.",
+                "Saatlik scheduler ve cron scripti hem planlanan defter imza mailini hem de takip mailini isleyecek sekilde guclendirildi."
+            ]
+        },
+        {
+            "version": "v0.52.0",
+            "title": "Haberler ve duyurular menuden kaldirildi",
+            "released_at": "2026-06-10 10:55",
+            "status": "completed",
+            "changes": [
+                "Haberler ve duyurular modulu sol navigasyon menusunden gizlendi.",
+                "Paneldeki modul kartlari listesinden Haberler ve duyurular karti kaldirildi.",
+                "Modul verisi ve yetki anahtari korunarak ileride tekrar acilabilir sekilde hidden_in_menu bayragi eklendi."
+            ]
+        },
+        {
+            "version": "v0.53.0",
+            "title": "Personel kartlarina IK ve yonetici gorev atamalari eklendi",
+            "released_at": "2026-06-10 11:16",
+            "status": "completed",
+            "changes": [
+                "Personel ekleme ve duzenleme formlarina IK, IK asistani ve menajer gorev kutucuklari eklendi.",
+                "Secilen gorevler personel profilinde workforce_roles alaninda saklanacak hale getirildi.",
+                "IK, IK asistani ve menajer gorevleri ilgili izin ve personel surec yetkilerini otomatik tamamlayacak sekilde baglandi.",
+                "Personel listesinde secili gorevler rozet olarak gosterilecek ve arama metnine dahil edilecek hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.54.0",
+            "title": "IK ve IK asistani izin yetkileri netlestirildi",
+            "released_at": "2026-06-10 11:40",
+            "status": "completed",
+            "changes": [
+                "IK asistani gorevi yillik izin defteri takip ve uyari maillerine otomatik alici olacak sekilde baglandi.",
+                "IK gorevine personel okuma, duzenleme, silme, export ve izin iptali yetkileri tam set olarak verildi.",
+                "Izin merkezine IK kullanicilarinin aktif ve onayli izin taleplerini iptal edebilecegi panel eklendi.",
+                "Iptal edilen izinler takvimde ayri cancelled durumuyla gorunecek ve izin bakiyesinden dusmeyecek hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.55.0",
+            "title": "Izin donusu defter imza alerti eklendi",
+            "released_at": "2026-06-11 09:25",
+            "status": "completed",
+            "changes": [
+                "Izin donusunden sonraki ilk mesai gunu kullanicinin kendi hesabinda yillik izin defteri imza uyarisi gorunur hale getirildi.",
+                "Uyari, ilgili izin talep numarasi ve tarih araligi ile kullaniciyi IK asistanina yonlendirecek sekilde tasarlandi.",
+                "Defter imzasi signed veya not_signed olarak isaretlendiginde hesap uyarisi otomatik kaybolacak sekilde baglandi.",
+                "Uyari metinleri Turkce, Ingilizce, Almanca ve Japonca dillerinde tamamlandi; PWA cache surumu yenilendi."
+            ]
+        },
+        {
+            "version": "v0.56.0",
+            "title": "Yarim gun izin destegi eklendi",
+            "released_at": "2026-06-16 11:41",
+            "status": "completed",
+            "changes": [
+                "Izin talep formuna Tam gun, Ogleden once ve Ogleden sonra gun bolumu secimi eklendi.",
+                "Yarim gun izinler tek tarih icin 0.5 gun olarak bakiye, bekleyen izin ve kullanilan izin hesaplarina dahil edildi.",
+                "Yarim gun izinler mevcut departman yoneticisi, IK onayi, mail onayi, web push, takvim ve defter imza sureclerini aynen kullanacak sekilde baglandi.",
+                "Takvim, panel mini takvimi, pop-up bilgi ekrani ve onay maillerinde yarim gun bilgisi gosterilecek hale getirildi.",
+                "10 gun bolunme kurali sistem engeli olarak uygulanmadi; mevcut bakiye ve onay politikalari korunarak calismaya devam ediyor."
+            ]
+        },
+        {
+            "version": "v0.57.0",
+            "title": "Mail sunucusu alarmbigabilisim SMTPye tasindi",
+            "released_at": "2026-06-21 17:45",
+            "status": "completed",
+            "changes": [
+                "Canli mail gonderimleri yeni alarmbigabilisim SMTP sunucusuna tasindi.",
+                "Bilgilendirme gonderici adresi ve SMTP port/encryption ayarlari yeni sunucuya gore guncellendi.",
+                "Izin onayi, sifremi unuttum, test mail ve surum notu gonderimleri ortak SMTP ayarlariyla calisacak sekilde korundu.",
+                "Yeni mail sunucusu uzerinden test maili gonderimi dogrulandi."
+            ]
+        },
+        {
+            "version": "v0.58.0",
+            "title": "Personel izin duzenleme ve iptal onay akisi eklendi",
+            "released_at": "2026-06-23 09:27",
+            "status": "completed",
+            "changes": [
+                "Personelin 1. yonetici onayi yapilmadan once kendi izin talebinin tarih, gun bolumu, tur ve not bilgilerini bildirim gondermeden duzenleyebilmesi eklendi.",
+                "1. yonetici onayi bekleyen izin taleplerinin personel tarafindan dogrudan iptal edilebilmesi ve bildirim uretmemesi saglandi.",
+                "1. yonetici onayindan sonra acilan izin iptal talepleri yalnizca 1. yonetici onayina gidecek sekilde baglandi; IK onayi verilmis olsa bile iptal icin 1. yonetici karari yeterli hale getirildi.",
+                "Iptal onaylari panel, web push ve 96 saatlik butonlu e-posta tokenlariyla calisacak sekilde ayrilastirildi.",
+                "Izin takvimi ve talep ekraninda iptal onayi bekleyen kayitlar ayri durum ve renkle gosterilecek hale getirildi; PWA cache surumu yenilendi."
+            ]
+        },
+        {
+            "version": "v0.59.0",
+            "title": "Varsayilan dil Turkce yapildi",
+            "released_at": "2026-06-23 09:33",
+            "status": "completed",
+            "changes": [
+                "Ilk giriste oturumda dil secimi yoksa uygulamanin tarayici dili yerine Turkce acilmasi saglandi.",
+                "Kullanicinin dil menusu uzerinden yaptigi secim oturumda korunmaya devam edecek sekilde mevcut davranis korundu.",
+                "Gecersiz dil parametresi geldiginde de uygulama varsayilan Turkce dile donecek hale getirildi."
+            ]
+        },
+        {
+            "version": "v0.60.0",
+            "title": "Kullanici paneline silinmis izinler ekrani eklendi",
+            "released_at": "2026-06-23 09:38",
+            "status": "completed",
+            "changes": [
+                "Kullanici izin paneline Silinmis izinler butonu eklendi.",
+                "Butonla acilan ekranda kullanicinin kendi iptal edilmis izin kayitlari talep numarasi, tarih araligi, izin turu, gun bolumu, gun sayisi ve silinme bilgisiyle listelenecek hale getirildi.",
+                "Silinmis izin kaydi olmayan kullanicilar icin acilir ekranda bos durum mesaji eklendi.",
+                "Yeni ekran Turkce, Ingilizce, Almanca ve Japonca dil dosyalarina eklendi; PWA cache surumu yenilendi."
+            ]
+        },
+        {
+            "version": "v0.61.0",
+            "title": "Izin paneli adi Takvim olarak degistirildi",
+            "released_at": "2026-06-23 09:40",
+            "status": "completed",
+            "changes": [
+                "Izin modulunun panel ve menu adi Turkce arayuzde Takvim olarak degistirildi.",
+                "Ayni panel adi Ingilizce, Almanca ve Japonca dil dosyalarinda Calendar, Kalender ve カレンダー olarak esitlendi.",
+                "Modulun izin talebi, onay ve takvim islevleri korunarak yalnizca gorunen panel adi sadeleştirildi."
+            ]
+        },
+        {
+            "version": "v0.62.0",
+            "title": "Shift modulu ve personel vardiya atamalari eklendi",
+            "released_at": "2026-06-24 08:49",
+            "status": "completed",
+            "changes": [
+                "Sol menuye ayri Shift modulu eklendi; vardiya gunleri, baslangic/bitis saatleri, mola suresi ve atamaya acik/pasif durumu yonetilebilir hale getirildi.",
+                "Shift tanimlarinda hafta ici, hafta sonu, tum gunler veya ozel gun secimiyle otomatik gun belirleme eklendi.",
+                "Shift ekranindan tek tek personel secerek veya tum personeli isaretleyerek toplu shift atamasi yapilmasi saglandi.",
+                "Personel ekleme ve duzenleme kartlarina Shift bilgisi alani eklendi; personel listesinde mevcut shift kolonu gorunur ve aramaya dahil edildi.",
+                "Shift erisimi ve shift yonetimi Admin > Yetkiler ekranina baglandi; IK, IK asistani ve menajer gorevlerine shift yonetimi yetkisi tanimlandi.",
+                "Shift modulu Turkce, Ingilizce, Almanca ve Japonca dil dosyalarina eklendi; responsive arayuz ve PWA cache surumu yenilendi."
+            ]
+        },
+        {
+            "version": "v0.63.0",
+            "title": "Varsayilan shift silme davranisi duzeltildi",
+            "released_at": "2026-06-24 09:09",
+            "status": "completed",
+            "changes": [
+                "Varsayilan olarak olusturulan Gece Shift gibi shift tanimlari silindiginde sistemin bunlari otomatik tekrar olusturmasi engellendi.",
+                "Silinen varsayilan shiftler deleted_seed_templates listesinde hatirlanacak sekilde kaydedildi.",
+                "Canli Gece Shift kaydi temizlenerek tekrar gorunmemesi icin silinmis varsayilan olarak isaretlendi."
+            ]
+        },
+        {
+            "version": "v0.65.0",
+            "title": "Shift atamalarinda cift shift engeli eklendi",
+            "released_at": "2026-06-24 09:17",
+            "status": "completed",
+            "changes": [
+                "Bir personel baska bir shiftte tanimliysa yeni bir shifte dogrudan atanmasi engellendi.",
+                "Yoneticiye once personeli mevcut shiftinden cikarmasi, daha sonra yeni shifte eklemesi gerektigini soyleyen hata mesaji eklendi.",
+                "Ayni shifte tekrar atama ve shiftten kaldirma islemleri mevcut akisla calismaya devam edecek sekilde korundu."
+            ]
+        },
+        {
+            "version": "v0.64.0",
+            "title": "Shift menusu yalnizca IK yoneticisine alindi",
+            "released_at": "2026-06-24 09:13",
+            "status": "completed",
+            "changes": [
+                "Shift modulunun otomatik gorunurlugu HR asistani ve menajer rollerinden kaldirildi.",
+                "Shift menusu ve shift yonetimi yalnizca sistem admini ile IK sahibi/IK yoneticisi olarak tanimlanan kullanicilarda kalacak sekilde sinirlandi.",
+                "Canli yetki kayitlarinda daha once kalmis Shift yetkileri non-HR kullanicilardan otomatik temizlenecek sekilde yetki versiyonu guncellendi."
+            ]
+        },
+        {
+            "version": "v0.66.0",
+            "title": "Surum mail alicilarina Yesim Ekici eklendi",
+            "released_at": "2026-06-24 09:20",
+            "status": "completed",
+            "changes": [
+                "Yeni surum ve islem aciklamasi maillerinin Bilal Bozduman ile birlikte Yesim Dingil Ekici adresine de gitmesi icin surum mail alici listesi guncellendi.",
+                "Admin > Surumler ekranindaki mail ozetine alici listesi eklendi.",
+                "Bu surumden itibaren surum notu gonderimleri bilal@bigabilisim.com ve y.ekici@takii.com.tr adreslerine birlikte yapilacak."
+            ]
+        },
+        {
+            "version": "v0.67.0",
+            "title": "IK geri bildirimlerine gore izin ve shift akislari guncellendi",
+            "released_at": "2026-06-24 11:45",
+            "status": "completed",
+            "changes": [
+                "Izin takviminde yetkili kullanicilarin talep kartindan hizli onay/red verebilmesi eklendi; red islemlerinde red nedeni zorunlu hale getirildi.",
+                "Tum izin taleplerine islem tarihcesi eklendi; kullanici kendi izin gecmisini, yonetici de yetkisi dahilindeki taleplerin akis kaydini gorebilir.",
+                "Personel ve izin takvimi gorunurlugu admin/IK, departman yoneticisi ve mavi yaka/beyaz yaka kapsamlarina gore filtrelenecek sekilde guclendirildi.",
+                "Mail adresi olmayan mavi yaka kullanicilarin PDKS ID veya kullanici adi ile giris yapabilmesi icin login kimligi esnetildi.",
+                "Shift ekranina aylik hafta sonu nobet plani eklendi; planlanan calisma gunleri izin gun sayisi hesabinda dikkate alinacak hale getirildi.",
+                "Personel gorevlerine Shift planlayici rolu eklendi; Sultan/Burak gibi kisilere yalnizca aylik nobet plani giris yetkisi verilebilir."
+            ]
+        },
+        {
+            "version": "v0.68.0",
+            "title": "Ozel hafta sonu nobetci planlama kapsami netlestirildi",
+            "released_at": "2026-06-30 12:00",
+            "status": "completed",
+            "changes": [
+                "Personel gorevlerine Hafta sonu nobetcisi isareti eklendi.",
+                "Aylik hafta sonu nobet plani formu yalnizca Hafta sonu nobetcisi olarak isaretlenen personelleri listeleyecek sekilde sinirlandi.",
+                "Backend tarafinda da kapsam disi personel icin nobet plani kaydi engellendi.",
+                "Sultan ve Burak gibi Shift planlayici yetkili kisilerin sadece ozel hafta sonu nobetcilerini planlamasi icin arayuz ve hata mesajlari guncellendi."
+            ]
+        },
+        {
+            "version": "v0.69.0",
+            "title": "Defter imzasi bekleyenler ekrani eklendi",
+            "released_at": "2026-06-30 13:30",
+            "status": "completed",
+            "changes": [
+                "IK ve IK asistani icin Defter Imzasi Bekleyenler menusu eklendi.",
+                "Onaylanmis yillik izinlerde defter imzasi bekleyen kayitlar mail gonderiminden bagimsiz olarak sistem listesine alindi.",
+                "Fiziksel yillik izin defteri imzalandiginda ilgili izin kaydi platformdan Imzalandi olarak kapatilabilir hale getirildi.",
+                "Platformdan islenen defter imzasi izin tarihcesine ve audit log kaydina dusuruldu."
+            ]
+        },
+        {
+            "version": "v0.70.0",
+            "title": "Cekirdek veriler MariaDB transaction katmanina tasindi",
+            "released_at": "2026-07-14 08:12",
+            "status": "completed",
+            "changes": [
+                "Izin, personel, mesaj, yetki, Web Push aboneligi, VAPID anahtari ve izin bildirim kayitlari MariaDB uzerindeki transaction destekli state tablosuna tasindi.",
+                "Es zamanli isteklerde veri kaybini engellemek icin InnoDB transaction, SELECT FOR UPDATE satir kilidi, revision kontrolu ve SHA-256 checksum eklendi.",
+                "Mevcut JSON verilerini MariaDB ye kayipsiz ve idempotent aktaran migration komutu eklendi; eski dosyalar otomatik olarak ezilmiyor veya silinmiyor.",
+                "Acil durum dosya surucusune belge bazli flock kilidi ve atomik gecici dosya degistirme mekanizmasi eklendi.",
+                "Dosya ve gercek MariaDB suruculerinde 120 es zamanli guncelleme ile personel, yetki, mesaj, bildirim ve izin entegrasyon testleri basariyla tamamlandi."
+            ]
+        },
+        {
+            "version": "v0.71.0",
+            "title": "Personel e-posta degisikligi atomik kimlik migrasyonuna donusturuldu",
+            "released_at": "2026-07-14 08:41",
+            "status": "completed",
+            "changes": [
+                "Personel e-posta degisikligi profil anahtariyla birlikte yetki, departman onaycisi, izin, mesaj, sabitlenmis konusma, Web Push ve shift referanslarini tasiyacak sekilde guncellendi.",
+                "Personel ve Admin Yetkiler ekranlarindaki profil duzenleme islemleri ayni merkezi kimlik migrasyon servisine baglandi.",
+                "Sekiz state belgesi sabit lock sirasiyla tek islem kapsamina alindi; hata halinde MariaDB transaction rollback veya dosya snapshot geri yukleme eklendi.",
+                "Eski adrese gonderilmis aktif parola sifirlama tokenlari e-posta degisikliginde otomatik iptal edilirken aktif kullanici oturumu ve yetkileri yeni kimlige tasindi.",
+                "Dosya ve gercek MariaDB testlerinde bilincli shift cakismasi ile payload ve revision rollback, ardindan basarili referans migrasyonu dogrulandi."
+            ]
+        },
+        {
+            "version": "v0.72.0",
+            "title": "Izin bakiyesi ve calisma takvimi sabit personel kimligine baglandi",
+            "released_at": "2026-07-14 09:15",
+            "status": "completed",
+            "changes": [
+                "Her personele e-posta ve ad-soyad degisikliklerinden etkilenmeyen sabit personel kimligi eklendi; eski izin kayitlari guvenli eslesme bulunan hesaplarda otomatik olarak bu kimlige baglandi.",
+                "Yillik izin bakiyesi ve talep sahipligi ad-soyad yerine sabit personel kimligiyle hesaplanacak sekilde guncellendi.",
+                "Turkiye resmi tatilleri 2025-2035 donemi icin tam gun ve saat 13:00 sonrasi yarim gun kurallariyla izin hesabina eklendi; sirket tatili tanimlama ekrani olusturuldu.",
+                "Ozel hafta sonu nobet planlari ay boyunca tekrar eden hafta gunleri yerine ay icindeki kesin tarihlerle planlanir hale getirildi; mevcut planlar kayipsiz donusturuldu.",
+                "Shift ekrani dort dilde tarih secim takvimi ve resmi/sirket tatili listesiyle responsive olarak yenilendi; kimlik, tatil ve nobet hesaplari entegrasyon testleriyle dogrulandi."
+            ]
+        },
+        {
+            "version": "v0.73.0",
+            "title": "Izin takvimi onay tarihcesi ve notlardan arindirildi",
+            "released_at": "2026-07-14 09:20",
+            "status": "completed",
+            "changes": [
+                "Takvim olay veri modeli yalnizca temel izin bilgisi, gorunur durum ve yetkili kullanici icin hizli karar baglantisini tasiyacak sekilde daraltildi.",
+                "Onay tarihcesi, karar veren kisi, red nedeni, talep notu ve onay akisi takvim payloadindan tamamen cikarildi.",
+                "HTML icindeki data-history alani ile JavaScript tarafindaki history, approvals ve note okuyuculari kaldirildi.",
+                "Personelin kendi Islem Tarihcem bolumu ile yonetici ve IK icin yetkili Bekleyen Izinler tarihcesi korunarak takvimden ayrildi.",
+                "Farkli departmanda ancak ayni yaka grubundaki kullanici senaryosuyla takvim payloadi ve HTML veri sizintisi regresyon testine baglandi."
             ]
         }
     ]

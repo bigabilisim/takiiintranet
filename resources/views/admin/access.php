@@ -6,6 +6,40 @@ foreach ($users as $knownUser) {
 $userName = fn (string $email): string => $usersByEmail[$email]['name'] ?? $email;
 $employmentTypes = ['full_time', 'part_time', 'contractor', 'intern'];
 $educationLevels = ['', 'high_school', 'associate', 'bachelor', 'master', 'doctorate', 'other'];
+$departmentOptions = is_array($departmentOptions ?? null) ? $departmentOptions : array_map(
+    static fn (string $department): array => ['name' => $department, 'label' => $department, 'parent' => '', 'level' => 0],
+    $departments
+);
+$departmentHierarchy = is_array($departmentHierarchy ?? null) ? $departmentHierarchy : array_map(
+    static fn (string $department): array => ['name' => $department, 'parent' => '', 'level' => 0, 'child_count' => 0],
+    $departments
+);
+$departmentParents = is_array($departmentParents ?? null) ? $departmentParents : [];
+$departmentChildCounts = is_array($departmentChildCounts ?? null) ? $departmentChildCounts : [];
+$departmentOptionNames = array_column($departmentOptions, 'name');
+$departmentOptionLabel = static function (string $department) use (&$departmentOptions): string {
+    foreach ($departmentOptions as $option) {
+        if (($option['name'] ?? '') === $department) {
+            return (string) ($option['label'] ?? $department);
+        }
+    }
+
+    return $department;
+};
+$departmentSelectOptions = static function (string $currentDepartment) use ($departmentOptions, $departmentOptionNames, $departmentOptionLabel): array {
+    $options = $departmentOptions;
+
+    if ($currentDepartment !== '' && !in_array($currentDepartment, $departmentOptionNames, true)) {
+        $options[] = [
+            'name' => $currentDepartment,
+            'label' => $departmentOptionLabel($currentDepartment),
+            'parent' => '',
+            'level' => 0,
+        ];
+    }
+
+    return $options;
+};
 ?>
 
 <section class="page-header">
@@ -51,11 +85,7 @@ $educationLevels = ['', 'high_school', 'associate', 'bachelor', 'master', 'docto
         <div class="permission-matrix user-directory-list">
             <?php foreach ($users as $managedUser): ?>
                 <?php
-                    $currentDepartmentOptions = array_values(array_unique(array_filter(array_merge(
-                        $departments,
-                        [(string) ($managedUser['department'] ?? '')]
-                    ))));
-                    sort($currentDepartmentOptions);
+                    $currentDepartmentOptions = $departmentSelectOptions((string) ($managedUser['department'] ?? ''));
                 ?>
                 <details class="user-directory-item">
                     <summary class="user-directory-row">
@@ -89,8 +119,9 @@ $educationLevels = ['', 'high_school', 'associate', 'bachelor', 'master', 'docto
                             <span><?= htmlspecialchars($t('admin.profile.department'), ENT_QUOTES, 'UTF-8') ?></span>
                             <select name="department" required>
                                 <?php foreach ($currentDepartmentOptions as $departmentOption): ?>
-                                    <option value="<?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8') ?>" <?= ($managedUser['department'] ?? '') === $departmentOption ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8') ?>
+                                    <?php $departmentOptionName = (string) ($departmentOption['name'] ?? ''); ?>
+                                    <option value="<?= htmlspecialchars($departmentOptionName, ENT_QUOTES, 'UTF-8') ?>" <?= ($managedUser['department'] ?? '') === $departmentOptionName ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars((string) ($departmentOption['label'] ?? $departmentOptionName), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -250,12 +281,29 @@ $educationLevels = ['', 'high_school', 'associate', 'bachelor', 'master', 'docto
                 <span><?= htmlspecialchars($t('admin.department_name'), ENT_QUOTES, 'UTF-8') ?></span>
                 <input type="text" name="department_name" maxlength="100" required>
             </label>
+            <label>
+                <span><?= htmlspecialchars($t('admin.parent_department'), ENT_QUOTES, 'UTF-8') ?></span>
+                <select name="parent_department">
+                    <option value=""><?= htmlspecialchars($t('admin.main_department'), ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php foreach ($departmentOptions as $departmentOption): ?>
+                        <?php $departmentOptionName = (string) ($departmentOption['name'] ?? ''); ?>
+                        <option value="<?= htmlspecialchars($departmentOptionName, ENT_QUOTES, 'UTF-8') ?>">
+                            <?= htmlspecialchars((string) ($departmentOption['label'] ?? $departmentOptionName), ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
             <button class="button compact" type="submit"><?= htmlspecialchars($t('admin.add_department'), ENT_QUOTES, 'UTF-8') ?></button>
         </form>
         <div class="permission-matrix user-directory-list department-directory-list">
-            <?php foreach ($departments as $department): ?>
+            <?php foreach ($departmentHierarchy as $departmentNode): ?>
+                <?php $department = (string) ($departmentNode['name'] ?? ''); ?>
+                <?php if ($department === '') { continue; } ?>
                 <?php $policy = $departmentPolicies[$department] ?? []; ?>
                 <?php $departmentUserCount = (int) ($departmentUserCounts[$department] ?? 0); ?>
+                <?php $departmentChildCount = (int) ($departmentChildCounts[$department] ?? ($departmentNode['child_count'] ?? 0)); ?>
+                <?php $departmentParent = (string) ($departmentParents[$department] ?? ($departmentNode['parent'] ?? '')); ?>
+                <?php $departmentLevel = (int) ($departmentNode['level'] ?? 0); ?>
                 <?php
                     $departmentFlow = array_values(array_filter([
                         $userName($policy['manager_1_email'] ?? ''),
@@ -263,14 +311,24 @@ $educationLevels = ['', 'high_school', 'associate', 'bachelor', 'master', 'docto
                         $userName($policy['hr_email'] ?? ''),
                     ], fn (string $name): bool => $name !== ''));
                 ?>
-                <details class="user-directory-item department-directory-item">
+                <details class="user-directory-item department-directory-item" style="--department-level: <?= htmlspecialchars((string) min($departmentLevel, 4), ENT_QUOTES, 'UTF-8') ?>">
                     <summary class="user-directory-row">
                         <span class="user-directory-main">
-                            <strong><?= htmlspecialchars($department, ENT_QUOTES, 'UTF-8') ?></strong>
+                            <strong>
+                                <?= htmlspecialchars(str_repeat('-- ', $departmentLevel) . $department, ENT_QUOTES, 'UTF-8') ?>
+                                <?php if ($departmentParent !== ''): ?>
+                                    <em class="department-parent-chip"><?= htmlspecialchars($t('admin.sub_department'), ENT_QUOTES, 'UTF-8') ?></em>
+                                <?php endif; ?>
+                            </strong>
                             <span class="user-directory-meta">
+                                <?php if ($departmentParent !== ''): ?>
+                                    <?= htmlspecialchars($t('admin.parent_department'), ENT_QUOTES, 'UTF-8') ?>
+                                    <?= htmlspecialchars($departmentParent, ENT_QUOTES, 'UTF-8') ?> /
+                                <?php endif; ?>
                                 <?= htmlspecialchars($t('admin.policy_preview'), ENT_QUOTES, 'UTF-8') ?>
                                 <?= htmlspecialchars($departmentFlow !== [] ? implode(' / ', $departmentFlow) : $t('admin.no_assignee'), ENT_QUOTES, 'UTF-8') ?>
                                 / <?= htmlspecialchars($t('admin.department_user_count', ['count' => $departmentUserCount]), ENT_QUOTES, 'UTF-8') ?>
+                                / <?= htmlspecialchars($t('admin.department_child_count', ['count' => $departmentChildCount]), ENT_QUOTES, 'UTF-8') ?>
                             </span>
                         </span>
                         <span class="button compact user-directory-edit"><?= htmlspecialchars($t('admin.edit'), ENT_QUOTES, 'UTF-8') ?></span>
@@ -289,6 +347,7 @@ $educationLevels = ['', 'high_school', 'associate', 'bachelor', 'master', 'docto
                         <button class="button compact" type="submit"><?= htmlspecialchars($t('admin.save'), ENT_QUOTES, 'UTF-8') ?></button>
                     </div>
                     <strong class="profile-section-title"><?= htmlspecialchars($t('admin.department_leave_policy'), ENT_QUOTES, 'UTF-8') ?></strong>
+                    <p class="department-policy-hint"><?= htmlspecialchars($t('admin.department_policy_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                     <div class="profile-grid department-policy-fields">
                         <label>
                             <span><?= htmlspecialchars($t('admin.manager_approval_count'), ENT_QUOTES, 'UTF-8') ?></span>
@@ -302,34 +361,34 @@ $educationLevels = ['', 'high_school', 'associate', 'bachelor', 'master', 'docto
                             </select>
                         </label>
                         <label>
-                            <span><?= htmlspecialchars($t('leave.stage.manager_1'), ENT_QUOTES, 'UTF-8') ?></span>
+                            <span><?= htmlspecialchars($t('admin.department_manager'), ENT_QUOTES, 'UTF-8') ?></span>
                             <select name="manager_1_email">
                                 <option value=""><?= htmlspecialchars($t('admin.no_assignee'), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php foreach ($users as $candidate): ?>
                                     <option value="<?= htmlspecialchars($candidate['email'], ENT_QUOTES, 'UTF-8') ?>" <?= ($policy['manager_1_email'] ?? '') === $candidate['email'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($candidate['name'], ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($candidate['name'] . ' / ' . $candidate['email'], ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </label>
                         <label>
-                            <span><?= htmlspecialchars($t('leave.stage.manager_2'), ENT_QUOTES, 'UTF-8') ?></span>
+                            <span><?= htmlspecialchars($t('admin.department_second_manager'), ENT_QUOTES, 'UTF-8') ?></span>
                             <select name="manager_2_email">
                                 <option value=""><?= htmlspecialchars($t('admin.no_assignee'), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php foreach ($users as $candidate): ?>
                                     <option value="<?= htmlspecialchars($candidate['email'], ENT_QUOTES, 'UTF-8') ?>" <?= ($policy['manager_2_email'] ?? '') === $candidate['email'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($candidate['name'], ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($candidate['name'] . ' / ' . $candidate['email'], ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </label>
                         <label>
-                            <span><?= htmlspecialchars($t('leave.stage.hr'), ENT_QUOTES, 'UTF-8') ?></span>
+                            <span><?= htmlspecialchars($t('admin.department_hr_approver'), ENT_QUOTES, 'UTF-8') ?></span>
                             <select name="hr_email">
                                 <option value=""><?= htmlspecialchars($t('admin.no_assignee'), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php foreach ($users as $candidate): ?>
                                     <option value="<?= htmlspecialchars($candidate['email'], ENT_QUOTES, 'UTF-8') ?>" <?= ($policy['hr_email'] ?? '') === $candidate['email'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($candidate['name'], ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($candidate['name'] . ' / ' . $candidate['email'], ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -339,6 +398,7 @@ $educationLevels = ['', 'high_school', 'associate', 'bachelor', 'master', 'docto
                         <?= htmlspecialchars($t('admin.policy_preview'), ENT_QUOTES, 'UTF-8') ?>
                         <strong><?= htmlspecialchars($departmentFlow !== [] ? implode(' / ', $departmentFlow) : $t('admin.no_assignee'), ENT_QUOTES, 'UTF-8') ?></strong>
                         / <?= htmlspecialchars($t('admin.department_user_count', ['count' => $departmentUserCount]), ENT_QUOTES, 'UTF-8') ?>
+                        / <?= htmlspecialchars($t('admin.department_child_count', ['count' => $departmentChildCount]), ENT_QUOTES, 'UTF-8') ?>
                     </p>
                     <div class="user-edit-actions">
                         <button class="button compact" type="submit"><?= htmlspecialchars($t('admin.save'), ENT_QUOTES, 'UTF-8') ?></button>

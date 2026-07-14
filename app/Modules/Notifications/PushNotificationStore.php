@@ -2,6 +2,7 @@
 
 namespace App\Modules\Notifications;
 
+use App\Core\StateStore;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\VAPID;
 use Minishlink\WebPush\WebPush;
@@ -9,6 +10,12 @@ use Minishlink\WebPush\WebPush;
 class PushNotificationStore
 {
     private const SUBSCRIPTION_VERSION = 1;
+    private const SUBSCRIPTIONS_STATE_KEY = 'push_subscriptions';
+    private const VAPID_STATE_KEY = 'vapid_keys';
+
+    public function __construct(private readonly StateStore $stateStore)
+    {
+    }
 
     public function publicKey(): string
     {
@@ -17,6 +24,8 @@ class PushNotificationStore
 
     public function subscribe(string $email, array $subscription): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::SUBSCRIPTIONS_STATE_KEY, $this->subscriptionsPath());
+
         if ($email === '' || empty($subscription['endpoint']) || empty($subscription['keys']['p256dh']) || empty($subscription['keys']['auth'])) {
             return ['ok' => false, 'message' => 'push.flash.invalid_subscription'];
         }
@@ -42,6 +51,7 @@ class PushNotificationStore
 
     public function unsubscribe(string $email, array $subscription): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::SUBSCRIPTIONS_STATE_KEY, $this->subscriptionsPath());
         $endpoint = (string) ($subscription['endpoint'] ?? '');
         $data = $this->subscriptionsData();
         $key = $this->endpointKey($endpoint);
@@ -75,8 +85,7 @@ class PushNotificationStore
 
         $sent = 0;
         $failed = 0;
-        $data = $this->subscriptionsData();
-        $dirty = false;
+        $expiredSubscriptionKeys = [];
 
         foreach ($subscriptions as $subscriptionData) {
             $endpoint = (string) ($subscriptionData['endpoint'] ?? '');
@@ -95,14 +104,20 @@ class PushNotificationStore
             } else {
                 $failed++;
 
-                if ($report->isSubscriptionExpired() && isset($data['subscriptions'][$subscriptionKey])) {
-                    unset($data['subscriptions'][$subscriptionKey]);
-                    $dirty = true;
+                if ($report->isSubscriptionExpired()) {
+                    $expiredSubscriptionKeys[] = $subscriptionKey;
                 }
             }
         }
 
-        if ($dirty) {
+        if ($expiredSubscriptionKeys !== []) {
+            $writeGuard = $this->stateStore->beginWrite(self::SUBSCRIPTIONS_STATE_KEY, $this->subscriptionsPath());
+            $data = $this->subscriptionsData();
+
+            foreach (array_unique($expiredSubscriptionKeys) as $subscriptionKey) {
+                unset($data['subscriptions'][$subscriptionKey]);
+            }
+
             $this->saveSubscriptionsData($data);
         }
 
@@ -112,6 +127,33 @@ class PushNotificationStore
             'failed' => $failed,
             'message' => $failed === 0 ? 'push.flash.sent' : 'push.flash.partial',
         ];
+    }
+
+    public function migrateUserIdentity(string $oldIdentity, string $newIdentity): int
+    {
+        if ($oldIdentity === '' || $newIdentity === '' || $oldIdentity === $newIdentity) {
+            return 0;
+        }
+
+        $writeGuard = $this->stateStore->beginWrite(self::SUBSCRIPTIONS_STATE_KEY, $this->subscriptionsPath());
+        $data = $this->subscriptionsData();
+        $migrated = 0;
+
+        foreach ($data['subscriptions'] as $key => $subscription) {
+            if ((string) ($subscription['user_email'] ?? '') !== $oldIdentity) {
+                continue;
+            }
+
+            $data['subscriptions'][$key]['user_email'] = $newIdentity;
+            $data['subscriptions'][$key]['last_seen_at'] = date('Y-m-d H:i');
+            $migrated++;
+        }
+
+        if ($migrated > 0) {
+            $this->saveSubscriptionsData($data);
+        }
+
+        return $migrated;
     }
 
     private function vapidKeys(): array
@@ -124,23 +166,21 @@ class PushNotificationStore
         }
 
         $path = $this->vapidPath();
+        $keys = $this->stateStore->read(self::VAPID_STATE_KEY, $path);
 
-        if (is_file($path)) {
-            $decoded = json_decode((string) file_get_contents($path), true);
+        if (!empty($keys['publicKey']) && !empty($keys['privateKey'])) {
+            return $keys;
+        }
 
-            if (is_array($decoded) && !empty($decoded['publicKey']) && !empty($decoded['privateKey'])) {
-                return $decoded;
-            }
+        $writeGuard = $this->stateStore->beginWrite(self::VAPID_STATE_KEY, $path);
+        $keys = $this->stateStore->read(self::VAPID_STATE_KEY, $path);
+
+        if (!empty($keys['publicKey']) && !empty($keys['privateKey'])) {
+            return $keys;
         }
 
         $keys = VAPID::createVapidKeys();
-        $directory = dirname($path);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        file_put_contents($path, json_encode($keys, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $this->stateStore->write(self::VAPID_STATE_KEY, $path, $keys);
 
         return $keys;
     }
@@ -160,15 +200,13 @@ class PushNotificationStore
 
     private function subscriptionsData(): array
     {
-        $path = $this->subscriptionsPath();
+        $decoded = $this->stateStore->read(
+            self::SUBSCRIPTIONS_STATE_KEY,
+            $this->subscriptionsPath(),
+            ['version' => self::SUBSCRIPTION_VERSION, 'subscriptions' => []]
+        );
 
-        if (!is_file($path)) {
-            return ['version' => self::SUBSCRIPTION_VERSION, 'subscriptions' => []];
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-
-        if (!is_array($decoded) || ($decoded['version'] ?? null) !== self::SUBSCRIPTION_VERSION || !isset($decoded['subscriptions'])) {
+        if (($decoded['version'] ?? null) !== self::SUBSCRIPTION_VERSION || !is_array($decoded['subscriptions'] ?? null)) {
             return ['version' => self::SUBSCRIPTION_VERSION, 'subscriptions' => []];
         }
 
@@ -177,14 +215,7 @@ class PushNotificationStore
 
     private function saveSubscriptionsData(array $data): void
     {
-        $path = $this->subscriptionsPath();
-        $directory = dirname($path);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $this->stateStore->write(self::SUBSCRIPTIONS_STATE_KEY, $this->subscriptionsPath(), $data);
     }
 
     private function endpointKey(string $endpoint): string

@@ -1,5 +1,20 @@
 <?php
-$calendarPopoverAttrs = function (array $event) use ($t): string {
+$formatDays = static function (mixed $value): string {
+    $number = is_numeric($value) ? (float) $value : 0.0;
+
+    if (abs($number - round($number)) < 0.001) {
+        return (string) (int) round($number);
+    }
+
+    return rtrim(rtrim(number_format($number, 2, '.', ''), '0'), '.');
+};
+$formatDateRange = static function (mixed $startsOn, mixed $endsOn): string {
+    $startsOn = (string) $startsOn;
+    $endsOn = (string) $endsOn;
+
+    return $endsOn === '' || $startsOn === $endsOn ? $startsOn : $startsOn . ' - ' . $endsOn;
+};
+$calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDateRange): string {
     $attributes = [
         'type' => 'button',
         'data-calendar-popover-trigger' => '1',
@@ -10,14 +25,16 @@ $calendarPopoverAttrs = function (array $event) use ($t): string {
         'data-label-department' => $t('leave.popover.department'),
         'data-label-type' => $t('leave.type'),
         'data-label-date-range' => $t('leave.popover.date_range'),
+        'data-label-day-part' => $t('leave.day_part'),
         'data-label-total-days' => $t('leave.popover.total_days'),
         'data-label-status' => $t('leave.popover.status'),
         'data-request-id' => (string) ($event['id'] ?? ''),
         'data-requester' => (string) ($event['requester'] ?? ''),
         'data-department' => (string) ($event['department'] ?? ''),
         'data-type' => $t((string) ($event['type_key'] ?? 'leave.type.annual')),
-        'data-date-range' => (string) ($event['starts_on'] ?? '') . ' - ' . (string) ($event['ends_on'] ?? ''),
-        'data-total-days' => (string) ($event['total_days'] ?? '') . ' ' . $t('leave.days'),
+        'data-date-range' => $formatDateRange($event['starts_on'] ?? '', $event['ends_on'] ?? ''),
+        'data-day-part' => $t((string) ($event['day_part_key'] ?? 'leave.day_part.full')),
+        'data-total-days' => $formatDays($event['total_days'] ?? 0) . ' ' . $t('leave.days'),
         'data-status' => $t((string) ($event['status_key'] ?? '')),
     ];
 
@@ -83,9 +100,12 @@ $calendarPopoverAttrs = function (array $event) use ($t): string {
                     <div class="compact-calendar-day <?= $day['is_outside_month'] ? 'is-muted' : '' ?>">
                         <span><?= htmlspecialchars($day['day'], ENT_QUOTES, 'UTF-8') ?></span>
                         <?php foreach (array_slice($day['events'], 0, 2) as $event): ?>
+                            <?php $eventDayPartKey = (string) ($event['day_part_key'] ?? 'leave.day_part.full'); ?>
                             <button class="compact-leave-event is-<?= htmlspecialchars($event['calendar_state'], ENT_QUOTES, 'UTF-8') ?> status-<?= htmlspecialchars($event['status'], ENT_QUOTES, 'UTF-8') ?>"<?= $calendarPopoverAttrs($event) ?>>
                                 <?= htmlspecialchars($event['requester'], ENT_QUOTES, 'UTF-8') ?>
-                                <small><?= htmlspecialchars($t($event['status_key']), ENT_QUOTES, 'UTF-8') ?></small>
+                                <small>
+                                    <?= htmlspecialchars($t($event['status_key']) . ($eventDayPartKey !== 'leave.day_part.full' ? ' / ' . $t($eventDayPartKey) : ''), ENT_QUOTES, 'UTF-8') ?>
+                                </small>
                             </button>
                         <?php endforeach; ?>
                         <?php if (count($day['events']) > 2): ?>

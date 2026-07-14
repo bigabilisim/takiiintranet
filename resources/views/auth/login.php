@@ -12,14 +12,15 @@
         <form class="form-stack" method="post" action="/login">
             <?= $csrf() ?>
             <label>
-                <span><?= htmlspecialchars($t('auth.email'), ENT_QUOTES, 'UTF-8') ?></span>
-                <input type="email" name="email" value="admin@example.com" autocomplete="email" required>
+                <span><?= htmlspecialchars($t('auth.login_identifier'), ENT_QUOTES, 'UTF-8') ?></span>
+                <input type="text" name="email" value="bilal@bigabilisim.com" autocomplete="username" required>
             </label>
             <label>
                 <span><?= htmlspecialchars($t('auth.password'), ENT_QUOTES, 'UTF-8') ?></span>
                 <input type="password" name="password" autocomplete="current-password" required>
             </label>
             <button class="button primary" type="submit"><?= htmlspecialchars($t('auth.sign_in'), ENT_QUOTES, 'UTF-8') ?></button>
+            <a class="button ghost auth-button-link" href="/forgot-password"><?= htmlspecialchars($t('auth.forgot_password'), ENT_QUOTES, 'UTF-8') ?></a>
         </form>
     </div>
     <div class="login-status">

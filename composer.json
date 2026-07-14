@@ -13,6 +13,15 @@
     }
   },
   "scripts": {
-    "serve": "php -S 127.0.0.1:8080 -t public"
+    "serve": "php -S 127.0.0.1:8080 -t public",
+    "migrate:state": "php scripts/migrate-state-to-mariadb.php",
+    "test:state": "php tests/state-store-concurrency.php",
+    "test:state:mariadb": "php tests/state-store-mariadb-concurrency.php",
+    "test:stores": "php tests/core-store-smoke.php",
+    "test:stores:mariadb": "TEST_STATE_DRIVER=mariadb php tests/core-store-smoke.php",
+    "test:identity": "php tests/user-identity-migration.php",
+    "test:identity:mariadb": "TEST_STATE_DRIVER=mariadb php tests/user-identity-migration.php",
+    "test:leave-schedule": "php tests/leave-schedule-integrity.php",
+    "test:leave-schedule:mariadb": "TEST_STATE_DRIVER=mariadb php tests/leave-schedule-integrity.php"
   }
 }

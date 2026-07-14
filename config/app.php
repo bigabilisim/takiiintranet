@@ -1,9 +1,9 @@
 <?php
 
-$adminEmail = strtolower(trim((string) (getenv('APP_ADMIN_EMAIL') ?: 'admin@example.com')));
-$adminPassword = (string) (getenv('APP_ADMIN_PASSWORD') ?: 'admin123');
-$hrEmail = strtolower(trim((string) (getenv('APP_HR_EMAIL') ?: 'hr@example.com')));
-$hrPassword = (string) (getenv('APP_HR_PASSWORD') ?: 'hr123');
+$adminEmail = strtolower(trim((string) (getenv('APP_ADMIN_EMAIL') ?: 'bilal@bigabilisim.com')));
+$adminPassword = (string) (getenv('APP_ADMIN_PASSWORD') ?: '');
+$hrEmail = strtolower(trim((string) (getenv('APP_HR_EMAIL') ?: 'y.ekici@takii.com.tr')));
+$hrPassword = (string) (getenv('APP_HR_PASSWORD') ?: '');
 
 return [
     'name' => getenv('APP_NAME') ?: 'Kanso Intranet',
@@ -18,7 +18,7 @@ return [
     'demo_users' => [
         $adminEmail => [
             'password' => $adminPassword,
-            'name' => 'Admin User',
+            'name' => 'Bilal Bozduman',
             'role' => 'System Admin',
             'department' => 'Operations',
             'started_on' => '2021-05-20',
@@ -26,7 +26,7 @@ return [
         ],
         $hrEmail => [
             'password' => $hrPassword,
-            'name' => 'HR User',
+            'name' => 'Yeşim Dingil Ekici',
             'role' => 'HR Specialist',
             'department' => 'IK',
             'started_on' => '2022-11-03',
@@ -35,12 +35,14 @@ return [
                 'module.leave.access',
                 'module.messages.access',
                 'module.personnel.access',
+                'module.shift.access',
                 'module.documents.access',
                 'messaging.send',
                 'personnel.read',
                 'personnel.write',
                 'personnel.delete',
                 'personnel.export',
+                'shift.manage',
                 'leave.request.create',
                 'leave.request.manage.hr',
                 'documents.view',

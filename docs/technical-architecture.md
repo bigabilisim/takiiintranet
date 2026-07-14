@@ -26,6 +26,24 @@ ileride servislesmeye acik olur.
 - `database/seeders/`: demo ve baslangic verileri
 - `storage/`: yuklenen dosyalar, loglar, gecici ciktiklar
 
+## Kalicilik ve Es Zamanlilik
+
+Cekirdek operasyonel veriler `app_state_documents` tablosunda tutulur. Bu katman
+mevcut domain belge yapisini korurken dosya tabanli kaliciligi devreden cikarir.
+Her read-modify-write islemi InnoDB transaction'i icinde ilgili belge satirini
+`SELECT ... FOR UPDATE` ile kilitler; boylece paralel isteklerde kayip guncelleme
+olmaz. Her kayitta artan `revision` ve SHA-256 `checksum` bulunur.
+
+Eski JSON dosyalari yalnizca idempotent ilk migrasyonun kaynagidir. Dosya
+surucusu uretim icin degil, yerel test ve acil geri donus icindir; bu surucu de
+`flock` ve atomik rename kullanir.
+
+Kullanici e-posta degisikligi bir kimlik migrasyonu olarak ele alinir. Parola
+sifirlama, profil, yetki, izin, izin mail kuyrugu, mesaj, Web Push ve shift
+belgeleri sabit lock sirasiyla tek islem kapsamina alinir. MariaDB tum belgeleri
+tek transaction ile geri alir; dosya fallback surucusu ise kilit altinda alinan
+snapshot'lari geri yukler. Tarihsel audit kayitlari degistirilmez.
+
 ## Moduller
 
 ### Identity
@@ -152,4 +170,3 @@ Ornek yetkiler:
 - Yetki kontrolu controller seviyesinde degil servis seviyesinde de korunur.
 - Kritik islemler `audit_logs` tablosuna yazilir.
 - MariaDB sorgularinda hazir ifadeler kullanilir.
-

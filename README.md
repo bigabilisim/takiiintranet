@@ -8,7 +8,7 @@ tasarlanmistir.
 ## Urun Ozeti
 
 - Uluslararasi firmalara beyaz etiketli olarak sunulabilecek intranet urunu
-- Turkce, Ingilizce, Almanca ve Japonca arayuz destegi
+- Turkce, Ingilizce ve Japonca arayuz destegi
 - Admin tarafindan kisi bazli modul ve surec yetkisi yonetimi
 - Departman bazli izin onay semasi: tek yonetici, iki yonetici ve IK onayi
 - PWA uyumlulugu, offline sayfasi ve Web Push bildirim altyapisi
@@ -18,6 +18,9 @@ tasarlanmistir.
 
 - **Operasyon paneli:** Haberler, duyurular, izin takvimi, hava durumu ve is kuyrugu.
 - **Izin yonetimi:** Izin talebi, aylik/haftalik/gunluk takvim, bakiye karti, 60 gun icinde yeni izin hakki uyarisi.
+- **Guvenli izin sahipligi:** Izinler ve bakiyeler, ad-soyad veya e-posta degisse de korunan sabit personel kimligiyle eslestirilir.
+- **Tatil ve nobet takvimi:** Turkiye resmi tatilleri, yarim gunler, sirket tatilleri ve tarih bazli aylik ozel nobet planlari izin hesabina katilir.
+- **Takvim gizliligi:** Takvim olaylari onay tarihcesi, karar veren kisi, red nedeni, talep notu veya onay akisi tasimaz; bu bilgiler yalnizca kisinin kendi tarihcesinde ve yetkili islem ekranlarinda kalir.
 - **Mail ile izin onayi:** Yoneticilere 96 saatlik token linki ile approve/reject akisi.
 - **Admin yetki merkezi:** Tum modulleri ve surec yetkilerini kisi bazinda acma/kapama; departman izin semasi tanimlama.
 - **Ic mesajlasma:** Konusma thread'i, hizli kisiler, pinleme, okundu takibi, menu bildirimi.
@@ -25,6 +28,7 @@ tasarlanmistir.
 - **Satin alma:** Yeni satin alma talebi acma, kategori/tutar/tarih/gerekce alanlari.
 - **PWA ve Web Push:** VAPID anahtarlari, push aboneligi, test bildirimi, service worker cache yonetimi.
 - **Rapor ve mail sablonlari:** GrapesJS ile surukle-birak mail ve rapor sablon editoru.
+- **Sifre sifirlama:** Giris ekranindan 2 saatlik token ile sifre sifirlama baglantisi gonderilir.
 - **Cok dilli altyapi:** `resources/lang` altinda `tr-TR`, `en-US`, `de-DE`, `ja-JP`.
 
 ## GrapesJS Sablon Editoru
@@ -53,12 +57,14 @@ Gereksinimler:
 
 - PHP 8.3+
 - Composer
-- MariaDB 10.11+ hedeflenir; demo akislarinin bir bolumu JSON storage ile calisir
+- MariaDB 10.11+
 
 Kurulum:
 
 ```bash
 composer install
+cp .env.example .env
+php scripts/migrate-state-to-mariadb.php
 php -S 127.0.0.1:8080 -t public
 ```
 
@@ -70,14 +76,19 @@ composer serve
 
 Ardindan `http://127.0.0.1:8080` adresini acin.
 
-## Demo Hesaplari
+MariaDB bulunmayan gecici bir yerel test ortaminda kilitli dosya surucusu acikca
+secilebilir. Bu ayar canli ortamda kullanilmamalidir:
 
-- `admin@example.com` / `admin123`
-- `hr@example.com` / `hr123`
+```bash
+STATE_STORE_DRIVER=file php -S 127.0.0.1:8080 -t public
+```
 
-Bu hesaplar `.env` icindeki `APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD`,
-`APP_HR_EMAIL` ve `APP_HR_PASSWORD` degerleriyle degistirilebilir. Canli
-ortamda varsayilan demo parolalariyla yayin yapmayin.
+## Baslangic Hesaplari
+
+Sistem yoneticisi ve IK hesabi `.env` icindeki `APP_ADMIN_*` ve `APP_HR_*`
+alanlariyla tanimlanir. Ornek dosyada parola bulunmaz; ilk calistirmadan once
+guclu parolalar belirleyin. Personel hesaplari daha sonra Personeller ekranindan
+olusturulur ve parolalari sifrelenmis olarak durum deposunda tutulur.
 
 ## Yetki Notlari
 
@@ -99,24 +110,49 @@ Onemli yetkiler:
 - `templates.manage`
 - `admin.company.manage`
 
-## Storage Dosyalari
+## Transactional State Store
 
-Demo ve prototip ortaminda bazi moduller JSON dosyalari ile kalici hale gelir:
+Izinler, personeller, mesajlar, yetkiler, shift planlari, parola sifirlama kayitlari,
+Web Push abonelikleri, VAPID anahtarlari, izin mail kuyrugu ve izin defteri
+zamanlayicisi `app_state_documents` tablosunda saklanir. Her degisiklik InnoDB
+transaction'i ve `SELECT ... FOR UPDATE` satir
+kilidi altinda yapilir. Ayni anda gelen iki onay veya mesaj birbirinin verisini
+ezemez.
 
-- `storage/access-control.json`
-- `storage/user-profiles.json`
-- `storage/leave-requests.json`
-- `storage/leave-mail-outbox.json`
-- `storage/messages.json`
-- `storage/templates.json`
-- `storage/template-test-mail-outbox.json`
-- `storage/push-subscriptions.json`
-- `storage/vapid.json`
-- `storage/weather-cache.json`
+Eski `storage/*.json` dosyalari ilk migrasyonda veri kaynagi olarak okunur ve
+sonrasinda cekirdek kayitlar icin yazma hedefi olmaz. Migrasyon idempotenttir;
+mevcut MariaDB satirlarini varsayilan olarak ezmez:
 
-Canli personel, izin, mesaj, push, VAPID, audit ve hava durumu storage
-dosyalari `.gitignore` ile repo disinda tutulur. Canli MariaDB gecisinde bu
-dosyalardaki davranislar ilgili tablolara tasinmalidir.
+```bash
+php scripts/migrate-state-to-mariadb.php
+```
+
+Yalnizca bilincli bir geri yukleme sirasinda JSON kopyalarini MariaDB uzerine
+yazmak icin `--force` kullanilabilir. Islemden once veritabani yedegi alinmalidir.
+
+Dosya surucusu sadece yerel test ve acil geri donus icindir. Bu modda da her
+belge icin `flock` ve atomik gecici-dosya/rename yazimi kullanilir.
+
+Personel e-posta adresi degistiginde profil anahtari, kullanici yetkileri,
+departman onaycilari, izinler, mesajlar, sabitlenmis konusmalar, Web Push
+abonelikleri ve aylik shift planlari tek transaction icinde yeni kimlige tasinir.
+Adimlardan biri basarisiz olursa degisikliklerin tamami geri alinir; eski adrese
+gonderilmis aktif parola sifirlama baglantilari guvenlik icin iptal edilir.
+
+Her personelin `personnel_id` alani sistem tarafindan bir kez uretilir ve profil
+adi ya da e-posta degisikliginde korunur. Yeni izinler bu kimligi dogrudan
+saklar. Eski izin kayitlari e-posta/profil anahtariyla, bunlar yoksa yalnizca
+tek bir personelle eslesen ad-soyad uzerinden bir kez geriye donuk baglanir;
+ayni isimli birden fazla personel varsa sistem tahminde bulunmaz.
+
+Shift modulu, ozel hafta sonu nobetlerini ay icindeki kesin `working_dates`
+tarihleriyle saklar. Eski hafta-gunu tabanli aylik planlar, secili ayin ilgili
+tarihlerine bir kez genisletilerek kayipsiz donusturulur. Turkiye resmi tatil
+takvimi 2025-2035 icin tam gun ve saat 13:00 sonrasi yarim gun ayrimiyla izin
+suresine uygulanir; IK yoneticisi ayni ekrandan sirket tatili de tanimlayabilir.
+
+Sablonlar, sifre sifirlama outbox'i ve hava durumu cache'i henuz cekirdek state
+store kapsami disindadir; bunlar ayri modul migrasyonlariyla ele alinacaktir.
 
 ## MariaDB Migration Taslaklari
 
@@ -129,6 +165,7 @@ Ilk sema taslaklari `database/migrations` altindadir:
 - `005_create_internal_messages_tables.sql`
 - `006_create_internal_message_pins_table.sql`
 - `007_create_web_push_subscriptions_table.sql`
+- `008_create_state_documents_table.sql`
 
 Veritabani ayarlari `config/database.php` icinden okunur ve ortam degiskenleriyle
 degistirilebilir:
@@ -138,6 +175,9 @@ degistirilebilir:
 - `DB_DATABASE`
 - `DB_USERNAME`
 - `DB_PASSWORD`
+- `STATE_STORE_DRIVER` (`mariadb` olmali)
+- `STATE_STORE_AUTO_MIGRATE`
+- `STATE_STORE_LOCK_TIMEOUT`
 
 ## PWA ve Web Push
 
@@ -194,11 +234,25 @@ node --check public/assets/templates-editor.js
 node --check public/service-worker.js
 ```
 
+Es zamanli yazma testi:
+
+```bash
+php tests/state-store-concurrency.php
+php tests/core-store-smoke.php
+php tests/user-identity-migration.php
+php tests/leave-schedule-integrity.php
+DB_DATABASE=kanso_intranet php tests/state-store-mariadb-concurrency.php
+DB_DATABASE=kanso_intranet composer test:stores:mariadb
+DB_DATABASE=kanso_intranet composer test:identity:mariadb
+DB_DATABASE=kanso_intranet composer test:leave-schedule:mariadb
+```
+
 Temel smoke test icin admin oturumuyla su ekranlar kontrol edilebilir:
 
 - `/`
 - `/admin/access`
 - `/module/leave`
+- `/module/shift`
 - `/module/messages`
 - `/module/procurement`
 - `/module/templates`

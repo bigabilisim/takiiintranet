@@ -4,6 +4,7 @@
 /storage/logs/*
 /storage/uploads/*
 /storage/*.json
+/storage/.state-locks/
 !/storage/release-notes.json
 !/storage/templates.json
 !/storage/logs/.gitkeep

@@ -4,9 +4,11 @@ namespace App\Core;
 
 class UserProfileStore
 {
-    private const VERSION = 1;
+    private const VERSION = 2;
+    private const STATE_KEY = 'user_profiles';
     private const NO_EMAIL_KEY_PREFIX = 'no-email-';
     private const CSV_COLUMNS = [
+        'personnel_id',
         'email',
         'first_name',
         'last_name',
@@ -32,8 +34,11 @@ class UserProfileStore
         'faculty',
         'graduation_year',
         'hr_notes',
+        'workforce_roles',
+        'shift_key',
         'password',
     ];
+    private const WORKFORCE_ROLE_CHOICES = ['hr', 'hr_assistant', 'manager', 'shift_planner', 'weekend_duty'];
     private const DEFAULT_IMPORTED_PERMISSIONS = [
         'module.announcements.access',
         'module.leave.access',
@@ -45,7 +50,9 @@ class UserProfileStore
 
     public function __construct(
         private readonly array $baseUsers,
+        private readonly StateStore $stateStore,
     ) {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $this->ensureSeeded();
     }
 
@@ -57,24 +64,54 @@ class UserProfileStore
     public function find(string $email): ?array
     {
         $users = $this->users();
+        $identifier = trim($email);
 
-        if (isset($users[$email])) {
-            return $users[$email];
+        if (isset($users[$identifier])) {
+            return $users[$identifier];
         }
 
-        $email = $this->normalizeEmail($email);
+        $email = $this->normalizeEmail($identifier);
 
-        if ($email === '') {
-            return null;
+        if ($email !== '') {
+            foreach ($users as $profile) {
+                if (($profile['email'] ?? '') === $email) {
+                    return $profile;
+                }
+            }
         }
 
-        foreach ($users as $profile) {
-            if (($profile['email'] ?? '') === $email) {
-                return $profile;
+        if ($identifier !== '') {
+            foreach ($users as $profile) {
+                if (hash_equals((string) ($profile['personnel_id'] ?? ''), $identifier)) {
+                    return $profile;
+                }
+
+                if (hash_equals((string) ($profile['pdks_id'] ?? ''), $identifier)) {
+                    return $profile;
+                }
             }
         }
 
         return null;
+    }
+
+    private function loginIdentifierMatches(string $identifier, array $user): bool
+    {
+        $identifier = trim($identifier);
+        $profileKey = (string) ($user['profile_key'] ?? '');
+        $email = (string) ($user['email'] ?? '');
+        $normalizedEmail = $this->normalizeEmail($identifier);
+        $pdksId = trim((string) ($user['pdks_id'] ?? ''));
+
+        if ($profileKey !== '' && hash_equals($profileKey, $identifier)) {
+            return true;
+        }
+
+        if ($email !== '' && $normalizedEmail !== '' && hash_equals($email, $normalizedEmail)) {
+            return true;
+        }
+
+        return $pdksId !== '' && hash_equals($pdksId, $identifier);
     }
 
     public function canDeleteProfile(string $email): bool
@@ -92,7 +129,7 @@ class UserProfileStore
 
         $profileKey = (string) ($user['profile_key'] ?? $email);
 
-        if (!isset($this->baseUsers[$profileKey]) && ($user['email'] ?? '') !== $email) {
+        if (!isset($this->baseUsers[$profileKey]) && !$this->loginIdentifierMatches($email, $user)) {
             return null;
         }
 
@@ -105,8 +142,103 @@ class UserProfileStore
         return $isValid ? $user : null;
     }
 
+    public function profileForPasswordReset(string $email): ?array
+    {
+        $email = $this->normalizeEmail($email);
+
+        if ($email === '') {
+            return null;
+        }
+
+        foreach ($this->users() as $profileKey => $profile) {
+            if ($profileKey !== $email && ($profile['email'] ?? '') !== $email) {
+                continue;
+            }
+
+            if (($profile['email'] ?? '') === '') {
+                return null;
+            }
+
+            $profile['profile_key'] = (string) $profileKey;
+
+            return $profile;
+        }
+
+        return null;
+    }
+
+    public function setPasswordForProfileKey(string $profileKey, string $password): bool
+    {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+
+        if (strlen($password) < 6) {
+            return false;
+        }
+
+        $users = $this->users();
+
+        if (!isset($users[$profileKey])) {
+            return false;
+        }
+
+        $profile = $users[$profileKey];
+        $profile['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+        $profile['updated_at'] = date('Y-m-d H:i');
+
+        $data = $this->loadWritableData();
+        $data['version'] = self::VERSION;
+        $data['profiles'] = is_array($data['profiles'] ?? null) ? $data['profiles'] : [];
+        $data['profiles'][$profileKey] = $this->profileForStorage($profile);
+        $this->saveData($data);
+
+        return true;
+    }
+
+    public function setShiftForProfiles(array $profileKeys, string $shiftKey): array
+    {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $profileKeys = array_values(array_unique(array_filter(array_map('strval', $profileKeys))));
+        $shiftKey = $this->cleanText($shiftKey, 80);
+        $users = $this->users();
+        $data = $this->loadWritableData();
+        $data['version'] = self::VERSION;
+        $data['profiles'] = is_array($data['profiles'] ?? null) ? $data['profiles'] : [];
+        $updated = 0;
+        $skipped = 0;
+
+        foreach ($profileKeys as $profileKey) {
+            if (!isset($users[$profileKey])) {
+                $skipped++;
+                continue;
+            }
+
+            $profile = $users[$profileKey];
+            $profile['shift_key'] = $shiftKey;
+            $profile['updated_at'] = date('Y-m-d H:i');
+            $data['profiles'][$profileKey] = $this->profileForStorage($profile);
+            $users[$profileKey] = $profile;
+            $updated++;
+        }
+
+        if ($updated > 0) {
+            $this->saveData($data);
+            $currentUser = Session::get('user');
+
+            if (is_array($currentUser)) {
+                $currentProfileKey = (string) ($currentUser['profile_key'] ?? $currentUser['email'] ?? '');
+
+                if (isset($users[$currentProfileKey])) {
+                    Session::put('user', array_merge($currentUser, $this->sessionProfile($users[$currentProfileKey])));
+                }
+            }
+        }
+
+        return ['updated' => $updated, 'skipped' => $skipped];
+    }
+
     public function createProfile(array $input): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $emailInput = array_key_exists('new_email', $input)
             ? trim((string) $input['new_email'])
             : trim((string) ($input['email'] ?? ''));
@@ -163,6 +295,8 @@ class UserProfileStore
             'faculty' => $this->cleanText((string) ($input['faculty'] ?? ''), 160),
             'graduation_year' => $this->cleanYear((string) ($input['graduation_year'] ?? '')),
             'hr_notes' => $this->cleanText((string) ($input['hr_notes'] ?? ''), 600),
+            'workforce_roles' => $this->cleanWorkforceRoles($input['workforce_roles'] ?? []),
+            'shift_key' => $this->cleanText((string) ($input['shift_key'] ?? ''), 80),
             'password_hash' => $password !== '' ? password_hash($password, PASSWORD_DEFAULT) : '',
             'created_at' => date('Y-m-d H:i'),
             'updated_at' => date('Y-m-d H:i'),
@@ -172,6 +306,7 @@ class UserProfileStore
         $data['version'] = self::VERSION;
         $data['profiles'] = is_array($data['profiles'] ?? null) ? $data['profiles'] : [];
         $profileKey = $this->profileKeyForEmail($email, $profile, $data['profiles'], '');
+        $profile['personnel_id'] = $this->generatedPersonnelId($profileKey);
 
         if (isset($data['profiles'][$profileKey])) {
             return ['ok' => false, 'message' => $email !== '' ? 'personnel.flash.email_duplicate' : 'personnel.flash.duplicate'];
@@ -184,13 +319,15 @@ class UserProfileStore
             'ok' => true,
             'message' => 'personnel.flash.created',
             'profile_key' => $profileKey,
+            'personnel_id' => $profile['personnel_id'],
             'name' => $profile['name'],
             'email' => $email,
         ];
     }
 
-    public function updateProfile(string $email, array $input): array
+    public function updateProfile(string $email, array $input, bool $syncSession = true): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $users = $this->users();
 
         if (!isset($users[$email])) {
@@ -268,6 +405,8 @@ class UserProfileStore
             'faculty' => $this->cleanText((string) ($input['faculty'] ?? ''), 160),
             'graduation_year' => $graduationYear,
             'hr_notes' => $this->cleanText((string) ($input['hr_notes'] ?? ''), 600),
+            'workforce_roles' => $this->cleanWorkforceRoles($input['workforce_roles'] ?? []),
+            'shift_key' => $this->cleanText((string) ($input['shift_key'] ?? ''), 80),
             'updated_at' => date('Y-m-d H:i'),
         ]);
 
@@ -281,9 +420,9 @@ class UserProfileStore
 
         $currentUser = Session::get('user');
 
-        if (is_array($currentUser) && ($currentUser['email'] ?? '') === $email) {
+        if ($syncSession && is_array($currentUser) && ($currentUser['email'] ?? '') === $email) {
             $currentUser = array_merge($currentUser, $this->sessionProfile($profile));
-            $currentUser['email'] = $newEmail !== '' ? $newEmail : $email;
+            $currentUser['email'] = $newProfileKey;
             Session::put('user', $currentUser);
         }
 
@@ -291,13 +430,36 @@ class UserProfileStore
             'ok' => true,
             'message' => 'admin.flash.user_profile_saved',
             'profile_key' => $newProfileKey,
+            'old_profile_key' => $email,
+            'new_profile_key' => $newProfileKey,
             'old_email' => $currentEmail,
             'new_email' => $newEmail,
         ];
     }
 
+    public function syncSessionAfterProfileUpdate(string $oldProfileKey, string $newProfileKey): void
+    {
+        $currentUser = Session::get('user');
+
+        if (!is_array($currentUser) || (string) ($currentUser['email'] ?? '') !== $oldProfileKey) {
+            return;
+        }
+
+        $profile = $this->find($newProfileKey);
+
+        if ($profile === null) {
+            return;
+        }
+
+        $currentUser = array_merge($currentUser, $this->sessionProfile($profile));
+        $currentUser['email'] = $newProfileKey;
+        Session::put('user', $currentUser);
+    }
+
     public function deleteProfile(string $email): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+
         if (!$this->canDeleteProfile($email)) {
             return ['ok' => false, 'message' => 'personnel.flash.delete_blocked'];
         }
@@ -328,7 +490,7 @@ class UserProfileStore
             $row = [];
 
             foreach (self::CSV_COLUMNS as $column) {
-                $row[] = $column === 'password' ? '' : (string) ($profile[$column] ?? '');
+                $row[] = $column === 'password' ? '' : $this->exportValue($profile[$column] ?? '');
             }
 
             fputcsv($handle, $row, ',', '"', '');
@@ -377,6 +539,8 @@ class UserProfileStore
 
     public function importProfilesCsv(string $path): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+
         if (!is_file($path) || !is_readable($path)) {
             return ['ok' => false, 'message' => 'admin.flash.personnel_import_failed'];
         }
@@ -489,6 +653,10 @@ class UserProfileStore
                 'faculty' => $this->importText($record, 'faculty', $profile, 160),
                 'graduation_year' => $this->importYear($record, 'graduation_year', $profile),
                 'hr_notes' => $this->importText($record, 'hr_notes', $profile, 600),
+                'workforce_roles' => array_key_exists('workforce_roles', $record)
+                    ? $this->cleanWorkforceRoles($record['workforce_roles'] ?? '')
+                    : $this->cleanWorkforceRoles($profile['workforce_roles'] ?? []),
+                'shift_key' => $this->importText($record, 'shift_key', $profile, 80),
                 'updated_at' => date('Y-m-d H:i'),
             ]);
 
@@ -541,8 +709,13 @@ class UserProfileStore
         $data = $this->loadWritableData();
         $dirty = false;
 
-        if (($data['version'] ?? null) !== self::VERSION || !isset($data['profiles']) || !is_array($data['profiles'])) {
+        if (!isset($data['profiles']) || !is_array($data['profiles'])) {
             $data = ['version' => self::VERSION, 'profiles' => []];
+            $dirty = true;
+        }
+
+        if (($data['version'] ?? null) !== self::VERSION) {
+            $data['version'] = self::VERSION;
             $dirty = true;
         }
 
@@ -550,7 +723,7 @@ class UserProfileStore
             $existing = is_array($data['profiles'][$email] ?? null) ? $data['profiles'][$email] : [];
             $profile = $this->mergeProfile($email, $baseUser, $existing);
 
-            if (($data['profiles'][$email] ?? null) !== $this->profileForStorage($profile)) {
+            if (($data['profiles'][$email] ?? null) != $this->profileForStorage($profile)) {
                 $data['profiles'][$email] = $this->profileForStorage($profile);
                 $dirty = true;
             }
@@ -571,7 +744,7 @@ class UserProfileStore
 
             $profile = $this->mergeProfile($email, $this->importedBaseUser($email, $existing), $existing);
 
-            if (($data['profiles'][$email] ?? null) !== $this->profileForStorage($profile)) {
+            if (($data['profiles'][$email] ?? null) != $this->profileForStorage($profile)) {
                 $data['profiles'][$email] = $this->profileForStorage($profile);
                 $dirty = true;
             }
@@ -609,6 +782,7 @@ class UserProfileStore
 
         $profile = array_merge([
             'profile_key' => $email,
+            'personnel_id' => $this->generatedPersonnelId($email),
             'email' => $email,
             'first_name' => $nameParts['first_name'],
             'last_name' => $nameParts['last_name'],
@@ -635,12 +809,20 @@ class UserProfileStore
             'faculty' => '',
             'graduation_year' => '',
             'hr_notes' => '',
+            'workforce_roles' => [],
+            'shift_key' => '',
             'password_hash' => '',
             'created_at' => date('Y-m-d H:i'),
             'updated_at' => date('Y-m-d H:i'),
         ], $stored);
 
         $profile['profile_key'] = $email;
+        $profile['personnel_id'] = $this->cleanPersonnelId((string) ($profile['personnel_id'] ?? ''));
+
+        if ($profile['personnel_id'] === '') {
+            $profile['personnel_id'] = $this->generatedPersonnelId($email);
+        }
+
         $profile['email'] = $emailValue;
         $profile['permissions'] = $baseUser['permissions'] ?? [];
         $profile['password'] = (string) ($baseUser['password'] ?? '');
@@ -680,6 +862,7 @@ class UserProfileStore
     private function sessionProfile(array $profile): array
     {
         return [
+            'personnel_id' => (string) ($profile['personnel_id'] ?? ''),
             'name' => (string) ($profile['name'] ?? ''),
             'role' => (string) ($profile['role'] ?? ''),
             'department' => (string) ($profile['department'] ?? ''),
@@ -690,6 +873,7 @@ class UserProfileStore
             'leave_opening_remaining_days' => (float) ($profile['leave_opening_remaining_days'] ?? 0),
             'leave_opening_snapshot_date' => (string) ($profile['leave_opening_snapshot_date'] ?? ''),
             'leave_opening_source' => (string) ($profile['leave_opening_source'] ?? ''),
+            'shift_key' => (string) ($profile['shift_key'] ?? ''),
         ];
     }
 
@@ -784,6 +968,13 @@ class UserProfileStore
             'graduation_year' => 'graduation_year',
             'ik_notlari' => 'hr_notes',
             'hr_notes' => 'hr_notes',
+            'gorev_atamalari' => 'workforce_roles',
+            'gorevler' => 'workforce_roles',
+            'workforce_roles' => 'workforce_roles',
+            'vardiya' => 'shift_key',
+            'shift' => 'shift_key',
+            'shift_key' => 'shift_key',
+            'vardiya_kodu' => 'shift_key',
             'sifre' => 'password',
             'password' => 'password',
         ];
@@ -854,7 +1045,7 @@ class UserProfileStore
             $row = [];
 
             foreach (self::CSV_COLUMNS as $column) {
-                $row[] = $column === 'password' ? '' : (string) ($profile[$column] ?? '');
+                $row[] = $column === 'password' ? '' : $this->exportValue($profile[$column] ?? '');
             }
 
             $rows[] = $row;
@@ -966,27 +1157,12 @@ class UserProfileStore
 
     private function loadWritableData(): array
     {
-        $path = $this->dataPath();
-
-        if (!is_file($path)) {
-            return [];
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-
-        return is_array($decoded) ? $decoded : [];
+        return $this->stateStore->read(self::STATE_KEY, $this->dataPath());
     }
 
     private function saveData(array $data): void
     {
-        $path = $this->dataPath();
-        $directory = dirname($path);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        $this->stateStore->write(self::STATE_KEY, $this->dataPath(), $data);
     }
 
     private function dataPath(): string
@@ -1052,6 +1228,18 @@ class UserProfileStore
         }
 
         return $key;
+    }
+
+    private function generatedPersonnelId(string $profileKey): string
+    {
+        return 'PER-' . strtoupper(substr(hash('sha256', 'takii-personnel|' . $profileKey), 0, 16));
+    }
+
+    private function cleanPersonnelId(string $value): string
+    {
+        $value = strtoupper(trim($value));
+
+        return preg_match('/^PER-[A-F0-9]{16}$/', $value) === 1 ? $value : '';
     }
 
     private function isValidProfileKey(string $profileKey, array $profile): bool
@@ -1145,5 +1333,79 @@ class UserProfileStore
     private function cleanChoice(string $value, array $choices): string
     {
         return in_array($value, $choices, true) ? $value : '';
+    }
+
+    private function cleanWorkforceRoles(mixed $value): array
+    {
+        $items = is_array($value)
+            ? $value
+            : preg_split('/[\s,;|]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY);
+        $roles = [];
+
+        foreach ($items ?: [] as $item) {
+            $role = $this->normalizeWorkforceRole((string) $item);
+
+            if ($role === '') {
+                continue;
+            }
+
+            $roles[$role] = $role;
+        }
+
+        return array_values($roles);
+    }
+
+    private function normalizeWorkforceRole(string $role): string
+    {
+        $role = strtolower(trim($role));
+        $role = strtr($role, [
+            'İ' => 'i',
+            'ı' => 'i',
+            'Ş' => 's',
+            'ş' => 's',
+            'Ğ' => 'g',
+            'ğ' => 'g',
+            'Ü' => 'u',
+            'ü' => 'u',
+            'Ö' => 'o',
+            'ö' => 'o',
+            'Ç' => 'c',
+            'ç' => 'c',
+        ]);
+        $role = preg_replace('/[^a-z0-9]+/', '_', $role) ?: '';
+        $role = trim($role, '_');
+        $aliases = [
+            'ik' => 'hr',
+            'hr' => 'hr',
+            'human_resources' => 'hr',
+            'insan_kaynaklari' => 'hr',
+            'ik_asistani' => 'hr_assistant',
+            'hr_assistant' => 'hr_assistant',
+            'human_resources_assistant' => 'hr_assistant',
+            'insan_kaynaklari_asistani' => 'hr_assistant',
+            'manager' => 'manager',
+            'menajer' => 'manager',
+            'mudur' => 'manager',
+            'yonetici' => 'manager',
+            'shift_planner' => 'shift_planner',
+            'vardiya_planlayici' => 'shift_planner',
+            'nobet_planlayici' => 'shift_planner',
+            'weekend_duty' => 'weekend_duty',
+            'hafta_sonu_nobetcisi' => 'weekend_duty',
+            'haftasonu_nobetcisi' => 'weekend_duty',
+            'nobetci' => 'weekend_duty',
+        ];
+        $role = $aliases[$role] ?? $role;
+
+        return in_array($role, self::WORKFORCE_ROLE_CHOICES, true) ? $role : '';
+    }
+
+    private function exportValue(mixed $value): string
+    {
+        if (is_array($value)) {
+            return implode('|', array_map('strval', $value));
+        }
+
+        return (string) $value;
     }
 }

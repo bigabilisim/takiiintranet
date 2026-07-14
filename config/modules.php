@@ -7,6 +7,7 @@ return [
         'title_key' => 'module.announcements.title',
         'summary_key' => 'module.announcements.summary',
         'permission' => 'module.announcements.access',
+        'hidden_in_menu' => true,
         'accent' => '#2f6f62',
         'metrics' => [
             ['label_key' => 'metric.active_posts', 'value' => '18'],
@@ -47,6 +48,18 @@ return [
         'metrics' => [
             ['label_key' => 'metric.personnel_records', 'value' => '178'],
             ['label_key' => 'metric.personnel_scope', 'value' => 'R/W/D'],
+        ],
+    ],
+    [
+        'slug' => 'shift',
+        'code' => 'SH',
+        'title_key' => 'module.shift.title',
+        'summary_key' => 'module.shift.summary',
+        'permission' => 'module.shift.access',
+        'accent' => '#6f5b2f',
+        'metrics' => [
+            ['label_key' => 'metric.shift_templates', 'value' => '2'],
+            ['label_key' => 'metric.shift_assigned', 'value' => 'OK'],
         ],
     ],
     [

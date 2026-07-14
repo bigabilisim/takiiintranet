@@ -69,10 +69,94 @@
 })();
 
 (function () {
+  const forms = document.querySelectorAll('[data-leave-request-form], [data-leave-edit-form]');
+
+  if (forms.length === 0) {
+    return;
+  }
+
+  forms.forEach((form) => {
+    const dayPart = form.querySelector('[data-leave-day-part]');
+    const startsOn = form.querySelector('[data-leave-starts-on]');
+    const endsOn = form.querySelector('[data-leave-ends-on]');
+
+    if (!dayPart || !startsOn || !endsOn) {
+      return;
+    }
+
+    function syncHalfDayDates() {
+      if (dayPart.value !== 'morning' && dayPart.value !== 'afternoon') {
+        return;
+      }
+
+      endsOn.value = startsOn.value;
+    }
+
+    dayPart.addEventListener('change', syncHalfDayDates);
+    startsOn.addEventListener('change', syncHalfDayDates);
+    syncHalfDayDates();
+  });
+})();
+
+(function () {
+  const openButton = document.querySelector('[data-leave-deleted-open]');
+  const dialog = document.querySelector('[data-leave-deleted-dialog]');
+
+  if (!openButton || !dialog) {
+    return;
+  }
+
+  const closeButtons = dialog.querySelectorAll('[data-leave-deleted-close]');
+  let previousFocus = null;
+
+  function openDialog() {
+    previousFocus = document.activeElement;
+    dialog.hidden = false;
+    document.body.classList.add('has-modal-open');
+
+    const closeButton = dialog.querySelector('[data-leave-deleted-close]');
+
+    if (closeButton) {
+      closeButton.focus();
+    }
+  }
+
+  function closeDialog() {
+    dialog.hidden = true;
+    document.body.classList.remove('has-modal-open');
+
+    if (previousFocus && typeof previousFocus.focus === 'function') {
+      previousFocus.focus();
+    }
+  }
+
+  openButton.addEventListener('click', openDialog);
+
+  closeButtons.forEach((button) => {
+    button.addEventListener('click', closeDialog);
+  });
+
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) {
+      closeDialog();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !dialog.hidden) {
+      closeDialog();
+    }
+  });
+})();
+
+(function () {
   const input = document.querySelector('[data-personnel-filter]');
   const rows = Array.from(document.querySelectorAll('[data-personnel-row]'));
   const emptyState = document.querySelector('[data-personnel-empty]');
+  const groupButtons = Array.from(document.querySelectorAll('[data-personnel-group-filter]'));
+  const groupHeaders = Array.from(document.querySelectorAll('[data-personnel-group-header]'));
   const hideTimers = new WeakMap();
+  let activeGroup = 'all';
 
   if (!input || rows.length === 0) {
     return;
@@ -112,7 +196,9 @@
 
     row.hidden = false;
     window.requestAnimationFrame(() => {
-      row.classList.remove('is-filter-hidden');
+      if (row.dataset.personnelVisible === '1') {
+        row.classList.remove('is-filter-hidden');
+      }
     });
   }
 
@@ -138,7 +224,10 @@
 
     rows.forEach((row) => {
       const searchText = normalize(row.dataset.personnelSearch);
-      const matches = query === '' || searchText.includes(query);
+      const group = row.dataset.personnelGroup || 'office';
+      const matchesGroup = activeGroup === 'all' || group === activeGroup;
+      const matches = matchesGroup && (query === '' || searchText.includes(query));
+      row.dataset.personnelVisible = matches ? '1' : '0';
 
       if (matches) {
         visibleCount++;
@@ -151,10 +240,156 @@
     if (emptyState) {
       emptyState.hidden = visibleCount > 0;
     }
+
+    groupHeaders.forEach((header) => {
+      const group = header.dataset.personnelGroup || '';
+      const hasVisibleRow = rows.some((row) => (row.dataset.personnelGroup || 'office') === group && row.dataset.personnelVisible === '1');
+      header.hidden = !hasVisibleRow;
+    });
   }
 
   input.addEventListener('input', applyFilter);
+
+  groupButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      activeGroup = button.dataset.personnelGroupFilter || 'all';
+
+      groupButtons.forEach((candidate) => {
+        const isActive = candidate === button;
+        candidate.classList.toggle('is-active', isActive);
+        candidate.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+
+      applyFilter();
+    });
+  });
+
   applyFilter();
+})();
+
+(function () {
+  const patternDays = {
+    weekdays: ['mon', 'tue', 'wed', 'thu', 'fri'],
+    weekend: ['sat', 'sun'],
+    all: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+  };
+  const forms = document.querySelectorAll('[data-shift-template-form]');
+
+  forms.forEach((form) => {
+    const pattern = form.querySelector('[data-shift-day-pattern]');
+    const dayInputs = Array.from(form.querySelectorAll('[data-shift-day-checkbox]'));
+
+    if (!pattern || dayInputs.length === 0) {
+      return;
+    }
+
+    function syncDays() {
+      const selectedDays = patternDays[pattern.value];
+
+      if (!selectedDays) {
+        return;
+      }
+
+      dayInputs.forEach((input) => {
+        input.checked = selectedDays.includes(input.value);
+      });
+    }
+
+    pattern.addEventListener('change', syncDays);
+    syncDays();
+  });
+
+  const dateCalendar = document.querySelector('[data-shift-date-calendar]');
+
+  if (dateCalendar) {
+    const dateForm = dateCalendar.closest('form');
+    const monthInput = dateForm ? dateForm.querySelector('input[name="month"]') : null;
+    const datePatternButtons = dateForm
+      ? Array.from(dateForm.querySelectorAll('[data-shift-date-pattern]'))
+      : [];
+    const locale = dateCalendar.dataset.locale || document.documentElement.lang || 'tr-TR';
+    const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+
+    function dateValue(year, monthIndex, day) {
+      return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    function renderDateCalendar() {
+      if (!monthInput || !/^\d{4}-\d{2}$/.test(monthInput.value)) {
+        return;
+      }
+
+      const [year, month] = monthInput.value.split('-').map(Number);
+      const monthIndex = month - 1;
+      const dayCount = new Date(year, month, 0, 12).getDate();
+      dateCalendar.replaceChildren();
+
+      for (let day = 1; day <= dayCount; day += 1) {
+        const date = new Date(year, monthIndex, day, 12);
+        const weekday = date.getDay();
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        const text = document.createElement('span');
+        const number = document.createElement('strong');
+        const weekdayText = document.createElement('small');
+
+        if (day === 1) {
+          label.style.gridColumnStart = String(weekday === 0 ? 7 : weekday);
+        }
+
+        input.type = 'checkbox';
+        input.name = 'working_dates[]';
+        input.value = dateValue(year, monthIndex, day);
+        input.checked = weekday >= 1 && weekday <= 5;
+        number.textContent = String(day).padStart(2, '0');
+        weekdayText.textContent = weekdayFormatter.format(date);
+        text.append(number, weekdayText);
+        label.append(input, text);
+        dateCalendar.append(label);
+      }
+    }
+
+    function applyDatePattern(pattern) {
+      const inputs = Array.from(dateCalendar.querySelectorAll('input[name="working_dates[]"]'));
+
+      inputs.forEach((input) => {
+        const date = new Date(`${input.value}T12:00:00`);
+        const weekday = date.getDay();
+        input.checked = pattern === 'all' || (pattern === 'weekdays' && weekday >= 1 && weekday <= 5);
+      });
+    }
+
+    if (monthInput) {
+      monthInput.addEventListener('change', renderDateCalendar);
+    }
+
+    datePatternButtons.forEach((button) => {
+      button.addEventListener('click', () => applyDatePattern(button.dataset.shiftDatePattern || 'clear'));
+    });
+  }
+
+  const selectAll = document.querySelector('[data-shift-select-all]');
+  const personInputs = Array.from(document.querySelectorAll('[data-shift-person-checkbox]'));
+
+  if (!selectAll || personInputs.length === 0) {
+    return;
+  }
+
+  selectAll.addEventListener('change', () => {
+    personInputs.forEach((input) => {
+      if (!input.disabled) {
+        input.checked = selectAll.checked;
+      }
+    });
+  });
+
+  personInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+      if (!input.checked) {
+        selectAll.checked = false;
+      }
+    });
+  });
 })();
 
 (function () {
@@ -228,15 +463,6 @@
     list.appendChild(wrapper);
   }
 
-  function readApprovals(trigger) {
-    try {
-      const approvals = JSON.parse(trigger.dataset.approvals || '[]');
-      return Array.isArray(approvals) ? approvals : [];
-    } catch (error) {
-      return [];
-    }
-  }
-
   function closePopover() {
     if (popover) {
       popover.remove();
@@ -303,44 +529,62 @@
     appendField(fields, trigger.dataset.labelDepartment, trigger.dataset.department);
     appendField(fields, trigger.dataset.labelType, trigger.dataset.type);
     appendField(fields, trigger.dataset.labelDateRange, trigger.dataset.dateRange);
+    appendField(fields, trigger.dataset.labelDayPart, trigger.dataset.dayPart);
     appendField(fields, trigger.dataset.labelTotalDays, trigger.dataset.totalDays);
     appendField(fields, trigger.dataset.labelStatus, trigger.dataset.status);
     popover.appendChild(fields);
 
-    if ((trigger.dataset.note || '').trim() !== '') {
-      const note = createElement('section', 'calendar-popover-note');
-      note.appendChild(createElement('h4', '', trigger.dataset.labelNote || ''));
-      note.appendChild(createElement('p', '', trigger.dataset.note || ''));
-      popover.appendChild(note);
-    }
+    if (trigger.dataset.canAct === '1' && trigger.dataset.decisionUrl) {
+      const actionSection = createElement('section', 'calendar-popover-actions');
+      actionSection.appendChild(createElement('h4', '', trigger.dataset.labelDecision || ''));
 
-    const approvals = readApprovals(trigger);
+      const approveForm = createElement('form', 'calendar-popover-action-form');
+      approveForm.method = 'post';
+      approveForm.action = trigger.dataset.decisionUrl;
+      const approveToken = createElement('input', '');
+      approveToken.type = 'hidden';
+      approveToken.name = '_token';
+      approveToken.value = trigger.dataset.csrfToken || '';
+      const approveDecision = createElement('input', '');
+      approveDecision.type = 'hidden';
+      approveDecision.name = 'decision';
+      approveDecision.value = 'approve';
+      const approveButton = createElement('button', 'button compact approve', trigger.dataset.labelApprove || '');
+      approveButton.type = 'submit';
+      approveForm.appendChild(approveToken);
+      approveForm.appendChild(approveDecision);
+      approveForm.appendChild(approveButton);
 
-    if (approvals.length > 0) {
-      const flow = createElement('section', 'calendar-popover-flow');
-      flow.appendChild(createElement('h4', '', trigger.dataset.labelApprovalFlow || ''));
-      const list = createElement('ol', '');
+      const rejectForm = createElement('form', 'calendar-popover-action-form');
+      rejectForm.method = 'post';
+      rejectForm.action = trigger.dataset.decisionUrl;
+      const rejectToken = createElement('input', '');
+      rejectToken.type = 'hidden';
+      rejectToken.name = '_token';
+      rejectToken.value = trigger.dataset.csrfToken || '';
+      const rejectDecision = createElement('input', '');
+      rejectDecision.type = 'hidden';
+      rejectDecision.name = 'decision';
+      rejectDecision.value = 'reject';
+      const rejectLabel = createElement('label', '');
+      rejectLabel.appendChild(createElement('span', '', trigger.dataset.labelRejectReason || ''));
+      const rejectTextarea = createElement('textarea', '');
+      rejectTextarea.name = 'decision_note';
+      rejectTextarea.rows = 2;
+      rejectTextarea.maxLength = 500;
+      rejectTextarea.required = true;
+      rejectTextarea.placeholder = trigger.dataset.labelRejectPlaceholder || '';
+      rejectLabel.appendChild(rejectTextarea);
+      const rejectButton = createElement('button', 'button compact reject', trigger.dataset.labelReject || '');
+      rejectButton.type = 'submit';
+      rejectForm.appendChild(rejectToken);
+      rejectForm.appendChild(rejectDecision);
+      rejectForm.appendChild(rejectLabel);
+      rejectForm.appendChild(rejectButton);
 
-      approvals.forEach((approval) => {
-        const item = createElement('li', '');
-        const line = createElement('div', '');
-        line.appendChild(createElement('strong', '', approval.label || ''));
-        line.appendChild(createElement('span', '', approval.status || ''));
-        item.appendChild(line);
-
-        const meta = [approval.actor || approval.assignee || '', approval.source || '', approval.acted_at || '']
-          .filter(Boolean)
-          .join(' / ');
-
-        if (meta) {
-          item.appendChild(createElement('small', '', meta));
-        }
-
-        list.appendChild(item);
-      });
-
-      flow.appendChild(list);
-      popover.appendChild(flow);
+      actionSection.appendChild(approveForm);
+      actionSection.appendChild(rejectForm);
+      popover.appendChild(actionSection);
     }
 
     document.body.appendChild(popover);

@@ -4,12 +4,60 @@ namespace App\Core;
 
 class AccessControl
 {
-    private const VERSION = 13;
+    private const VERSION = 15;
+    private const STATE_KEY = 'access_control';
+    private const ADMIN_EMAIL = 'bilal@bigabilisim.com';
+    private const HR_EMAIL = 'y.ekici@takii.com.tr';
+    private const DEPARTMENT_MANAGER_PERMISSIONS = [
+        'module.leave.access',
+        'leave.request.approve.department',
+    ];
+    private const HR_APPROVER_PERMISSIONS = [
+        'module.leave.access',
+        'leave.request.manage.hr',
+    ];
+    private const WORKFORCE_ROLE_PERMISSIONS = [
+        'hr' => [
+            'module.leave.access',
+            'leave.request.manage.hr',
+            'leave.request.cancel',
+            'module.personnel.access',
+            'personnel.read',
+            'personnel.write',
+            'personnel.delete',
+            'personnel.export',
+            'module.shift.access',
+            'shift.manage',
+        ],
+        'hr_assistant' => [
+            'module.leave.access',
+            'leave.request.manage.hr',
+            'module.personnel.access',
+            'personnel.read',
+            'personnel.write',
+            'personnel.export',
+        ],
+        'manager' => [
+            'module.leave.access',
+            'leave.request.approve.department',
+            'module.personnel.access',
+            'personnel.read',
+            'personnel.write',
+        ],
+        'shift_planner' => [
+            'module.shift.access',
+            'shift.manage',
+        ],
+    ];
+    private array $demoUsers;
 
     public function __construct(
-        private readonly array $demoUsers,
+        array $demoUsers,
         private readonly array $modules,
+        private readonly StateStore $stateStore,
     ) {
+        $this->demoUsers = $demoUsers;
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $this->ensureSeeded();
     }
 
@@ -31,9 +79,97 @@ class AccessControl
         return $users;
     }
 
+    public function replaceDirectoryUsers(array $users): void
+    {
+        $this->demoUsers = $users;
+    }
+
+    public function isApprovalAssignee(string $identity): bool
+    {
+        if ($identity === '') {
+            return false;
+        }
+
+        foreach ($this->departmentPolicies() as $policy) {
+            foreach (['manager_1_email', 'manager_2_email', 'hr_email'] as $field) {
+                if ((string) ($policy[$field] ?? '') === $identity) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public function migrateUserIdentity(
+        string $oldIdentity,
+        string $newIdentity,
+        array $fallbackPermissions = []
+    ): array {
+        if ($oldIdentity === '' || $newIdentity === '' || $oldIdentity === $newIdentity) {
+            return ['permission_keys' => 0, 'approval_references' => 0];
+        }
+
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $data = $this->loadData();
+        $permissions = is_array($data['user_permissions'] ?? null) ? $data['user_permissions'] : [];
+
+        if (array_key_exists($newIdentity, $permissions)) {
+            throw new \RuntimeException('The target identity already has an access-control record.');
+        }
+
+        $sourcePermissions = is_array($permissions[$oldIdentity] ?? null)
+            ? $permissions[$oldIdentity]
+            : $fallbackPermissions;
+        unset($permissions[$oldIdentity]);
+        $permissions[$newIdentity] = array_values(array_unique(array_map('strval', $sourcePermissions)));
+        $data['user_permissions'] = $permissions;
+        $approvalReferences = 0;
+        $data['department_policies'] = IdentityReferenceRewriter::replaceValues(
+            is_array($data['department_policies'] ?? null) ? $data['department_policies'] : [],
+            $oldIdentity,
+            $newIdentity,
+            $approvalReferences
+        );
+        $this->saveData($data);
+
+        return [
+            'permission_keys' => 1,
+            'approval_references' => $approvalReferences,
+        ];
+    }
+
     public function departments(): array
     {
         return $this->departmentNamesFromData($this->data());
+    }
+
+    public function departmentOptions(): array
+    {
+        return array_map(
+            fn (array $node): array => [
+                'name' => $node['name'],
+                'label' => str_repeat('-- ', (int) ($node['level'] ?? 0)) . $node['name'],
+                'parent' => $node['parent'] ?? '',
+                'level' => (int) ($node['level'] ?? 0),
+            ],
+            $this->departmentHierarchy()
+        );
+    }
+
+    public function departmentHierarchy(): array
+    {
+        return $this->departmentHierarchyFromData($this->data());
+    }
+
+    public function departmentParents(): array
+    {
+        return $this->departmentParentsFromData($this->data());
+    }
+
+    public function departmentChildCounts(): array
+    {
+        return $this->departmentChildCountsFromData($this->data());
     }
 
     public function departmentUserCounts(): array
@@ -68,6 +204,8 @@ class AccessControl
 
     public function setUserPermissions(string $email, array $permissions): void
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+
         if (!isset($this->demoUsers[$email])) {
             return;
         }
@@ -79,7 +217,8 @@ class AccessControl
         }
 
         if (!$this->isSystemAdmin($email)) {
-            $selected = $this->expandPermissions($this->withRequiredPermissions($email, $this->demoUsers[$email], $selected));
+            $requiredPermissions = $this->withRequiredPermissions($email, $this->demoUsers[$email], $selected);
+            $selected = $this->expandPermissions($this->withoutUnauthorizedShiftPermissions($email, $this->demoUsers[$email], $requiredPermissions));
         }
 
         $data = $this->data();
@@ -92,6 +231,29 @@ class AccessControl
             $currentUser['permissions'] = $data['user_permissions'][$email];
             Session::put('user', $currentUser);
         }
+    }
+
+    public function usersWithWorkforceRole(string $role): array
+    {
+        $users = [];
+
+        foreach ($this->users() as $user) {
+            $roles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
+
+            if (!in_array($role, $roles, true)) {
+                continue;
+            }
+
+            $email = (string) ($user['email'] ?? '');
+
+            if ($email === '') {
+                continue;
+            }
+
+            $users[] = $user;
+        }
+
+        return $users;
     }
 
     public function permissionCatalog(): array
@@ -128,13 +290,26 @@ class AccessControl
 
     public function departmentPolicy(string $department): array
     {
-        $policies = $this->departmentPolicies();
+        $data = $this->data();
+        $department = $this->cleanDepartmentName($department);
+        $policies = $data['department_policies'] ?? [];
 
-        return $policies[$department] ?? $this->defaultPolicyFor($department);
+        if (isset($policies[$department]) && is_array($policies[$department])) {
+            return $policies[$department];
+        }
+
+        foreach ($this->departmentParentChainFromData($data, $department) as $parentDepartment) {
+            if (isset($policies[$parentDepartment]) && is_array($policies[$parentDepartment])) {
+                return $policies[$parentDepartment];
+            }
+        }
+
+        return $this->defaultPolicyFor($department);
     }
 
     public function setDepartmentPolicy(string $department, array $policy): bool
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $department = $this->cleanDepartmentName($department);
 
         if (!in_array($department, $this->departments(), true)) {
@@ -153,37 +328,49 @@ class AccessControl
             $data['department_policies'][$department]['manager_2_email'] = '';
         }
 
+        $this->ensureDepartmentPolicyAssigneePermissions($data, $data['department_policies'][$department]);
         $this->saveData($data);
 
         return true;
     }
 
-    public function createDepartment(string $name): array
+    public function createDepartment(string $name, string $parent = ''): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $name = $this->cleanDepartmentName($name);
+        $parent = $this->cleanDepartmentName($parent);
 
         if ($name === '') {
             return ['ok' => false, 'message' => 'admin.flash.department_invalid'];
         }
 
         $data = $this->data();
+        $departmentNames = $this->departmentNamesFromData($data);
 
-        if (in_array($name, $this->departmentNamesFromData($data), true)) {
+        if (in_array($name, $departmentNames, true)) {
             return ['ok' => false, 'message' => 'admin.flash.department_exists'];
+        }
+
+        if ($parent !== '' && (!in_array($parent, $departmentNames, true) || $parent === $name)) {
+            return ['ok' => false, 'message' => 'admin.flash.department_parent_invalid'];
         }
 
         $data['departments'][$name] = [
             'name' => $name,
+            'parent' => $parent,
             'created_at' => date('Y-m-d H:i'),
         ];
-        $data['department_policies'][$name] = $this->defaultPolicyFor($name);
+        $data['department_policies'][$name] = $parent !== ''
+            ? $this->departmentPolicyFromData($data, $parent)
+            : $this->defaultPolicyFor($name);
         $this->saveData($data);
 
-        return ['ok' => true, 'message' => 'admin.flash.department_created', 'department' => $name];
+        return ['ok' => true, 'message' => 'admin.flash.department_created', 'department' => $name, 'parent' => $parent];
     }
 
     public function deleteDepartment(string $name): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
         $name = $this->cleanDepartmentName($name);
         $data = $this->data();
 
@@ -197,10 +384,58 @@ class AccessControl
             return ['ok' => false, 'message' => 'admin.flash.department_in_use', 'department' => $name, 'user_count' => $userCount];
         }
 
+        $childCount = (int) ($this->departmentChildCountsFromData($data)[$name] ?? 0);
+
+        if ($childCount > 0) {
+            return ['ok' => false, 'message' => 'admin.flash.department_has_children', 'department' => $name, 'child_count' => $childCount];
+        }
+
         unset($data['departments'][$name], $data['department_policies'][$name]);
         $this->saveData($data);
 
         return ['ok' => true, 'message' => 'admin.flash.department_deleted', 'department' => $name];
+    }
+
+    public function setDepartmentParent(string $department, string $parent): array
+    {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $department = $this->cleanDepartmentName($department);
+        $parent = $this->cleanDepartmentName($parent);
+        $data = $this->data();
+        $departmentNames = $this->departmentNamesFromData($data);
+
+        if ($department === '' || !in_array($department, $departmentNames, true)) {
+            return ['ok' => false, 'message' => 'admin.flash.department_not_found'];
+        }
+
+        if ($parent === '' || $parent === $department || !in_array($parent, $departmentNames, true)) {
+            return ['ok' => false, 'message' => 'admin.flash.department_parent_invalid'];
+        }
+
+        $parents = $this->departmentParentsFromData($data);
+        $parents[$department] = $parent;
+        $seen = [$department => true];
+        $cursor = $parent;
+
+        while ($cursor !== '') {
+            if (isset($seen[$cursor])) {
+                return ['ok' => false, 'message' => 'admin.flash.department_parent_invalid'];
+            }
+
+            $seen[$cursor] = true;
+            $cursor = $parents[$cursor] ?? '';
+        }
+
+        $existing = is_array($data['departments'][$department] ?? null) ? $data['departments'][$department] : [];
+        $data['departments'][$department] = [
+            'name' => $department,
+            'parent' => $parent,
+            'created_at' => (string) ($existing['created_at'] ?? ''),
+        ];
+
+        $this->saveData($data);
+
+        return ['ok' => true, 'message' => 'leave_policy.flash.parent_saved', 'department' => $department, 'parent' => $parent];
     }
 
     public function managedPermissionSlugs(): array
@@ -250,6 +485,7 @@ class AccessControl
 
             if (!$this->isSystemAdmin($email)) {
                 $currentPermissions = $this->withRequiredPermissions($email, $user, is_array($currentPermissions) ? $currentPermissions : []);
+                $currentPermissions = $this->withoutUnauthorizedShiftPermissions($email, $user, $currentPermissions);
             }
 
             $expandedPermissions = $this->isSystemAdmin($email)
@@ -279,11 +515,18 @@ class AccessControl
             $dirty = true;
         }
 
+        $normalizedDepartments = $this->normalizeDepartments($data);
+
+        if (($data['departments'] ?? []) !== $normalizedDepartments) {
+            $data['departments'] = $normalizedDepartments;
+            $dirty = true;
+        }
+
         $departmentNames = $this->departmentNamesFromData($data);
 
         foreach ($departmentNames as $department) {
             if (!isset($data['department_policies'][$department]) || !is_array($data['department_policies'][$department])) {
-                $data['department_policies'][$department] = $this->defaultPolicyFor($department);
+                $data['department_policies'][$department] = $this->departmentPolicyFromData($data, $department);
                 $dirty = true;
             }
 
@@ -291,6 +534,10 @@ class AccessControl
 
             if ($data['department_policies'][$department] !== $normalizedPolicy) {
                 $data['department_policies'][$department] = $normalizedPolicy;
+                $dirty = true;
+            }
+
+            if ($this->ensureDepartmentPolicyAssigneePermissions($data, $data['department_policies'][$department])) {
                 $dirty = true;
             }
         }
@@ -337,15 +584,7 @@ class AccessControl
 
     private function loadData(): array
     {
-        $path = $this->dataPath();
-
-        if (!is_file($path)) {
-            return [];
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-
-        return is_array($decoded) ? $decoded : [];
+        return $this->stateStore->read(self::STATE_KEY, $this->dataPath());
     }
 
     private function userDepartments(): array
@@ -384,6 +623,189 @@ class AccessControl
         return $names;
     }
 
+    private function normalizeDepartments(array $data): array
+    {
+        $normalized = [];
+
+        foreach (($data['departments'] ?? []) as $key => $department) {
+            $name = is_array($department) ? (string) ($department['name'] ?? $key) : (string) $department;
+            $name = $this->cleanDepartmentName($name);
+
+            if ($name === '') {
+                continue;
+            }
+
+            $parent = is_array($department) ? $this->cleanDepartmentName((string) ($department['parent'] ?? '')) : '';
+
+            $normalized[$name] = [
+                'name' => $name,
+                'parent' => $parent,
+                'created_at' => is_array($department) ? (string) ($department['created_at'] ?? '') : '',
+            ];
+        }
+
+        $knownDepartments = array_fill_keys(array_merge($this->userDepartments(), array_keys($normalized)), true);
+
+        foreach ($normalized as $name => $department) {
+            $parent = (string) ($department['parent'] ?? '');
+
+            if ($parent === $name || $parent === '' || !isset($knownDepartments[$parent])) {
+                $normalized[$name]['parent'] = '';
+                continue;
+            }
+
+            $seen = [$name => true];
+            $cursor = $parent;
+
+            while ($cursor !== '') {
+                if (isset($seen[$cursor])) {
+                    $normalized[$name]['parent'] = '';
+                    break;
+                }
+
+                $seen[$cursor] = true;
+                $cursor = (string) ($normalized[$cursor]['parent'] ?? '');
+            }
+        }
+
+        ksort($normalized);
+
+        return $normalized;
+    }
+
+    private function departmentParentsFromData(array $data): array
+    {
+        $parents = array_fill_keys($this->departmentNamesFromData($data), '');
+
+        foreach (($data['departments'] ?? []) as $key => $department) {
+            $name = is_array($department) ? (string) ($department['name'] ?? $key) : (string) $department;
+            $name = $this->cleanDepartmentName($name);
+
+            if ($name === '' || !array_key_exists($name, $parents)) {
+                continue;
+            }
+
+            $parents[$name] = is_array($department) ? $this->cleanDepartmentName((string) ($department['parent'] ?? '')) : '';
+        }
+
+        foreach ($parents as $name => $parent) {
+            if ($parent === '' || $parent === $name || !array_key_exists($parent, $parents)) {
+                $parents[$name] = '';
+                continue;
+            }
+
+            $seen = [$name => true];
+            $cursor = $parent;
+
+            while ($cursor !== '') {
+                if (isset($seen[$cursor])) {
+                    $parents[$name] = '';
+                    break;
+                }
+
+                $seen[$cursor] = true;
+                $cursor = $parents[$cursor] ?? '';
+            }
+        }
+
+        ksort($parents);
+
+        return $parents;
+    }
+
+    private function departmentChildCountsFromData(array $data): array
+    {
+        $parents = $this->departmentParentsFromData($data);
+        $counts = array_fill_keys(array_keys($parents), 0);
+
+        foreach ($parents as $parent) {
+            if ($parent !== '' && array_key_exists($parent, $counts)) {
+                $counts[$parent]++;
+            }
+        }
+
+        return $counts;
+    }
+
+    private function departmentHierarchyFromData(array $data): array
+    {
+        $parents = $this->departmentParentsFromData($data);
+        $children = [];
+
+        foreach ($parents as $name => $parent) {
+            $children[$parent][] = $name;
+        }
+
+        foreach ($children as $parent => $names) {
+            natcasesort($names);
+            $children[$parent] = array_values($names);
+        }
+
+        $ordered = [];
+        $visited = [];
+        $appendDepartment = function (string $department, int $level) use (&$appendDepartment, &$ordered, &$visited, $parents, $children): void {
+            if (isset($visited[$department])) {
+                return;
+            }
+
+            $visited[$department] = true;
+            $ordered[] = [
+                'name' => $department,
+                'parent' => $parents[$department] ?? '',
+                'level' => $level,
+                'child_count' => count($children[$department] ?? []),
+            ];
+
+            foreach ($children[$department] ?? [] as $childDepartment) {
+                $appendDepartment($childDepartment, $level + 1);
+            }
+        };
+
+        foreach ($children[''] ?? [] as $rootDepartment) {
+            $appendDepartment($rootDepartment, 0);
+        }
+
+        foreach (array_keys($parents) as $department) {
+            $appendDepartment($department, 0);
+        }
+
+        return $ordered;
+    }
+
+    private function departmentParentChainFromData(array $data, string $department): array
+    {
+        $parents = $this->departmentParentsFromData($data);
+        $chain = [];
+        $seen = [$department => true];
+        $cursor = $parents[$department] ?? '';
+
+        while ($cursor !== '' && !isset($seen[$cursor])) {
+            $chain[] = $cursor;
+            $seen[$cursor] = true;
+            $cursor = $parents[$cursor] ?? '';
+        }
+
+        return $chain;
+    }
+
+    private function departmentPolicyFromData(array $data, string $department): array
+    {
+        $department = $this->cleanDepartmentName($department);
+        $policies = $data['department_policies'] ?? [];
+
+        if (isset($policies[$department]) && is_array($policies[$department])) {
+            return $this->normalizePolicy($department, $policies[$department]);
+        }
+
+        foreach ($this->departmentParentChainFromData($data, $department) as $parentDepartment) {
+            if (isset($policies[$parentDepartment]) && is_array($policies[$parentDepartment])) {
+                return $this->normalizePolicy($parentDepartment, $policies[$parentDepartment]);
+            }
+        }
+
+        return $this->defaultPolicyFor($department);
+    }
+
     private function cleanDepartmentName(string $name): string
     {
         $name = trim(preg_replace('/\s+/', ' ', $name) ?? '');
@@ -393,14 +815,7 @@ class AccessControl
 
     private function saveData(array $data): void
     {
-        $path = $this->dataPath();
-        $directory = dirname($path);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $this->stateStore->write(self::STATE_KEY, $this->dataPath(), $data);
     }
 
     private function dataPath(): string
@@ -437,10 +852,12 @@ class AccessControl
             'leave.request.create' => 'admin.permission.leave_create',
             'leave.request.approve.department' => 'admin.permission.leave_approve_department',
             'leave.request.manage.hr' => 'admin.permission.leave_manage_hr',
+            'leave.request.cancel' => 'admin.permission.leave_cancel',
             'personnel.read' => 'admin.permission.personnel_read',
             'personnel.write' => 'admin.permission.personnel_write',
             'personnel.delete' => 'admin.permission.personnel_delete',
             'personnel.export' => 'admin.permission.personnel_export',
+            'shift.manage' => 'admin.permission.shift_manage',
             'documents.view' => 'admin.permission.documents_view',
             'budget.view.own' => 'admin.permission.budget_own',
             'budget.view.department' => 'admin.permission.budget_department',
@@ -462,10 +879,12 @@ class AccessControl
             'leave.request.create' => 'module.leave.access',
             'leave.request.approve.department' => 'module.leave.access',
             'leave.request.manage.hr' => 'module.leave.access',
+            'leave.request.cancel' => 'module.leave.access',
             'personnel.read' => 'module.personnel.access',
             'personnel.write' => 'module.personnel.access',
             'personnel.delete' => 'module.personnel.access',
             'personnel.export' => 'module.personnel.access',
+            'shift.manage' => 'module.shift.access',
             'documents.view' => 'module.documents.access',
             'budget.view.own' => 'module.budget.access',
             'budget.view.department' => 'module.budget.access',
@@ -478,24 +897,36 @@ class AccessControl
 
     private function defaultPolicyFor(string $department): array
     {
-        $managerEmail = $this->defaultManagerEmail();
-        $hrEmail = $this->hrEmail();
+        $hrIdentity = $this->defaultHrIdentity();
 
         if ($department === 'Product') {
             return [
                 'manager_approval_count' => 1,
-                'manager_1_email' => $managerEmail,
+                'manager_1_email' => self::ADMIN_EMAIL,
                 'manager_2_email' => '',
-                'hr_email' => $hrEmail,
+                'hr_email' => $hrIdentity,
             ];
         }
 
         return [
             'manager_approval_count' => 1,
-            'manager_1_email' => $managerEmail,
+            'manager_1_email' => self::ADMIN_EMAIL,
             'manager_2_email' => '',
-            'hr_email' => $hrEmail,
+            'hr_email' => $hrIdentity,
         ];
+    }
+
+    private function defaultHrIdentity(): string
+    {
+        foreach ($this->demoUsers as $identity => $user) {
+            $roles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
+
+            if (in_array('hr', $roles, true)) {
+                return (string) $identity;
+            }
+        }
+
+        return isset($this->demoUsers[self::HR_EMAIL]) ? self::HR_EMAIL : '';
     }
 
     private function migratePersonnelPermissions(string $email, array $user, array $currentPermissions): array
@@ -503,7 +934,7 @@ class AccessControl
         $role = strtolower((string) ($user['role'] ?? ''));
         $permissions = $currentPermissions;
 
-        if ($email === $this->hrEmail() || str_contains($role, 'hr')) {
+        if ($email === self::HR_EMAIL || str_contains($role, 'hr')) {
             return array_values(array_unique(array_merge($permissions, [
                 'module.personnel.access',
                 'personnel.read',
@@ -528,7 +959,7 @@ class AccessControl
     {
         $role = strtolower((string) ($user['role'] ?? ''));
 
-        if ($email !== $this->hrEmail() && !str_contains($role, 'hr')) {
+        if ($email !== self::HR_EMAIL && !str_contains($role, 'hr')) {
             return $currentPermissions;
         }
 
@@ -541,6 +972,8 @@ class AccessControl
 
     private function withRequiredPermissions(string $email, array $user, array $permissions): array
     {
+        $permissions = $this->withWorkforceRolePermissions($user, $permissions);
+
         if (!$this->isHrPersonnelOwner($email, $user)) {
             return $permissions;
         }
@@ -551,46 +984,65 @@ class AccessControl
             'personnel.write',
             'personnel.delete',
             'personnel.export',
+            'module.shift.access',
+            'shift.manage',
         ])));
+    }
+
+    private function withoutUnauthorizedShiftPermissions(string $email, array $user, array $permissions): array
+    {
+        if ($this->isSystemAdmin($email) || $this->isShiftModuleOwner($email, $user)) {
+            return $permissions;
+        }
+
+        return array_values(array_diff($permissions, [
+            'module.shift.access',
+            'shift.manage',
+        ]));
+    }
+
+    private function withWorkforceRolePermissions(array $user, array $permissions): array
+    {
+        $roles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
+
+        foreach ($roles as $role) {
+            $role = (string) $role;
+
+            if (!isset(self::WORKFORCE_ROLE_PERMISSIONS[$role])) {
+                continue;
+            }
+
+            $permissions = array_merge($permissions, self::WORKFORCE_ROLE_PERMISSIONS[$role]);
+        }
+
+        return array_values(array_unique($permissions));
     }
 
     private function isHrPersonnelOwner(string $email, array $user): bool
     {
         $role = strtolower((string) ($user['role'] ?? ''));
+        $name = strtolower((string) ($user['name'] ?? ''));
+        $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
 
-        return $email === $this->hrEmail()
-            || str_contains($role, 'hr');
+        return $email === self::HR_EMAIL
+            || str_contains($role, 'hr')
+            || str_contains($name, 'yeşim dingil ekici')
+            || in_array('hr', $workforceRoles, true);
     }
 
-    private function defaultManagerEmail(): string
+    private function isShiftModuleOwner(string $email, array $user): bool
     {
-        foreach ($this->demoUsers as $email => $user) {
-            if (in_array('*', $user['permissions'] ?? [], true)) {
-                return (string) $email;
-            }
-        }
+        $role = strtolower((string) ($user['role'] ?? ''));
+        $name = strtolower((string) ($user['name'] ?? ''));
+        $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
 
-        return (string) array_key_first($this->demoUsers);
-    }
-
-    private function hrEmail(): string
-    {
-        $configured = strtolower(trim((string) getenv('APP_HR_EMAIL')));
-
-        if ($configured !== '' && isset($this->demoUsers[$configured])) {
-            return $configured;
-        }
-
-        foreach ($this->demoUsers as $email => $user) {
-            $role = strtolower((string) ($user['role'] ?? ''));
-            $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
-
-            if (in_array('leave.request.manage.hr', $permissions, true) || str_contains($role, 'hr')) {
-                return (string) $email;
-            }
-        }
-
-        return '';
+        return $email === self::HR_EMAIL
+            || str_contains($name, 'yeşim dingil ekici')
+            || in_array('hr', $workforceRoles, true)
+            || in_array('shift_planner', $workforceRoles, true)
+            || str_contains($role, 'hr manager')
+            || str_contains($role, 'ik yoneticisi')
+            || str_contains($role, 'ik yöneticisi');
     }
 
     private function validUserEmail(string $email): string
@@ -630,6 +1082,46 @@ class AccessControl
             'manager_2_email' => $manager2,
             'hr_email' => $hr,
         ];
+    }
+
+    private function ensureDepartmentPolicyAssigneePermissions(array &$data, array $policy): bool
+    {
+        $dirty = false;
+
+        foreach (['manager_1_email', 'manager_2_email'] as $key) {
+            $email = (string) ($policy[$key] ?? '');
+
+            if ($email !== '' && $this->grantUserPermissions($data, $email, self::DEPARTMENT_MANAGER_PERMISSIONS)) {
+                $dirty = true;
+            }
+        }
+
+        $hrEmail = (string) ($policy['hr_email'] ?? '');
+
+        if ($hrEmail !== '' && $this->grantUserPermissions($data, $hrEmail, self::HR_APPROVER_PERMISSIONS)) {
+            $dirty = true;
+        }
+
+        return $dirty;
+    }
+
+    private function grantUserPermissions(array &$data, string $email, array $permissions): bool
+    {
+        if (!isset($this->demoUsers[$email]) || $this->isSystemAdmin($email)) {
+            return false;
+        }
+
+        $currentPermissions = $data['user_permissions'][$email] ?? ($this->demoUsers[$email]['permissions'] ?? []);
+        $currentPermissions = is_array($currentPermissions) ? $currentPermissions : [];
+        $expanded = $this->expandPermissions(array_merge($currentPermissions, $permissions));
+
+        if (($data['user_permissions'][$email] ?? []) === $expanded) {
+            return false;
+        }
+
+        $data['user_permissions'][$email] = $expanded;
+
+        return true;
     }
 
     private function isSystemAdmin(string $email): bool

@@ -46,7 +46,20 @@
                             <?= htmlspecialchars($t('nav.versions'), ENT_QUOTES, 'UTF-8') ?>
                         </a>
                     <?php endif; ?>
+                    <?php if ($auth->can('leave.request.manage.hr')): ?>
+                        <a class="nav-item" href="/leave/book-signatures">
+                            <span class="nav-code">LB</span>
+                            <?= htmlspecialchars($t('nav.leave_book_signatures'), ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                        <a class="nav-item" href="/leave/policies">
+                            <span class="nav-code">LA</span>
+                            <?= htmlspecialchars($t('nav.leave_policies'), ENT_QUOTES, 'UTF-8') ?>
+                        </a>
+                    <?php endif; ?>
                     <?php foreach ($modules as $module): ?>
+                        <?php if (!empty($module['hidden_in_menu'])): ?>
+                            <?php continue; ?>
+                        <?php endif; ?>
                         <?php if ($auth->can($module['permission'])): ?>
                             <?php
                                 $moduleSlug = (string) $module['slug'];
@@ -128,6 +141,42 @@
                         </form>
                     </div>
                 </header>
+            <?php endif; ?>
+
+            <?php if ($user && !empty($leaveBookSignatureAlerts)): ?>
+                <section class="account-alerts" aria-label="<?= htmlspecialchars($t('leave.signature_alert.title'), ENT_QUOTES, 'UTF-8') ?>">
+                    <?php foreach ($leaveBookSignatureAlerts as $signatureAlert): ?>
+                        <?php
+                            $signatureStartsOn = (string) ($signatureAlert['starts_on'] ?? '');
+                            $signatureEndsOn = (string) ($signatureAlert['ends_on'] ?? '');
+                            $signatureDateRange = $signatureEndsOn === '' || $signatureStartsOn === $signatureEndsOn
+                                ? $signatureStartsOn
+                                : $signatureStartsOn . ' - ' . $signatureEndsOn;
+                            $signatureDayPartKey = (string) ($signatureAlert['day_part_key'] ?? 'leave.day_part.full');
+
+                            if ($signatureDayPartKey !== 'leave.day_part.full') {
+                                $signatureDateRange .= ' / ' . $t($signatureDayPartKey);
+                            }
+                        ?>
+                        <article class="account-alert signature-alert" role="alert">
+                            <span class="module-code">LV</span>
+                            <div>
+                                <strong><?= htmlspecialchars($t('leave.signature_alert.title'), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <p>
+                                    <?= htmlspecialchars($t('leave.signature_alert.body', [
+                                        'request_id' => (string) ($signatureAlert['id'] ?? ''),
+                                        'date_range' => $signatureDateRange,
+                                        'days' => (string) ($signatureAlert['total_days_label'] ?? $signatureAlert['total_days'] ?? ''),
+                                    ]), ENT_QUOTES, 'UTF-8') ?>
+                                </p>
+                                <?php if (!empty($signatureAlert['due_at'])): ?>
+                                    <small><?= htmlspecialchars($t('leave.signature_alert.due', ['date' => (string) $signatureAlert['due_at']]), ENT_QUOTES, 'UTF-8') ?></small>
+                                <?php endif; ?>
+                            </div>
+                            <a class="button compact" href="/module/leave"><?= htmlspecialchars($t('leave.signature_alert.cta'), ENT_QUOTES, 'UTF-8') ?></a>
+                        </article>
+                    <?php endforeach; ?>
+                </section>
             <?php endif; ?>
 
             <?= $content ?>

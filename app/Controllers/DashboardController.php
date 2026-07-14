@@ -28,7 +28,7 @@ class DashboardController
 
         $visibleModules = array_values(array_filter(
             $this->modules,
-            fn (array $module): bool => $this->auth->can($module['permission'])
+            fn (array $module): bool => empty($module['hidden_in_menu']) && $this->auth->can($module['permission'])
         ));
         $showAnnouncementsPanel = false;
         $canViewAnnouncements = $showAnnouncementsPanel && $this->auth->can('module.announcements.access');
@@ -40,7 +40,7 @@ class DashboardController
             'workQueue' => $this->workQueue(),
             'worldClocks' => $this->worldClocks(),
             'newsItems' => $canViewAnnouncements ? $this->newsItems() : [],
-            'leaveCalendar' => $canViewLeaveCalendar ? $this->leaveStore->calendar('month', date('Y-m-d')) : null,
+            'leaveCalendar' => $canViewLeaveCalendar ? $this->leaveStore->calendar('month', date('Y-m-d'), $this->auth->user() ?? [], $this->auth) : null,
             'canViewAnnouncements' => $canViewAnnouncements,
             'canViewLeaveCalendar' => $canViewLeaveCalendar,
             'weeklyWeather' => $this->weatherStore->weekly(),
