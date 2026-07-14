@@ -1722,6 +1722,52 @@ th {
     padding: 18px;
 }
 
+.leave-page-header .eyebrow {
+    color: #1e6775;
+}
+
+.leave-page-header .view-tabs a.is-active {
+    background: #258194;
+}
+
+.leave-module-accent {
+    border-top-width: 4px;
+}
+
+.leave-form.leave-module-accent.is-request {
+    border-top-color: #4a68a8;
+    background: #fbfcff;
+}
+
+.leave-form.is-request .module-code {
+    border-color: #b8c6e8;
+    background: #eef3ff;
+    color: #36558f;
+}
+
+.leave-form.is-request > .section-title h2 {
+    color: #36558f;
+}
+
+.requester-panel.leave-module-accent.is-self-service {
+    border-top-color: #b0643c;
+    background: #fffdfb;
+}
+
+.calendar-panel.leave-module-accent.is-calendar {
+    border-top-color: #258194;
+    background: #fbfefe;
+}
+
+.calendar-panel.is-calendar .calendar-header {
+    padding-bottom: 14px;
+    border-bottom: 1px solid #b7dce2;
+}
+
+.calendar-panel.is-calendar .calendar-header .eyebrow {
+    color: #1e6775;
+}
+
 .requester-panel {
     display: grid;
     gap: 14px;
@@ -1767,6 +1813,42 @@ th {
     border: 1px solid var(--line);
     border-radius: 8px;
     background: #f7f8f5;
+}
+
+.leave-balance-grid div:nth-child(1) {
+    border-color: #b8c6e8;
+    background: #eef3ff;
+}
+
+.leave-balance-grid div:nth-child(1) strong {
+    color: #36558f;
+}
+
+.leave-balance-grid div:nth-child(2) {
+    border-color: #e4bbb0;
+    background: #fff2ed;
+}
+
+.leave-balance-grid div:nth-child(2) strong {
+    color: #8a341f;
+}
+
+.leave-balance-grid div:nth-child(3) {
+    border-color: #e5c58b;
+    background: #fff7e8;
+}
+
+.leave-balance-grid div:nth-child(3) strong {
+    color: #7a4a10;
+}
+
+.leave-balance-grid div:nth-child(4) {
+    border-color: #9bc4ac;
+    background: #eff8f1;
+}
+
+.leave-balance-grid div:nth-child(4) strong {
+    color: #24613b;
 }
 
 .leave-balance-grid span,
@@ -2020,6 +2102,16 @@ th {
     background: #f8faf7;
 }
 
+.requester-group.is-editable .requester-request {
+    border-left: 4px solid #4a68a8;
+    background: #f7f9ff;
+}
+
+.requester-group.is-cancellable .requester-request {
+    border-left: 4px solid #b0643c;
+    background: #fff8f4;
+}
+
 .requester-request > header {
     justify-content: space-between;
 }
@@ -2031,6 +2123,68 @@ th {
 .approval-panel {
     min-width: 0;
     margin-bottom: 20px;
+}
+
+.leave-action-panel > .section-title > span {
+    padding: 5px 9px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.leave-action-panel.has-items > .section-title {
+    padding: 12px 14px;
+    border: 1px solid #e5c58b;
+    border-left: 4px solid #c17c1f;
+    border-radius: 8px;
+    background: #fff7e8;
+}
+
+.leave-action-panel.is-approval.has-items > .section-title h2,
+.leave-action-panel.is-approval.has-items > .section-title > span {
+    color: #7a4a10;
+}
+
+.leave-action-panel.is-approval.has-items > .section-title > span {
+    border-color: #e5c58b;
+    background: #fffdf8;
+}
+
+.leave-action-panel.is-approval.has-items .approval-card {
+    border-color: #e5c58b;
+    border-left: 4px solid #c17c1f;
+    background: #fffdf8;
+}
+
+.leave-action-panel.is-cancellation.has-items > .section-title {
+    border-color: #dda097;
+    border-left-color: #a63d34;
+    background: #fff2ed;
+}
+
+.leave-action-panel.is-cancellation.has-items > .section-title h2,
+.leave-action-panel.is-cancellation.has-items > .section-title > span {
+    color: #8a341f;
+}
+
+.leave-action-panel.is-cancellation.has-items > .section-title > span {
+    border-color: #dda097;
+    background: #fffaf8;
+}
+
+.leave-action-panel.is-cancellation.has-items .approval-card {
+    border-color: #dda097;
+    border-left: 4px solid #a63d34;
+    background: #fffaf8;
+}
+
+.leave-action-panel.is-clear > .section-title > span {
+    border-color: #9bc4ac;
+    background: #eff8f1;
+    color: #24613b;
 }
 
 .approval-list {
@@ -2120,9 +2274,29 @@ th {
     background: var(--green);
 }
 
+.stage-node.is-pending {
+    border-color: #e5c58b;
+    background: #fffaf0;
+}
+
+.stage-node.is-pending > span {
+    border-color: #c17c1f;
+    background: #fff7e8;
+}
+
+.stage-node.is-approved {
+    border-color: #9bc4ac;
+    background: #eff8f1;
+}
+
 .stage-node.is-rejected > span {
     border-color: #a63d34;
     background: #a63d34;
+}
+
+.stage-node.is-rejected {
+    border-color: #dda097;
+    background: #fff2ed;
 }
 
 .stage-node.is-cancelled > span {

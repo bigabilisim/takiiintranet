@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.77.0';
+    private const CURRENT_RELEASE = 'v0.78.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,18 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.78.0',
+                'title' => 'Izin modulleri renkli odak hiyerarsisiyle yenilendi',
+                'released_at' => '2026-07-14 11:30',
+                'status' => 'completed',
+                'changes' => [
+                    'Yonetici onayi, iptal islemi, yeni talep ve takvim alanlari birbirinden ayrisan islevsel renklerle belirginlestirildi.',
+                    'Izin bakiyesi kutulari hak, kullanilan, bekleyen ve kalan durumlarina gore renklendirildi.',
+                    'Onay adimlari ile kullanicinin duzenleme veya iptal bekleyen talepleri durum renkleriyle daha kolay taranir hale getirildi.',
+                    'Renkler mobil gorunum ve okunabilirlik korunarak dusuk yogunluklu arka plan ve kenar vurgulariyla uygulandi.',
+                ],
+            ],
             [
                 'version' => 'v0.77.0',
                 'title' => 'Panel altindaki ikincil bolumler kaldirildi',

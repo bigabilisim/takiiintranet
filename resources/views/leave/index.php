@@ -71,7 +71,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
 };
 ?>
 
-<section class="page-header">
+<section class="page-header leave-page-header">
     <div>
         <p class="eyebrow"><?= htmlspecialchars($t('leave.eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
         <h1><?= htmlspecialchars($t('leave.title'), ENT_QUOTES, 'UTF-8') ?></h1>
@@ -86,7 +86,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
 </section>
 
 <?php if ($canApproveInPlatform): ?>
-    <section class="approval-panel" aria-label="<?= htmlspecialchars($t('leave.platform_approvals'), ENT_QUOTES, 'UTF-8') ?>">
+    <section class="approval-panel leave-action-panel is-approval <?= !empty($approvalQueue) ? 'has-items' : 'is-clear' ?>" aria-label="<?= htmlspecialchars($t('leave.platform_approvals'), ENT_QUOTES, 'UTF-8') ?>">
         <div class="section-title">
             <h2><?= htmlspecialchars($t('leave.platform_approvals'), ENT_QUOTES, 'UTF-8') ?></h2>
             <span><?= htmlspecialchars($t('leave.platform_approvals_count', ['count' => count($approvalQueue ?? [])]), ENT_QUOTES, 'UTF-8') ?></span>
@@ -184,7 +184,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
 <?php endif; ?>
 
 <?php if ($canCancelLeave): ?>
-    <section class="approval-panel" aria-label="<?= htmlspecialchars($t('leave.cancel_requests'), ENT_QUOTES, 'UTF-8') ?>">
+    <section class="approval-panel leave-action-panel is-cancellation <?= !empty($cancellationQueue) ? 'has-items' : 'is-clear' ?>" aria-label="<?= htmlspecialchars($t('leave.cancel_requests'), ENT_QUOTES, 'UTF-8') ?>">
         <div class="section-title">
             <h2><?= htmlspecialchars($t('leave.cancel_requests'), ENT_QUOTES, 'UTF-8') ?></h2>
             <span><?= htmlspecialchars($t('leave.cancel_requests_count', ['count' => count($cancellationQueue ?? [])]), ENT_QUOTES, 'UTF-8') ?></span>
@@ -234,7 +234,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
 
 <section class="leave-layout">
     <div class="leave-sidebar">
-    <form class="leave-form" method="post" action="/leave/requests" data-leave-request-form>
+    <form class="leave-form leave-module-accent is-request" method="post" action="/leave/requests" data-leave-request-form>
         <?= $csrf() ?>
         <div class="leave-person-card">
             <span class="module-code">LV</span>
@@ -402,12 +402,12 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
     </div>
 
     <?php if (!empty($requesterEditableRequests) || !empty($requesterCancellableRequests)): ?>
-        <section class="requester-panel" aria-label="<?= htmlspecialchars($t('leave.my_requests'), ENT_QUOTES, 'UTF-8') ?>">
+        <section class="requester-panel leave-module-accent is-self-service" aria-label="<?= htmlspecialchars($t('leave.my_requests'), ENT_QUOTES, 'UTF-8') ?>">
             <div class="section-title">
                 <h2><?= htmlspecialchars($t('leave.my_requests'), ENT_QUOTES, 'UTF-8') ?></h2>
             </div>
             <?php if (!empty($requesterEditableRequests)): ?>
-                <div class="requester-group">
+                <div class="requester-group is-editable">
                     <div class="requester-group-title">
                         <strong><?= htmlspecialchars($t('leave.editable_requests'), ENT_QUOTES, 'UTF-8') ?></strong>
                         <span><?= htmlspecialchars($t('leave.editable_requests_count', ['count' => count($requesterEditableRequests)]), ENT_QUOTES, 'UTF-8') ?></span>
@@ -463,7 +463,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                 </div>
             <?php endif; ?>
             <?php if (!empty($requesterCancellableRequests)): ?>
-                <div class="requester-group">
+                <div class="requester-group is-cancellable">
                     <div class="requester-group-title">
                         <strong><?= htmlspecialchars($t('leave.cancellable_requests'), ENT_QUOTES, 'UTF-8') ?></strong>
                         <span><?= htmlspecialchars($t('leave.cancellable_requests_count', ['count' => count($requesterCancellableRequests)]), ENT_QUOTES, 'UTF-8') ?></span>
@@ -538,7 +538,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
     <?php endif; ?>
     </div>
 
-    <section class="calendar-panel">
+    <section class="calendar-panel leave-module-accent is-calendar">
     <header class="calendar-header">
         <div>
             <p class="eyebrow"><?= htmlspecialchars($t('leave.calendar'), ENT_QUOTES, 'UTF-8') ?></p>
