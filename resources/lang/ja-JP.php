@@ -91,7 +91,7 @@ return [
     'weather.condition.storm' => '雷雨',
     'module.announcements.title' => 'ニュースと告知',
     'module.announcements.summary' => '社内ニュース、対象別告知、既読管理。',
-    'module.leave.title' => 'カレンダー',
+    'module.leave.title' => '休暇申請',
     'module.leave.summary' => '年次休暇残高、申請フォーム、承認フロー。',
     'module.messages.title' => 'メッセージ',
     'module.messages.summary' => 'ユーザー間の安全な社内メッセージと既読管理。',

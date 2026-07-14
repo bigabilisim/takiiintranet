@@ -91,7 +91,7 @@ return [
     'weather.condition.storm' => 'Storm',
     'module.announcements.title' => 'News and announcements',
     'module.announcements.summary' => 'Company news, targeted announcements, and read tracking.',
-    'module.leave.title' => 'Calendar',
+    'module.leave.title' => 'Leave Request',
     'module.leave.summary' => 'Annual leave balances, request forms, and approval flows.',
     'module.messages.title' => 'Messages',
     'module.messages.summary' => 'Secure internal messaging and read tracking between users.',

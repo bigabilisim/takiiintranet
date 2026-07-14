@@ -91,7 +91,7 @@ return [
     'weather.condition.storm' => 'Fırtınalı',
     'module.announcements.title' => 'Haberler ve duyurular',
     'module.announcements.summary' => 'Şirket haberleri, hedefli duyurular ve okundu takibi.',
-    'module.leave.title' => 'Takvim',
+    'module.leave.title' => 'İzin Talep',
     'module.leave.summary' => 'Yıllık izin bakiyeleri, talep formları ve onay akışları.',
     'module.messages.title' => 'Mesajlar',
     'module.messages.summary' => 'Kullanıcılar arası güvenli iç mesajlaşma ve okundu takibi.',

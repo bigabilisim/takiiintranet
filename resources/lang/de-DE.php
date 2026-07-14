@@ -91,7 +91,7 @@ return [
     'weather.condition.storm' => 'Sturm',
     'module.announcements.title' => 'Nachrichten und Ankündigungen',
     'module.announcements.summary' => 'Unternehmensnachrichten, gezielte Ankündigungen und Lesestatus.',
-    'module.leave.title' => 'Kalender',
+    'module.leave.title' => 'Urlaubsantrag',
     'module.leave.summary' => 'Jahresurlaub, Antragsformulare und Freigabeprozesse.',
     'module.messages.title' => 'Nachrichten',
     'module.messages.summary' => 'Sichere interne Nachrichten mit Lesestatus zwischen Benutzern.',

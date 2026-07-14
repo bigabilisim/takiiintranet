@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.78.0';
+    private const CURRENT_RELEASE = 'v0.79.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.79.0',
+                'title' => 'Izin modulunun menu adi Izin Talep olarak degistirildi',
+                'released_at' => '2026-07-14 11:40',
+                'status' => 'completed',
+                'changes' => [
+                    'Sol menudeki Takvim etiketi Turkce arayuzde Izin Talep olarak degistirildi.',
+                    'Ayni menu etiketi Ingilizce, Almanca ve Japonca arayuzlerde Leave Request, Urlaubsantrag ve 休暇申請 olarak esitlendi.',
+                    'PWA onbellek surumu yenilenerek yeni menu adinin kullanicilara gecikmeden ulasmasi saglandi.',
+                ],
+            ],
             [
                 'version' => 'v0.78.0',
                 'title' => 'Izin modulleri renkli odak hiyerarsisiyle yenilendi',
