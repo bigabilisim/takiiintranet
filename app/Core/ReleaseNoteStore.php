@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.75.0';
+    private const CURRENT_RELEASE = 'v0.76.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.76.0',
+                'title' => 'Operasyon paneli basligi sadelestirildi',
+                'released_at' => '2026-07-14 11:19',
+                'status' => 'completed',
+                'changes' => [
+                    'Ana paneldeki Operasyon paneli basligi Panel olarak degistirildi.',
+                    'Ingilizce, Almanca ve Japonca panel basliklari ayni sade anlamla esitlendi.',
+                    'PWA onbellek surumu yenilenerek yeni basligin kullanicilara gecikmeden ulasmasi saglandi.',
+                ],
+            ],
             [
                 'version' => 'v0.75.0',
                 'title' => 'Antalya ve Bursa lokasyon gorunurlugu ayrildi',

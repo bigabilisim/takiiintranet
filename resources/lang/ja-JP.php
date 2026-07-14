@@ -51,7 +51,7 @@ return [
     'auth.metric.uptime' => '稼働率',
     'auth.metric.locales' => '言語',
     'auth.metric.flows' => 'フロー',
-    'dashboard.title' => 'オペレーションダッシュボード',
+    'dashboard.title' => 'ダッシュボード',
     'dashboard.today' => '本日の社内状況',
     'dashboard.queue' => '承認待ち',
     'dashboard.modules' => 'モジュール',

@@ -51,7 +51,7 @@ return [
     'auth.metric.uptime' => 'Uptime',
     'auth.metric.locales' => 'Locales',
     'auth.metric.flows' => 'Flows',
-    'dashboard.title' => 'Operations dashboard',
+    'dashboard.title' => 'Dashboard',
     'dashboard.today' => 'Today’s company rhythm',
     'dashboard.queue' => 'Approval queue',
     'dashboard.modules' => 'Modules',

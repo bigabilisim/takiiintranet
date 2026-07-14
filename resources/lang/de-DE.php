@@ -51,7 +51,7 @@ return [
     'auth.metric.uptime' => 'Verfügbarkeit',
     'auth.metric.locales' => 'Sprachen',
     'auth.metric.flows' => 'Abläufe',
-    'dashboard.title' => 'Operations-Dashboard',
+    'dashboard.title' => 'Dashboard',
     'dashboard.today' => 'Heutiger Unternehmensrhythmus',
     'dashboard.queue' => 'Freigabewarteschlange',
     'dashboard.modules' => 'Module',

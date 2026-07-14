@@ -51,7 +51,7 @@ return [
     'auth.metric.uptime' => 'Çalışma süresi',
     'auth.metric.locales' => 'Dil sayısı',
     'auth.metric.flows' => 'Akışlar',
-    'dashboard.title' => 'Operasyon paneli',
+    'dashboard.title' => 'Panel',
     'dashboard.today' => 'Bugünün kurum ritmi',
     'dashboard.queue' => 'Onay kuyruğu',
     'dashboard.modules' => 'Modüller',
