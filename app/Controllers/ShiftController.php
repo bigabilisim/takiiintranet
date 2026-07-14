@@ -31,13 +31,15 @@ class ShiftController
             return new Response($this->view->render('errors/404', ['title' => '404']), 404);
         }
 
+        $user = $this->auth->user() ?? [];
+
         return new Response($this->view->render('shift/index', [
             'title' => 'module.shift.title',
             'templates' => $this->shiftStore->templates(),
             'enabledTemplates' => $this->shiftStore->enabledTemplates(),
-            'personnel' => $this->shiftStore->personnel(),
-            'weekendDutyPersonnel' => $this->shiftStore->weekendDutyPersonnel(),
-            'weekendPlans' => $this->shiftStore->weekendPlans(),
+            'personnel' => $this->shiftStore->personnel($user),
+            'weekendDutyPersonnel' => $this->shiftStore->weekendDutyPersonnel($user),
+            'weekendPlans' => $this->shiftStore->weekendPlans($user),
             'holidays' => $this->shiftStore->holidays(),
             'dayLabels' => $this->shiftStore->dayLabels(),
             'canManageShift' => $this->auth->can('shift.manage'),
@@ -94,7 +96,7 @@ class ShiftController
             return Response::redirect('/module/shift');
         }
 
-        $result = $this->shiftStore->saveWeekendPlan($request->all());
+        $result = $this->shiftStore->saveWeekendPlan($request->all(), $this->auth->user() ?? []);
 
         if ($result['ok']) {
             $plan = is_array($result['plan'] ?? null) ? $result['plan'] : [];
@@ -158,7 +160,7 @@ class ShiftController
         }
 
         $key = (string) $request->input('plan_key', '');
-        $result = $this->shiftStore->deleteWeekendPlan($key);
+        $result = $this->shiftStore->deleteWeekendPlan($key, $this->auth->user() ?? []);
 
         $this->auditLog->record(
             $this->auth->user() ?? [],
@@ -181,7 +183,8 @@ class ShiftController
         $result = $this->shiftStore->assignToProfiles(
             (string) $request->input('shift_key', ''),
             (array) $request->input('profile_keys', []),
-            $request->input('all_personnel') === '1'
+            $request->input('all_personnel') === '1',
+            $this->auth->user() ?? []
         );
 
         if ($result['ok']) {

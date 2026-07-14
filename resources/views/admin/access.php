@@ -40,6 +40,7 @@ $departmentSelectOptions = static function (string $currentDepartment) use ($dep
 
     return $options;
 };
+$locationOptions = is_array($locationOptions ?? null) ? $locationOptions : [];
 ?>
 
 <section class="page-header">
@@ -86,12 +87,14 @@ $departmentSelectOptions = static function (string $currentDepartment) use ($dep
             <?php foreach ($users as $managedUser): ?>
                 <?php
                     $currentDepartmentOptions = $departmentSelectOptions((string) ($managedUser['department'] ?? ''));
+                    $managedUserLocation = (string) ($managedUser['location'] ?? '');
+                    $managedUserLocationLabel = $managedUserLocation !== '' ? $t('location.' . $managedUserLocation) : $t('admin.not_specified');
                 ?>
                 <details class="user-directory-item">
                     <summary class="user-directory-row">
                         <span class="user-directory-main">
                             <strong><?= htmlspecialchars($managedUser['name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                            <span class="user-directory-meta"><?= htmlspecialchars($managedUser['email'] . ' / ' . $managedUser['role'] . ' / ' . $managedUser['department'], ENT_QUOTES, 'UTF-8') ?></span>
+                            <span class="user-directory-meta"><?= htmlspecialchars($managedUser['email'] . ' / ' . $managedUser['role'] . ' / ' . $managedUser['department'] . ' / ' . $managedUserLocationLabel, ENT_QUOTES, 'UTF-8') ?></span>
                         </span>
                         <span class="button compact user-directory-edit"><?= htmlspecialchars($t('admin.edit'), ENT_QUOTES, 'UTF-8') ?></span>
                     </summary>
@@ -122,6 +125,16 @@ $departmentSelectOptions = static function (string $currentDepartment) use ($dep
                                     <?php $departmentOptionName = (string) ($departmentOption['name'] ?? ''); ?>
                                     <option value="<?= htmlspecialchars($departmentOptionName, ENT_QUOTES, 'UTF-8') ?>" <?= ($managedUser['department'] ?? '') === $departmentOptionName ? 'selected' : '' ?>>
                                         <?= htmlspecialchars((string) ($departmentOption['label'] ?? $departmentOptionName), ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                        <label>
+                            <span><?= htmlspecialchars($t('admin.profile.location'), ENT_QUOTES, 'UTF-8') ?></span>
+                            <select name="location" required>
+                                <?php foreach ($locationOptions as $locationKey => $locationLabelKey): ?>
+                                    <option value="<?= htmlspecialchars((string) $locationKey, ENT_QUOTES, 'UTF-8') ?>" <?= $managedUserLocation === (string) $locationKey ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($t((string) $locationLabelKey), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

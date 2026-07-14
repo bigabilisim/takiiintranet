@@ -5,6 +5,7 @@ namespace App\Modules\Leave;
 use App\Core\AccessControl;
 use App\Core\Auth;
 use App\Core\IdentityReferenceRewriter;
+use App\Core\LocationScope;
 use App\Core\Session;
 use App\Core\StateStore;
 use App\Core\StateWriteGuard;
@@ -166,6 +167,7 @@ class LeaveStore
             'requester' => $user['name'] ?? 'Unknown',
             'requester_email' => $user['email'] ?? '',
             'department' => $user['department'] ?? 'General',
+            'requester_location' => LocationScope::locationForProfile($user),
             'type_key' => $typeKey,
             'starts_on' => $startsOn,
             'ends_on' => $endsOn,
@@ -491,6 +493,10 @@ class LeaveStore
 
             if ($this->tokenExpired($request, $stage)) {
                 return ['ok' => false, 'message' => 'leave.flash.token_expired', 'request' => $request];
+            }
+
+            if (!$this->assigneeCanViewRequest($request, $stage)) {
+                return ['ok' => false, 'message' => 'leave.flash.not_allowed', 'request' => $request];
             }
 
             $isCancellationDecision = $stage === self::CANCELLATION_STAGE;
@@ -1322,6 +1328,31 @@ class LeaveStore
         return count($matches) === 1 ? trim((string) ($matches[0]['personnel_id'] ?? '')) : '';
     }
 
+    private function requesterProfileForRequest(array $request): array
+    {
+        foreach (['requester_id', 'requester_email'] as $identityKey) {
+            $identity = trim((string) ($request[$identityKey] ?? ''));
+
+            if ($identity === '') {
+                continue;
+            }
+
+            $profile = $this->userProfiles->find($identity);
+
+            if ($profile !== null) {
+                return $profile;
+            }
+        }
+
+        return [
+            'personnel_id' => (string) ($request['requester_id'] ?? ''),
+            'email' => (string) ($request['requester_email'] ?? ''),
+            'name' => (string) ($request['requester'] ?? ''),
+            'department' => (string) ($request['department'] ?? ''),
+            'location' => (string) ($request['requester_location'] ?? ''),
+        ];
+    }
+
     private function personnelIdForUser(array $user): string
     {
         $personnelId = trim((string) ($user['personnel_id'] ?? ''));
@@ -1391,6 +1422,11 @@ class LeaveStore
         }
 
         $user = $auth->user();
+
+        if (!is_array($user) || !LocationScope::canView($user, $this->requesterProfileForRequest($request))) {
+            return false;
+        }
+
         $userEmail = $user['email'] ?? '';
         $policy = $request['approval_policy'] ?? $this->accessControl?->departmentPolicy($request['department'] ?? '') ?? [];
 
@@ -1524,6 +1560,10 @@ class LeaveStore
 
         if ($this->requestBelongsToUser($request, $user)) {
             return true;
+        }
+
+        if (!LocationScope::canView($user, $this->requesterProfileForRequest($request))) {
+            return false;
         }
 
         $userEmail = (string) ($user['email'] ?? '');
@@ -1766,7 +1806,7 @@ class LeaveStore
     {
         $recipient = $this->assigneeEmailForStage($request, $stage);
 
-        if ($recipient === '') {
+        if ($recipient === '' || !$this->assigneeCanViewRequest($request, $stage)) {
             return $request;
         }
 
@@ -2178,7 +2218,7 @@ class LeaveStore
 
         $recipient = $this->assigneeEmailForStage($request, $stage);
 
-        if ($recipient === '') {
+        if ($recipient === '' || !$this->assigneeCanViewRequest($request, $stage)) {
             return [];
         }
 
@@ -2206,6 +2246,27 @@ class LeaveStore
         }
 
         return (string) ($policy[$stage . '_email'] ?? ($stage === 'hr' ? ($policy['hr_email'] ?? '') : ''));
+    }
+
+    private function assigneeCanViewRequest(array $request, string $stage): bool
+    {
+        $recipient = $this->assigneeEmailForStage($request, $stage);
+
+        if ($recipient === '') {
+            return false;
+        }
+
+        $profile = $this->userProfiles->find($recipient);
+
+        if ($profile === null) {
+            return false;
+        }
+
+        if ($this->accessControl !== null) {
+            $profile['permissions'] = $this->accessControl->permissionsFor($recipient);
+        }
+
+        return LocationScope::canView($profile, $this->requesterProfileForRequest($request));
     }
 
     private function absoluteUrl(string $path): string
@@ -2277,6 +2338,7 @@ class LeaveStore
     {
         return array_map(function (array $request): array {
             $request['requester_id'] = $this->requesterPersonnelId($request);
+            $request['requester_location'] = LocationScope::locationForProfile($this->requesterProfileForRequest($request));
             $request['approval_tokens'] = array_merge([
                 'manager_1' => null,
                 'manager_2' => null,

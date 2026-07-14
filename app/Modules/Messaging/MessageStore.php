@@ -2,6 +2,7 @@
 
 namespace App\Modules\Messaging;
 
+use App\Core\LocationScope;
 use App\Core\StateStore;
 
 class MessageStore
@@ -30,6 +31,10 @@ class MessageStore
 
         foreach ($this->users as $email => $user) {
             if ($email === $currentEmail) {
+                continue;
+            }
+
+            if (!$this->canContact($currentEmail, (string) $email)) {
                 continue;
             }
 
@@ -93,15 +98,15 @@ class MessageStore
         $contacts = [];
 
         foreach ($this->pinnedEmails($email) as $pinnedEmail) {
-            $this->addContact($contacts, $pinnedEmail, 'messages.quick.pinned');
+            $this->addContact($contacts, $email, $pinnedEmail, 'messages.quick.pinned');
         }
 
         if (is_string($managerEmail) && $managerEmail !== '') {
-            $this->addContact($contacts, $managerEmail, 'messages.quick.manager');
+            $this->addContact($contacts, $email, $managerEmail, 'messages.quick.manager');
         }
 
         foreach ($this->lastCorrespondents($email, 3) as $recentEmail) {
-            $this->addContact($contacts, $recentEmail, 'messages.quick.recent');
+            $this->addContact($contacts, $email, $recentEmail, 'messages.quick.recent');
         }
 
         return array_values($contacts);
@@ -119,6 +124,10 @@ class MessageStore
             $counterpartEmail = $this->counterpartEmail($message, $email);
 
             if ($counterpartEmail === null || !isset($this->users[$counterpartEmail])) {
+                continue;
+            }
+
+            if (!$this->canContact($email, $counterpartEmail)) {
                 continue;
             }
 
@@ -156,9 +165,13 @@ class MessageStore
         return $conversations;
     }
 
-    public function contact(string $email): ?array
+    public function contact(string $email, ?string $viewerEmail = null): ?array
     {
         if (!isset($this->users[$email])) {
+            return null;
+        }
+
+        if ($viewerEmail !== null && !$this->canContact($viewerEmail, $email)) {
             return null;
         }
 
@@ -172,7 +185,7 @@ class MessageStore
 
     public function threadMessages(string $email, string $counterpartEmail): array
     {
-        if (!isset($this->users[$counterpartEmail]) || $counterpartEmail === $email) {
+        if (!isset($this->users[$counterpartEmail]) || $counterpartEmail === $email || !$this->canContact($email, $counterpartEmail)) {
             return [];
         }
 
@@ -213,7 +226,7 @@ class MessageStore
     {
         $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
 
-        if (!isset($this->users[$counterpartEmail]) || $counterpartEmail === $email) {
+        if (!isset($this->users[$counterpartEmail]) || $counterpartEmail === $email || !$this->canContact($email, $counterpartEmail)) {
             return ['ok' => false, 'message' => 'messages.flash.invalid_pin'];
         }
 
@@ -242,7 +255,11 @@ class MessageStore
         $subject = trim((string) ($input['subject'] ?? ''));
         $body = trim((string) ($input['body'] ?? ''));
 
-        if (!isset($this->users[$toEmail]) || $toEmail === ($sender['email'] ?? '')) {
+        if (
+            !isset($this->users[$toEmail])
+            || $toEmail === ($sender['email'] ?? '')
+            || !LocationScope::canView($sender, $this->directoryProfile($toEmail))
+        ) {
             return ['ok' => false, 'message' => 'messages.flash.invalid_recipient'];
         }
 
@@ -292,6 +309,12 @@ class MessageStore
                 return ['ok' => false, 'message' => 'messages.flash.not_allowed'];
             }
 
+            $counterpartEmail = $this->counterpartEmail($message, $actorEmail);
+
+            if (!$isAdmin && $counterpartEmail !== null && !$this->canContact($actorEmail, $counterpartEmail)) {
+                return ['ok' => false, 'message' => 'messages.flash.not_allowed'];
+            }
+
             $data['messages'][$index]['deleted_at'] = date('Y-m-d H:i');
             $data['messages'][$index]['deleted_by_email'] = $actorEmail;
             $data['messages'][$index]['deleted_by_name'] = (string) ($actor['name'] ?? $actorEmail);
@@ -335,6 +358,12 @@ class MessageStore
                 continue;
             }
 
+            $counterpartEmail = $this->counterpartEmail($message, $email);
+
+            if ($counterpartEmail === null || !$this->canContact($email, $counterpartEmail)) {
+                return ['ok' => false, 'message' => 'messages.flash.not_found'];
+            }
+
             $data['messages'][$index]['read_at'] = $message['read_at'] ?: date('Y-m-d H:i');
             $this->saveData($data);
 
@@ -348,7 +377,7 @@ class MessageStore
     {
         $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
 
-        if (!isset($this->users[$counterpartEmail]) || $counterpartEmail === $email) {
+        if (!isset($this->users[$counterpartEmail]) || $counterpartEmail === $email || !$this->canContact($email, $counterpartEmail)) {
             return ['ok' => false, 'message' => 'messages.flash.not_found'];
         }
 
@@ -439,7 +468,15 @@ class MessageStore
     {
         $messages = array_values(array_filter(
             $this->activeMessages(),
-            fn (array $message): bool => ($message[$field] ?? '') === $email
+            function (array $message) use ($field, $email): bool {
+                if (($message[$field] ?? '') !== $email) {
+                    return false;
+                }
+
+                $counterpartEmail = $this->counterpartEmail($message, $email);
+
+                return $counterpartEmail !== null && $this->canContact($email, $counterpartEmail);
+            }
         ));
 
         $messages = array_map(function (array $message) use ($email): array {
@@ -559,6 +596,10 @@ class MessageStore
                 continue;
             }
 
+            if (!$this->canContact($email, $counterpartEmail)) {
+                continue;
+            }
+
             if (!isset($latest[$counterpartEmail]) || strcmp($message['created_at'], $latest[$counterpartEmail]) > 0) {
                 $latest[$counterpartEmail] = $message['created_at'];
             }
@@ -569,9 +610,9 @@ class MessageStore
         return array_slice(array_keys($latest), 0, $limit);
     }
 
-    private function addContact(array &$contacts, string $email, string $reasonKey): void
+    private function addContact(array &$contacts, string $viewerEmail, string $email, string $reasonKey): void
     {
-        if (!isset($this->users[$email]) || isset($contacts[$email])) {
+        if (!isset($this->users[$email]) || isset($contacts[$email]) || !$this->canContact($viewerEmail, $email)) {
             return;
         }
 
@@ -608,5 +649,33 @@ class MessageStore
     private function isDeleted(array $message): bool
     {
         return !empty($message['deleted_at']);
+    }
+
+    private function canContact(string $viewerEmail, string $targetEmail): bool
+    {
+        if ($viewerEmail === '' || $targetEmail === '' || $viewerEmail === $targetEmail) {
+            return false;
+        }
+
+        if (!isset($this->users[$viewerEmail], $this->users[$targetEmail])) {
+            return false;
+        }
+
+        return LocationScope::canView(
+            $this->directoryProfile($viewerEmail),
+            $this->directoryProfile($targetEmail)
+        );
+    }
+
+    private function directoryProfile(string $identity): array
+    {
+        $profile = is_array($this->users[$identity] ?? null) ? $this->users[$identity] : [];
+        $profile['profile_key'] = (string) ($profile['profile_key'] ?? $identity);
+
+        if (!array_key_exists('email', $profile) && filter_var($identity, FILTER_VALIDATE_EMAIL)) {
+            $profile['email'] = $identity;
+        }
+
+        return $profile;
     }
 }

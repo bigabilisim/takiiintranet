@@ -63,10 +63,15 @@ class AccessControl
 
     public function users(): array
     {
+        return array_values($this->usersByIdentity());
+    }
+
+    public function usersByIdentity(): array
+    {
         $users = [];
 
         foreach ($this->demoUsers as $email => $user) {
-            $users[] = array_merge($user, [
+            $users[$email] = array_merge($user, [
                 'email' => $email,
                 'name' => $user['name'],
                 'role' => $user['role'],

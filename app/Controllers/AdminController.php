@@ -6,6 +6,7 @@ use App\Core\AccessControl;
 use App\Core\AuditLogStore;
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\LocationScope;
 use App\Core\Request;
 use App\Core\ReleaseNoteStore;
 use App\Core\Response;
@@ -54,6 +55,7 @@ class AdminController
             'departmentChildCounts' => $this->accessControl->departmentChildCounts(),
             'departmentUserCounts' => $this->accessControl->departmentUserCounts(),
             'departmentPolicies' => $this->accessControl->departmentPolicies(),
+            'locationOptions' => LocationScope::options(),
             'auditLogs' => $this->auditLog->recent(12),
         ]));
     }

@@ -6,6 +6,7 @@ use App\Core\AccessControl;
 use App\Core\AuditLogStore;
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\LocationScope;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
@@ -44,6 +45,7 @@ class PersonnelController
             'personnel' => $personnel,
             'departments' => $this->visibleDepartmentNames(),
             'departmentOptions' => $this->visibleDepartmentOptions(),
+            'locationOptions' => LocationScope::visibleOptions($this->auth->user() ?? []),
             'canWritePersonnel' => $this->auth->can('personnel.write'),
             'canDeletePersonnel' => $this->auth->can('personnel.delete'),
             'canExportPersonnel' => $this->canExport(),
@@ -64,11 +66,12 @@ class PersonnelController
             return new Response($this->view->render('errors/404', ['title' => '404']), 404);
         }
 
+        $profiles = $this->sortedProfiles();
         $this->auditLog->record($this->auth->user() ?? [], 'personnel.exported', 'personnel', 'csv', [
-            'record_count' => (string) count($this->userProfiles->users()),
+            'record_count' => (string) count($profiles),
         ]);
 
-        return new Response($this->userProfiles->exportProfilesCsv(), 200, [
+        return new Response($this->userProfiles->exportProfilesCsv($profiles), 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="personnel-export-' . date('Ymd-His') . '.csv"',
             'Cache-Control' => 'no-store',
@@ -85,7 +88,8 @@ class PersonnelController
             return new Response($this->view->render('errors/404', ['title' => '404']), 404);
         }
 
-        $content = $this->userProfiles->exportProfilesXlsx();
+        $profiles = $this->sortedProfiles();
+        $content = $this->userProfiles->exportProfilesXlsx($profiles);
 
         if ($content === '') {
             Session::flash('error', 'personnel.flash.export_failed');
@@ -94,7 +98,7 @@ class PersonnelController
         }
 
         $this->auditLog->record($this->auth->user() ?? [], 'personnel.exported', 'personnel', 'xlsx', [
-            'record_count' => (string) count($this->userProfiles->users()),
+            'record_count' => (string) count($profiles),
         ]);
 
         return new Response($content, 200, [
@@ -111,6 +115,12 @@ class PersonnelController
         }
 
         if (!$this->canUseDepartment((string) $request->input('department', ''))) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
+
+        if (!$this->canUseLocation((string) $request->input('location', ''))) {
             Session::flash('error', 'personnel.flash.not_allowed');
 
             return Response::redirect('/module/personnel');
@@ -149,6 +159,12 @@ class PersonnelController
         }
 
         if (!$this->canUseDepartment((string) $request->input('department', (string) ($before['department'] ?? '')))) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
+
+        if (!$this->canUseLocation((string) $request->input('location', (string) ($before['location'] ?? '')))) {
             Session::flash('error', 'personnel.flash.not_allowed');
 
             return Response::redirect('/module/personnel');
@@ -284,6 +300,10 @@ class PersonnelController
             return true;
         }
 
+        if (!LocationScope::canView($viewer, $profile)) {
+            return false;
+        }
+
         $viewerDepartment = (string) ($viewer['department'] ?? '');
         $profileDepartment = (string) ($profile['department'] ?? '');
 
@@ -348,6 +368,19 @@ class PersonnelController
         }
 
         return in_array($department, $this->visibleDepartmentNames(), true);
+    }
+
+    private function canUseLocation(string $location): bool
+    {
+        $viewer = $this->auth->user() ?? [];
+
+        if (LocationScope::hasGlobalVisibility($viewer)) {
+            return true;
+        }
+
+        $location = LocationScope::normalize($location);
+
+        return $location !== '' && $location === LocationScope::locationForProfile($viewer);
     }
 
     private function personnelGroupCounts(array $profiles): array
@@ -445,7 +478,7 @@ class PersonnelController
         $emails = [];
 
         foreach ($this->userProfiles->users() as $email => $profile) {
-            if ($this->userProfiles->canDeleteProfile((string) $email)) {
+            if ($this->canViewProfile($profile) && $this->userProfiles->canDeleteProfile((string) $email)) {
                 $emails[$email] = true;
             }
         }

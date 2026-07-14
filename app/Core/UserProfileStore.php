@@ -4,7 +4,7 @@ namespace App\Core;
 
 class UserProfileStore
 {
-    private const VERSION = 2;
+    private const VERSION = 3;
     private const STATE_KEY = 'user_profiles';
     private const NO_EMAIL_KEY_PREFIX = 'no-email-';
     private const CSV_COLUMNS = [
@@ -14,6 +14,7 @@ class UserProfileStore
         'last_name',
         'role',
         'department',
+        'location',
         'pdks_id',
         'started_on',
         'employment_type',
@@ -256,6 +257,14 @@ class UserProfileStore
         $lastName = $this->cleanText((string) ($input['last_name'] ?? ''), 80);
         $role = $this->cleanText((string) ($input['role'] ?? ''), 100);
         $department = $this->cleanText((string) ($input['department'] ?? ''), 100);
+        $location = LocationScope::normalize((string) ($input['location'] ?? ''));
+
+        if ($location === '') {
+            $location = LocationScope::locationForProfile([
+                'department' => $department,
+                'shift_key' => (string) ($input['shift_key'] ?? ''),
+            ]);
+        }
 
         if ($firstName === '' || $lastName === '' || $role === '' || $department === '') {
             return ['ok' => false, 'message' => 'admin.flash.user_profile_invalid'];
@@ -275,6 +284,7 @@ class UserProfileStore
             'name' => trim($firstName . ' ' . $lastName),
             'role' => $role,
             'department' => $department,
+            'location' => $location,
             'pdks_id' => $this->cleanText((string) ($input['pdks_id'] ?? ''), 80),
             'started_on' => $this->cleanDate((string) ($input['started_on'] ?? '')),
             'employment_type' => $this->cleanChoice((string) ($input['employment_type'] ?? 'full_time'), ['full_time', 'part_time', 'contractor', 'intern']) ?: 'full_time',
@@ -358,6 +368,16 @@ class UserProfileStore
         $lastName = $this->cleanText((string) ($input['last_name'] ?? ''), 80);
         $role = $this->cleanText((string) ($input['role'] ?? ''), 100);
         $department = $this->cleanText((string) ($input['department'] ?? ''), 100);
+        $location = array_key_exists('location', $input)
+            ? LocationScope::normalize((string) $input['location'])
+            : LocationScope::locationForProfile($profile);
+
+        if ($location === '') {
+            $location = LocationScope::locationForProfile([
+                'department' => $department,
+                'shift_key' => (string) ($input['shift_key'] ?? ($profile['shift_key'] ?? '')),
+            ]);
+        }
 
         if ($firstName === '' || $lastName === '' || $role === '' || $department === '') {
             return ['ok' => false, 'message' => 'admin.flash.user_profile_invalid'];
@@ -385,6 +405,7 @@ class UserProfileStore
             'name' => trim($firstName . ' ' . $lastName),
             'role' => $role,
             'department' => $department,
+            'location' => $location,
             'pdks_id' => $this->cleanText((string) ($input['pdks_id'] ?? ''), 80),
             'started_on' => $startedOn,
             'employment_type' => $this->cleanChoice((string) ($input['employment_type'] ?? ''), ['full_time', 'part_time', 'contractor', 'intern']),
@@ -476,7 +497,7 @@ class UserProfileStore
         return ['ok' => true, 'message' => 'personnel.flash.deleted'];
     }
 
-    public function exportProfilesCsv(): string
+    public function exportProfilesCsv(?array $profiles = null): string
     {
         $handle = fopen('php://temp', 'r+');
 
@@ -486,7 +507,7 @@ class UserProfileStore
 
         fputcsv($handle, self::CSV_COLUMNS, ',', '"', '');
 
-        foreach ($this->users() as $profile) {
+        foreach ($profiles ?? $this->users() as $profile) {
             $row = [];
 
             foreach (self::CSV_COLUMNS as $column) {
@@ -503,7 +524,7 @@ class UserProfileStore
         return "\xEF\xBB\xBF" . $csv;
     }
 
-    public function exportProfilesXlsx(): string
+    public function exportProfilesXlsx(?array $profiles = null): string
     {
         if (!class_exists(\ZipArchive::class)) {
             return '';
@@ -528,7 +549,7 @@ class UserProfileStore
         $zip->addFromString('xl/workbook.xml', $this->xlsxWorkbook());
         $zip->addFromString('xl/_rels/workbook.xml.rels', $this->xlsxWorkbookRelationships());
         $zip->addFromString('xl/styles.xml', $this->xlsxStyles());
-        $zip->addFromString('xl/worksheets/sheet1.xml', $this->xlsxSheet());
+        $zip->addFromString('xl/worksheets/sheet1.xml', $this->xlsxSheet($profiles ?? $this->users()));
         $zip->close();
 
         $content = (string) file_get_contents($path);
@@ -620,6 +641,16 @@ class UserProfileStore
             $lastName = $this->importText($record, 'last_name', $profile, 80, $nameParts['last_name']);
             $role = $this->importText($record, 'role', $profile, 100);
             $department = $this->importText($record, 'department', $profile, 100);
+            $location = array_key_exists('location', $record)
+                ? LocationScope::normalize((string) ($record['location'] ?? ''))
+                : LocationScope::locationForProfile($profile);
+
+            if ($location === '') {
+                $location = LocationScope::locationForProfile([
+                    'department' => $department,
+                    'shift_key' => (string) ($record['shift_key'] ?? ($profile['shift_key'] ?? '')),
+                ]);
+            }
 
             if ($firstName === '' || $lastName === '' || $role === '' || $department === '') {
                 $skipped++;
@@ -633,6 +664,7 @@ class UserProfileStore
                 'name' => trim($firstName . ' ' . $lastName),
                 'role' => $role,
                 'department' => $department,
+                'location' => $location,
                 'pdks_id' => $this->importText($record, 'pdks_id', $profile, 80),
                 'started_on' => $this->importDate($record, 'started_on', $profile),
                 'employment_type' => $this->importChoice($record, 'employment_type', $profile, ['full_time', 'part_time', 'contractor', 'intern']),
@@ -789,6 +821,7 @@ class UserProfileStore
             'name' => (string) ($baseUser['name'] ?? $email),
             'role' => (string) ($baseUser['role'] ?? ''),
             'department' => (string) ($baseUser['department'] ?? ''),
+            'location' => '',
             'pdks_id' => '',
             'started_on' => (string) ($baseUser['started_on'] ?? ''),
             'employment_type' => 'full_time',
@@ -824,6 +857,7 @@ class UserProfileStore
         }
 
         $profile['email'] = $emailValue;
+        $profile['location'] = LocationScope::locationForProfile($profile);
         $profile['permissions'] = $baseUser['permissions'] ?? [];
         $profile['password'] = (string) ($baseUser['password'] ?? '');
 
@@ -866,6 +900,7 @@ class UserProfileStore
             'name' => (string) ($profile['name'] ?? ''),
             'role' => (string) ($profile['role'] ?? ''),
             'department' => (string) ($profile['department'] ?? ''),
+            'location' => LocationScope::locationForProfile($profile),
             'started_on' => (string) ($profile['started_on'] ?? ''),
             'birth_date' => (string) ($profile['birth_date'] ?? ''),
             'leave_opening_total_days' => (float) ($profile['leave_opening_total_days'] ?? 0),
@@ -916,6 +951,9 @@ class UserProfileStore
             'gorev' => 'role',
             'departman' => 'department',
             'bolum' => 'department',
+            'lokasyon' => 'location',
+            'location' => 'location',
+            'tesis' => 'location',
             'pdks' => 'pdks_id',
             'pdks_id' => 'pdks_id',
             'pdksid' => 'pdks_id',
@@ -1037,11 +1075,11 @@ class UserProfileStore
         return $value !== '' ? $this->cleanChoice($value, $choices) : (string) ($profile[$column] ?? '');
     }
 
-    private function xlsxSheet(): string
+    private function xlsxSheet(array $profiles): string
     {
         $rows = [self::CSV_COLUMNS];
 
-        foreach ($this->users() as $profile) {
+        foreach ($profiles as $profile) {
             $row = [];
 
             foreach (self::CSV_COLUMNS as $column) {

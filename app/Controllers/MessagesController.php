@@ -46,7 +46,7 @@ class MessagesController
             $selectedRecipient = '';
         }
 
-        if ($selectedRecipient !== '' && $this->messageStore->contact($selectedRecipient) === null) {
+        if ($selectedRecipient !== '' && $this->messageStore->contact($selectedRecipient, $email) === null) {
             $selectedRecipient = '';
         }
 
@@ -62,7 +62,7 @@ class MessagesController
             'recipients' => $this->messageStore->recipients($email),
             'quickContacts' => $quickContacts,
             'conversations' => $conversations,
-            'activeContact' => $selectedRecipient !== '' ? $this->messageStore->contact($selectedRecipient) : null,
+            'activeContact' => $selectedRecipient !== '' ? $this->messageStore->contact($selectedRecipient, $email) : null,
             'threadMessages' => $selectedRecipient !== '' ? $this->messageStore->threadMessages($email, $selectedRecipient) : [],
             'replySubject' => $selectedRecipient !== '' ? $this->messageStore->replySubject($email, $selectedRecipient) : '',
             'inbox' => $this->messageStore->inbox($email),

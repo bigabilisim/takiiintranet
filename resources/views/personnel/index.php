@@ -53,6 +53,7 @@ $departmentSelectOptions = static function (string $currentDepartment) use ($dep
 
     return $options;
 };
+$locationOptions = is_array($locationOptions ?? null) ? $locationOptions : [];
 $shiftTemplates = is_array($shiftTemplates ?? null) ? $shiftTemplates : [];
 $shiftOptions = is_array($shiftOptions ?? null) ? $shiftOptions : [];
 $shiftOptionKeys = array_map(static fn (array $shiftOption): string => (string) ($shiftOption['key'] ?? ''), $shiftOptions);
@@ -163,6 +164,17 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                                 <?php $departmentOptionName = (string) ($departmentOption['name'] ?? ''); ?>
                                 <option value="<?= htmlspecialchars($departmentOptionName, ENT_QUOTES, 'UTF-8') ?>">
                                     <?= htmlspecialchars((string) ($departmentOption['label'] ?? $departmentOptionName), ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>
+                        <span><?= htmlspecialchars($t('admin.profile.location'), ENT_QUOTES, 'UTF-8') ?></span>
+                        <select name="location" required>
+                            <option value=""><?= htmlspecialchars($t('admin.not_specified'), ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php foreach ($locationOptions as $locationKey => $locationLabelKey): ?>
+                                <option value="<?= htmlspecialchars((string) $locationKey, ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars($t((string) $locationLabelKey), ENT_QUOTES, 'UTF-8') ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -344,6 +356,8 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                 $profileGroupLabel = $t($personnelGroupLabel($profileGroup));
                 $profileShiftKey = (string) ($profile['shift_key'] ?? '');
                 $profileShiftLabel = $shiftLabel($profileShiftKey);
+                $profileLocation = (string) ($profile['location'] ?? '');
+                $profileLocationLabel = $profileLocation !== '' ? $t('location.' . $profileLocation) : $t('admin.not_specified');
                 $profileWorkforceRoles = is_array($profile['workforce_roles'] ?? null)
                     ? array_values(array_intersect(array_keys($workforceAssignments), $profile['workforce_roles']))
                     : [];
@@ -361,6 +375,7 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                     (string) ($profile['first_name'] ?? ''),
                     (string) ($profile['last_name'] ?? ''),
                     (string) ($profile['department'] ?? ''),
+                    $profileLocationLabel,
                     (string) ($profile['role'] ?? ''),
                     $profileShiftLabel,
                     (string) ($profile['pdks_id'] ?? ''),
@@ -398,7 +413,10 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                             </span>
                         <?php endif; ?>
                     </span>
-                    <span><?= htmlspecialchars((string) ($profile['department'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                    <span>
+                        <?= htmlspecialchars((string) ($profile['department'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                        <small><?= htmlspecialchars($profileLocationLabel, ENT_QUOTES, 'UTF-8') ?></small>
+                    </span>
                     <span><?= htmlspecialchars((string) ($profile['role'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                     <span><?= htmlspecialchars($profileShiftLabel, ENT_QUOTES, 'UTF-8') ?></span>
                     <span><?= htmlspecialchars((string) ($profile['pdks_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
@@ -435,6 +453,16 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                                         <?php $departmentOptionName = (string) ($departmentOption['name'] ?? ''); ?>
                                         <option value="<?= htmlspecialchars($departmentOptionName, ENT_QUOTES, 'UTF-8') ?>" <?= ($profile['department'] ?? '') === $departmentOptionName ? 'selected' : '' ?>>
                                             <?= htmlspecialchars((string) ($departmentOption['label'] ?? $departmentOptionName), ENT_QUOTES, 'UTF-8') ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                            <label>
+                                <span><?= htmlspecialchars($t('admin.profile.location'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <select name="location" required>
+                                    <?php foreach ($locationOptions as $locationKey => $locationLabelKey): ?>
+                                        <option value="<?= htmlspecialchars((string) $locationKey, ENT_QUOTES, 'UTF-8') ?>" <?= $profileLocation === (string) $locationKey ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($t((string) $locationLabelKey), ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>

@@ -97,7 +97,7 @@ final class UserIdentityMigrationService
             $newProfileKey = (string) ($result['new_profile_key'] ?? $result['profile_key'] ?? $oldProfileKey);
             $directoryUsers = $this->userProfiles->users();
             $this->accessControl->replaceDirectoryUsers($directoryUsers);
-            $this->messageStore->replaceDirectoryUsers($directoryUsers);
+            $this->messageStore->replaceDirectoryUsers($this->accessControl->usersByIdentity());
 
             if (!empty($result['identity_migrated'])) {
                 $this->userProfiles->syncSessionAfterProfileUpdate($oldProfileKey, $newProfileKey);

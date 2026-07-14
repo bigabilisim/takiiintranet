@@ -21,6 +21,7 @@ tasarlanmistir.
 - **Guvenli izin sahipligi:** Izinler ve bakiyeler, ad-soyad veya e-posta degisse de korunan sabit personel kimligiyle eslestirilir.
 - **Tatil ve nobet takvimi:** Turkiye resmi tatilleri, yarim gunler, sirket tatilleri ve tarih bazli aylik ozel nobet planlari izin hesabina katilir.
 - **Takvim gizliligi:** Takvim olaylari onay tarihcesi, karar veren kisi, red nedeni, talep notu veya onay akisi tasimaz; bu bilgiler yalnizca kisinin kendi tarihcesinde ve yetkili islem ekranlarinda kalir.
+- **Lokasyon gorunurlugu:** Antalya ve Bursa personeli yalnizca kendi lokasyonundaki personel, izin, mesaj ve shift kayitlarini gorur; Admin, IK yoneticisi ve IK asistanlari iki lokasyona da erisir.
 - **Mail ile izin onayi:** Yoneticilere 96 saatlik token linki ile approve/reject akisi.
 - **Admin yetki merkezi:** Tum modulleri ve surec yetkilerini kisi bazinda acma/kapama; departman izin semasi tanimlama.
 - **Ic mesajlasma:** Konusma thread'i, hizli kisiler, pinleme, okundu takibi, menu bildirimi.

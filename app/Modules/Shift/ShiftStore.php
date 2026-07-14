@@ -2,6 +2,7 @@
 
 namespace App\Modules\Shift;
 
+use App\Core\LocationScope;
 use App\Core\StateStore;
 use App\Core\UserProfileStore;
 use DateTimeImmutable;
@@ -145,10 +146,17 @@ class ShiftStore
         return ['ok' => true, 'message' => 'shift.flash.deleted'];
     }
 
-    public function personnel(): array
+    public function personnel(?array $viewer = null): array
     {
         $templates = $this->templateMap();
         $personnel = array_values($this->userProfiles->users());
+
+        if (is_array($viewer)) {
+            $personnel = array_values(array_filter(
+                $personnel,
+                static fn (array $profile): bool => LocationScope::canView($viewer, $profile)
+            ));
+        }
 
         foreach ($personnel as &$profile) {
             $shiftKey = (string) ($profile['shift_key'] ?? '');
@@ -163,10 +171,10 @@ class ShiftStore
         return $personnel;
     }
 
-    public function weekendDutyPersonnel(): array
+    public function weekendDutyPersonnel(?array $viewer = null): array
     {
         return array_values(array_filter(
-            $this->personnel(),
+            $this->personnel($viewer),
             fn (array $profile): bool => $this->isWeekendDutyProfile($profile)
         ));
     }
@@ -285,11 +293,19 @@ class ShiftStore
         return in_array($this->dayKey($day), $workingDays, true);
     }
 
-    public function weekendPlans(): array
+    public function weekendPlans(?array $viewer = null): array
     {
         $plans = array_values($this->data()['weekend_plans'] ?? []);
         $templates = $this->templateMap();
         $users = $this->userProfiles->users();
+
+        if (is_array($viewer)) {
+            $plans = array_values(array_filter($plans, function (array $plan) use ($users, $viewer): bool {
+                $profile = $users[(string) ($plan['profile_key'] ?? '')] ?? null;
+
+                return is_array($profile) && LocationScope::canView($viewer, $profile);
+            }));
+        }
 
         foreach ($plans as &$plan) {
             $profileKey = (string) ($plan['profile_key'] ?? '');
@@ -316,7 +332,7 @@ class ShiftStore
         return $plans;
     }
 
-    public function saveWeekendPlan(array $input): array
+    public function saveWeekendPlan(array $input, ?array $viewer = null): array
     {
         $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath(), $this->emptyData());
         $month = $this->cleanMonth((string) ($input['month'] ?? ''));
@@ -336,6 +352,10 @@ class ShiftStore
 
         if (!is_array($users[$profileKey] ?? null)) {
             return ['ok' => false, 'message' => 'shift.flash.personnel_required'];
+        }
+
+        if (is_array($viewer) && !LocationScope::canView($viewer, $users[$profileKey])) {
+            return ['ok' => false, 'message' => 'shift.flash.not_allowed'];
         }
 
         if (!$this->isWeekendDutyProfile($users[$profileKey])) {
@@ -375,7 +395,7 @@ class ShiftStore
         ];
     }
 
-    public function deleteWeekendPlan(string $key): array
+    public function deleteWeekendPlan(string $key, ?array $viewer = null): array
     {
         $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath(), $this->emptyData());
         $key = $this->cleanKey($key);
@@ -384,6 +404,13 @@ class ShiftStore
 
         if ($key === '' || !isset($data['weekend_plans'][$key])) {
             return ['ok' => false, 'message' => 'shift.flash.weekend_plan_not_found'];
+        }
+
+        $profileKey = (string) ($data['weekend_plans'][$key]['profile_key'] ?? '');
+        $profile = $this->userProfiles->find($profileKey);
+
+        if (is_array($viewer) && (!is_array($profile) || !LocationScope::canView($viewer, $profile))) {
+            return ['ok' => false, 'message' => 'shift.flash.not_allowed'];
         }
 
         unset($data['weekend_plans'][$key]);
@@ -434,7 +461,7 @@ class ShiftStore
         return $migrated;
     }
 
-    public function assignToProfiles(string $shiftKey, array $profileKeys, bool $allProfiles): array
+    public function assignToProfiles(string $shiftKey, array $profileKeys, bool $allProfiles, ?array $viewer = null): array
     {
         $shiftKey = $this->cleanKey($shiftKey);
 
@@ -446,14 +473,27 @@ class ShiftStore
             }
         }
 
+        $users = $this->userProfiles->users();
+
         if ($allProfiles) {
-            $profileKeys = array_keys($this->userProfiles->users());
+            $profileKeys = array_keys(array_filter(
+                $users,
+                static fn (array $profile): bool => !is_array($viewer) || LocationScope::canView($viewer, $profile)
+            ));
         }
 
         $profileKeys = array_values(array_unique(array_filter(array_map('strval', $profileKeys))));
 
         if ($profileKeys === []) {
             return ['ok' => false, 'message' => 'shift.flash.personnel_required'];
+        }
+
+        foreach ($profileKeys as $profileKey) {
+            $profile = $users[$profileKey] ?? null;
+
+            if (!is_array($profile) || (is_array($viewer) && !LocationScope::canView($viewer, $profile))) {
+                return ['ok' => false, 'message' => 'shift.flash.not_allowed'];
+            }
         }
 
         if ($shiftKey !== '') {

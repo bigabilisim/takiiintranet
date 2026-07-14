@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.74.0';
+    private const CURRENT_RELEASE = 'v0.75.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,20 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.75.0',
+                'title' => 'Antalya ve Bursa lokasyon gorunurlugu ayrildi',
+                'released_at' => '2026-07-14 11:06',
+                'status' => 'completed',
+                'changes' => [
+                    'Personel profillerine acik lokasyon alani eklendi; mevcut 81 kayit departman ve shift bilgileriyle kayipsiz olarak Antalya veya Bursa lokasyonuna eslendi.',
+                    'Normal kullanicilarin personel listesi ve Excel/CSV disari aktarmasi yalnizca kendi lokasyonlariyla sinirlandirildi.',
+                    'Izin takvimi, bekleyen onaylar, platform aksiyonlari ve 96 saatlik mail tokenlari karsi lokasyondaki personeli gostermeyecek veya onaylamayacak sekilde sunucu tarafinda korundu.',
+                    'Mesaj alicilari, konusmalar, hizli kisiler ve yeni mesaj gonderimi lokasyon politikasina baglandi; eski mesajlar silinmeden yetkisiz gorunumden kaldirildi.',
+                    'Shift personel listesi, aylik nobet planlari ve atama islemleri lokasyon kapsaminda sinirlandirildi.',
+                    'Admin, IK yoneticisi ve IK asistanlari iki lokasyonu da gormeye devam edecek sekilde merkezi istisna tanimlandi ve otomatik regresyon testleri eklendi.',
+                ],
+            ],
             [
                 'version' => 'v0.74.0',
                 'title' => 'Giris ekranindaki sabit kullanici adi kaldirildi',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kanso-intranet-v27';
+const CACHE_NAME = 'kanso-intranet-v28';
 const STATIC_ASSETS = [
   '/offline.html',
   '/assets/app.css',

@@ -26,6 +26,8 @@ class Auth
             'name' => $user['name'],
             'role' => $user['role'],
             'department' => $user['department'],
+            'location' => LocationScope::locationForProfile($user),
+            'workforce_roles' => is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [],
             'started_on' => $user['started_on'] ?? null,
             'birth_date' => $user['birth_date'] ?? null,
             'leave_opening_total_days' => $user['leave_opening_total_days'] ?? 0,
@@ -60,6 +62,10 @@ class Auth
             $user['name'] = $sourceUser['name'] ?? $user['name'] ?? '';
             $user['role'] = $sourceUser['role'] ?? $user['role'] ?? '';
             $user['department'] = $sourceUser['department'] ?? $user['department'] ?? '';
+            $user['location'] = LocationScope::locationForProfile($sourceUser !== [] ? $sourceUser : $user);
+            $user['workforce_roles'] = is_array($sourceUser['workforce_roles'] ?? null)
+                ? $sourceUser['workforce_roles']
+                : (is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : []);
             $user['started_on'] = $sourceUser['started_on'] ?? $user['started_on'] ?? null;
             $user['birth_date'] = $sourceUser['birth_date'] ?? $user['birth_date'] ?? null;
             $user['leave_opening_total_days'] = $sourceUser['leave_opening_total_days'] ?? $user['leave_opening_total_days'] ?? 0;
