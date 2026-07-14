@@ -28,6 +28,8 @@ $canCancelLeave = $auth->can('admin.company.manage') || $auth->can('leave.reques
 $approvalStageOrder = ['manager_1', 'manager_2', 'hr', 'calendar'];
 $leaveTypeOptions = ['leave.type.annual', 'leave.type.excuse', 'leave.type.remote'];
 $dayPartOptions = ['full', 'morning', 'afternoon'];
+$entitlementBands = is_array($entitlementPolicy['bands'] ?? null) ? $entitlementPolicy['bands'] : [];
+$ageMinimumEntitlement = is_array($entitlementPolicy['age_minimum'] ?? null) ? $entitlementPolicy['age_minimum'] : [];
 $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDateRange): string {
     $attributes = [
         'type' => 'button',
@@ -244,9 +246,35 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
             </div>
         </div>
         <div class="leave-balance-grid" aria-label="<?= htmlspecialchars($t('leave.balance_title'), ENT_QUOTES, 'UTF-8') ?>">
-            <div>
-                <span><?= htmlspecialchars($t('leave.balance.allowance'), ENT_QUOTES, 'UTF-8') ?></span>
-                <strong><?= htmlspecialchars($formatDays($leaveBalance['allowance_days']), ENT_QUOTES, 'UTF-8') ?></strong>
+            <div class="leave-balance-entitlement" data-leave-entitlement-rules>
+                <button
+                    class="leave-balance-trigger"
+                    type="button"
+                    data-leave-entitlement-rules-trigger
+                    aria-expanded="false"
+                    aria-controls="leave-entitlement-policy"
+                    aria-label="<?= htmlspecialchars($t('leave.balance.allowance') . ': ' . $formatDays($leaveBalance['allowance_days']) . '. ' . $t('leave.entitlement.policy_title'), ENT_QUOTES, 'UTF-8') ?>"
+                >
+                    <span><?= htmlspecialchars($t('leave.balance.allowance'), ENT_QUOTES, 'UTF-8') ?></span>
+                    <strong><?= htmlspecialchars($formatDays($leaveBalance['allowance_days']), ENT_QUOTES, 'UTF-8') ?></strong>
+                </button>
+                <aside class="leave-entitlement-popover" id="leave-entitlement-policy" role="tooltip">
+                    <p><?= htmlspecialchars($t('leave.entitlement.policy_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                    <ul>
+                        <?php foreach ($entitlementBands as $band): ?>
+                            <li>
+                                <span><?= htmlspecialchars($t((string) ($band['label_key'] ?? '')), ENT_QUOTES, 'UTF-8') ?></span>
+                                <strong><?= htmlspecialchars($t('leave.entitlement.days_value', ['days' => (int) ($band['days'] ?? 0)]), ENT_QUOTES, 'UTF-8') ?></strong>
+                            </li>
+                        <?php endforeach; ?>
+                        <?php if ($ageMinimumEntitlement !== []): ?>
+                            <li class="is-exception">
+                                <span><?= htmlspecialchars($t((string) ($ageMinimumEntitlement['label_key'] ?? '')), ENT_QUOTES, 'UTF-8') ?></span>
+                                <strong><?= htmlspecialchars($t('leave.entitlement.minimum_days_value', ['days' => (int) ($ageMinimumEntitlement['days'] ?? 0)]), ENT_QUOTES, 'UTF-8') ?></strong>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </aside>
             </div>
             <div>
                 <span><?= htmlspecialchars($t('leave.balance.used'), ENT_QUOTES, 'UTF-8') ?></span>
@@ -274,23 +302,6 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                 <?php if (($leaveBalance['opening_snapshot_date'] ?? '') !== '' || ($leaveBalance['opening_source'] ?? '') !== ''): ?>
                     <small><?= htmlspecialchars(trim(($leaveBalance['opening_source'] ?? '') . ' / ' . ($leaveBalance['opening_snapshot_date'] ?? ''), ' /'), ENT_QUOTES, 'UTF-8') ?></small>
                 <?php endif; ?>
-            </div>
-        <?php endif; ?>
-        <?php if (!empty($leaveBalance['ledger'])): ?>
-            <div class="leave-ledger">
-                <div class="leave-ledger-head">
-                    <span><?= htmlspecialchars($t('leave.entitlement.ledger_title'), ENT_QUOTES, 'UTF-8') ?></span>
-                    <strong><?= htmlspecialchars($t('leave.entitlement.current_days', ['days' => $formatDays($leaveBalance['current_entitlement_days'] ?? 0)]), ENT_QUOTES, 'UTF-8') ?></strong>
-                </div>
-                <div class="leave-ledger-list">
-                    <?php foreach ($leaveBalance['ledger'] as $entry): ?>
-                        <div class="leave-ledger-row">
-                            <span><?= htmlspecialchars($t('leave.entitlement.ledger_year', ['year' => $entry['service_year']]), ENT_QUOTES, 'UTF-8') ?></span>
-                            <strong><?= htmlspecialchars($formatDays($entry['days']) . ' ' . $t('leave.days'), ENT_QUOTES, 'UTF-8') ?></strong>
-                            <small><?= htmlspecialchars((string) $entry['date'] . ' / ' . $t((string) $entry['rule_key']), ENT_QUOTES, 'UTF-8') ?></small>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
             </div>
         <?php endif; ?>
         <div class="section-title">

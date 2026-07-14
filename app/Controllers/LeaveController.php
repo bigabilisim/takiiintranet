@@ -42,6 +42,7 @@ class LeaveController
         return new Response($this->view->render('leave/index', [
             'title' => 'module.leave.title',
             'leaveBalance' => $this->leaveStore->balanceForUser($user),
+            'entitlementPolicy' => $this->leaveStore->entitlementPolicy(),
             'upcomingEntitlement' => $this->leaveStore->upcomingEntitlementForUser($user),
             'departmentPolicy' => $this->leaveStore->policyForDepartment($user['department'] ?? ''),
             'approvalQueue' => $this->leaveStore->pendingApprovalsFor($this->auth),

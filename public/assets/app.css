@@ -1807,7 +1807,7 @@ th {
     gap: 10px;
 }
 
-.leave-balance-grid div {
+.leave-balance-grid > div {
     min-width: 0;
     padding: 12px;
     border: 1px solid var(--line);
@@ -1815,39 +1815,39 @@ th {
     background: #f7f8f5;
 }
 
-.leave-balance-grid div:nth-child(1) {
+.leave-balance-grid > div:nth-child(1) {
     border-color: #b8c6e8;
     background: #eef3ff;
 }
 
-.leave-balance-grid div:nth-child(1) strong {
+.leave-balance-grid > div:nth-child(1) .leave-balance-trigger strong {
     color: #36558f;
 }
 
-.leave-balance-grid div:nth-child(2) {
+.leave-balance-grid > div:nth-child(2) {
     border-color: #e4bbb0;
     background: #fff2ed;
 }
 
-.leave-balance-grid div:nth-child(2) strong {
+.leave-balance-grid > div:nth-child(2) > strong {
     color: #8a341f;
 }
 
-.leave-balance-grid div:nth-child(3) {
+.leave-balance-grid > div:nth-child(3) {
     border-color: #e5c58b;
     background: #fff7e8;
 }
 
-.leave-balance-grid div:nth-child(3) strong {
+.leave-balance-grid > div:nth-child(3) > strong {
     color: #7a4a10;
 }
 
-.leave-balance-grid div:nth-child(4) {
+.leave-balance-grid > div:nth-child(4) {
     border-color: #9bc4ac;
     background: #eff8f1;
 }
 
-.leave-balance-grid div:nth-child(4) strong {
+.leave-balance-grid > div:nth-child(4) > strong {
     color: #24613b;
 }
 
@@ -1861,8 +1861,106 @@ th {
     font-size: 24px;
 }
 
-.leave-opening-balance,
-.leave-ledger {
+.leave-balance-entitlement {
+    position: relative;
+}
+
+.leave-balance-entitlement:hover,
+.leave-balance-entitlement.is-open {
+    z-index: 35;
+}
+
+.leave-balance-trigger {
+    appearance: none;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: help;
+    text-align: left;
+}
+
+.leave-balance-trigger span {
+    width: fit-content;
+    border-bottom: 1px dotted #6e82b2;
+}
+
+.leave-entitlement-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 36;
+    display: grid;
+    gap: 9px;
+    width: min(310px, calc(100vw - 48px));
+    padding: 12px;
+    border: 1px solid #b8c6e8;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 18px 50px rgba(31, 36, 40, 0.16);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    visibility: hidden;
+    transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s ease;
+}
+
+.leave-balance-entitlement:hover .leave-entitlement-popover,
+.leave-balance-trigger:focus-visible + .leave-entitlement-popover,
+.leave-balance-entitlement.is-open .leave-entitlement-popover {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+.leave-entitlement-popover p,
+.leave-entitlement-popover ul {
+    margin: 0;
+}
+
+.leave-entitlement-popover p {
+    color: #36558f;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.leave-entitlement-popover ul {
+    display: grid;
+    gap: 6px;
+    padding: 0;
+    list-style: none;
+}
+
+.leave-entitlement-popover li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    background: #f7f9ff;
+}
+
+.leave-entitlement-popover li.is-exception {
+    background: #fff7e8;
+}
+
+.leave-entitlement-popover li span {
+    color: #4f5661;
+    font-size: 12px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.leave-entitlement-popover li strong {
+    margin: 0;
+    color: #1f2428;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.leave-opening-balance {
     display: grid;
     gap: 8px;
     padding: 12px;
@@ -1872,40 +1970,15 @@ th {
 }
 
 .leave-opening-balance span,
-.leave-opening-balance small,
-.leave-ledger-head span,
-.leave-ledger-row small {
+.leave-opening-balance small {
     color: var(--muted);
     font-size: 12px;
 }
 
-.leave-opening-balance strong,
-.leave-ledger-head strong {
+.leave-opening-balance strong {
     color: var(--ink);
     font-size: 13px;
     line-height: 1.45;
-}
-
-.leave-ledger-list {
-    display: grid;
-    gap: 6px;
-    max-height: 220px;
-    overflow: auto;
-    padding-right: 3px;
-}
-
-.leave-ledger-row {
-    display: grid;
-    grid-template-columns: minmax(58px, 0.7fr) minmax(62px, 0.8fr);
-    gap: 4px 8px;
-    padding: 8px;
-    border-radius: 7px;
-    background: #f7f8f5;
-}
-
-.leave-ledger-row small {
-    grid-column: 1 / -1;
-    overflow-wrap: anywhere;
 }
 
 .leave-entitlement-notice {

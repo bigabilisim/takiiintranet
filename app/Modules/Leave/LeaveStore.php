@@ -33,6 +33,30 @@ class LeaveStore
         self::DAY_PART_AFTERNOON,
     ];
     private const CANCELLATION_STAGE = 'cancellation_manager_1';
+    private const ENTITLEMENT_BANDS = [
+        [
+            'min_year' => 1,
+            'max_year' => 5,
+            'days' => 14,
+            'label_key' => 'leave.entitlement.rule.one_to_five',
+        ],
+        [
+            'min_year' => 6,
+            'max_year' => 14,
+            'days' => 20,
+            'label_key' => 'leave.entitlement.rule.more_than_five',
+        ],
+        [
+            'min_year' => 15,
+            'max_year' => null,
+            'days' => 26,
+            'label_key' => 'leave.entitlement.rule.fifteen_plus',
+        ],
+    ];
+    private const AGE_MINIMUM_ENTITLEMENT = [
+        'days' => 20,
+        'label_key' => 'leave.entitlement.rule.age',
+    ];
 
     public function __construct(
         private readonly ?AccessControl $accessControl,
@@ -945,6 +969,14 @@ class LeaveStore
         // ShiftStore reads the current state document on every schedule lookup.
     }
 
+    public function entitlementPolicy(): array
+    {
+        return [
+            'bands' => self::ENTITLEMENT_BANDS,
+            'age_minimum' => self::AGE_MINIMUM_ENTITLEMENT,
+        ];
+    }
+
     public function balanceForUser(array $user, ?string $excludeRequestId = null): array
     {
         $ledger = $this->entitlementLedgerForUser($user);
@@ -953,7 +985,6 @@ class LeaveStore
         $openingUsedDays = (float) ($user['leave_opening_used_days'] ?? 0);
         $openingRemainingDays = (float) ($user['leave_opening_remaining_days'] ?? 0);
         $earnedDays = max($earnedDays, $openingTotalDays);
-        $currentEntitlement = $this->currentEntitlementDaysForUser($user);
         $usedDays = $openingUsedDays;
         $pendingDays = 0.0;
 
@@ -978,12 +1009,9 @@ class LeaveStore
 
         return [
             'allowance_days' => $earnedDays,
-            'current_entitlement_days' => $currentEntitlement,
-            'service_years' => $this->completedServiceYears($user),
             'used_days' => $usedDays,
             'pending_days' => $pendingDays,
             'remaining_days' => max(0, $earnedDays - $usedDays - $pendingDays),
-            'ledger' => $ledger,
             'opening_total_days' => $openingTotalDays,
             'opening_used_days' => $openingUsedDays,
             'opening_remaining_days' => $openingRemainingDays,
@@ -1676,14 +1704,6 @@ class LeaveStore
         };
     }
 
-    private function currentEntitlementDaysForUser(array $user): int
-    {
-        $serviceYears = max(1, $this->completedServiceYears($user));
-        $asOf = new DateTimeImmutable(date('Y-m-d'));
-
-        return $this->entitlementDaysForServiceYear($user, $serviceYears, $asOf);
-    }
-
     private function completedServiceYears(array $user, ?DateTimeImmutable $asOf = null): int
     {
         $startedOn = $this->cleanDate((string) ($user['started_on'] ?? ''));
@@ -1704,18 +1724,13 @@ class LeaveStore
             return 0;
         }
 
-        if ($serviceYear <= 5) {
-            $days = 14;
-        } elseif ($serviceYear < 15) {
-            $days = 20;
-        } else {
-            $days = 26;
-        }
+        $band = $this->entitlementBandForServiceYear($serviceYear);
+        $days = (int) ($band['days'] ?? 0);
 
         $age = $this->ageAt($user, $entitlementDate);
 
         if ($age !== null && ($age <= 18 || $age >= 50)) {
-            $days = max($days, 20);
+            $days = max($days, (int) self::AGE_MINIMUM_ENTITLEMENT['days']);
         }
 
         return $days;
@@ -1726,18 +1741,26 @@ class LeaveStore
         $age = $this->ageAt($user, $entitlementDate);
 
         if ($age !== null && ($age <= 18 || $age >= 50)) {
-            return 'leave.entitlement.rule.age';
+            return (string) self::AGE_MINIMUM_ENTITLEMENT['label_key'];
         }
 
-        if ($serviceYear <= 5) {
-            return 'leave.entitlement.rule.one_to_five';
+        $band = $this->entitlementBandForServiceYear($serviceYear);
+
+        return (string) ($band['label_key'] ?? 'leave.entitlement.rule.fifteen_plus');
+    }
+
+    private function entitlementBandForServiceYear(int $serviceYear): array
+    {
+        foreach (self::ENTITLEMENT_BANDS as $band) {
+            $minimum = (int) ($band['min_year'] ?? 1);
+            $maximum = $band['max_year'] ?? null;
+
+            if ($serviceYear >= $minimum && ($maximum === null || $serviceYear <= (int) $maximum)) {
+                return $band;
+            }
         }
 
-        if ($serviceYear < 15) {
-            return 'leave.entitlement.rule.more_than_five';
-        }
-
-        return 'leave.entitlement.rule.fifteen_plus';
+        return self::ENTITLEMENT_BANDS[array_key_last(self::ENTITLEMENT_BANDS)];
     }
 
     private function ageAt(array $user, DateTimeImmutable $date): ?int

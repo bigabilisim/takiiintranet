@@ -185,6 +185,10 @@ try {
     scheduleAssert(count($overlappingHoliday['name_keys'] ?? []) === 2, 'Overlapping public holiday names were not preserved.');
 
     $leave = new LeaveStore($access, new LeaveApprovalMailer(), $stateStore, $profiles, $shifts);
+    $entitlementPolicy = $leave->entitlementPolicy();
+    scheduleAssert(array_column($entitlementPolicy['bands'] ?? [], 'min_year') === [1, 6, 15], 'Entitlement service-year ranges are inconsistent.');
+    scheduleAssert(array_column($entitlementPolicy['bands'] ?? [], 'days') === [14, 20, 26], 'Entitlement day bands are inconsistent.');
+    scheduleAssert((int) ($entitlementPolicy['age_minimum']['days'] ?? 0) === 20, 'Age-based minimum entitlement is inconsistent.');
     $dutyLeave = $leave->create($profile, [
         'starts_on' => '2030-03-02',
         'ends_on' => '2030-03-02',

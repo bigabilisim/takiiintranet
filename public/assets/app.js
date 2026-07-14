@@ -99,6 +99,56 @@
 })();
 
 (function () {
+  const containers = Array.from(document.querySelectorAll('[data-leave-entitlement-rules]'));
+
+  if (containers.length === 0) {
+    return;
+  }
+
+  function setOpen(container, open) {
+    const trigger = container.querySelector('[data-leave-entitlement-rules-trigger]');
+    container.classList.toggle('is-open', open);
+
+    if (trigger) {
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+  }
+
+  function closeAll(except = null) {
+    containers.forEach((container) => {
+      if (container !== except) {
+        setOpen(container, false);
+      }
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-leave-entitlement-rules-trigger]');
+
+    if (!trigger) {
+      closeAll();
+      return;
+    }
+
+    const container = trigger.closest('[data-leave-entitlement-rules]');
+
+    if (!container) {
+      return;
+    }
+
+    const shouldOpen = !container.classList.contains('is-open');
+    closeAll(container);
+    setOpen(container, shouldOpen);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeAll();
+    }
+  });
+})();
+
+(function () {
   const input = document.querySelector('[data-personnel-filter]');
   const rows = Array.from(document.querySelectorAll('[data-personnel-row]'));
   const emptyState = document.querySelector('[data-personnel-empty]');

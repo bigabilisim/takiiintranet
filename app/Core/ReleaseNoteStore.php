@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.80.0';
+    private const CURRENT_RELEASE = 'v0.81.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,18 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.81.0',
+                'title' => 'Hak edis numaratoru izin kademesi bilgisine donusturuldu',
+                'released_at' => '2026-07-14 11:55',
+                'status' => 'completed',
+                'changes' => [
+                    'Izin ekranindaki uzun Hak edis numaratoru listesi kaldirildi.',
+                    'Hak edilen bakiye kutusuna masaustunde uzerine gelince, klavyede odaklaninca ve mobilde dokununca acilan izin kademesi bilgisi eklendi.',
+                    'Bilgi alaninda 1-5 yil icin 14 gun, 6-14 yil icin 20 gun, 15 yil ve uzeri icin 26 gun ile yas istisnasi gosterildi.',
+                    'Arayuzdeki kademeler izin hesaplama motoruyla ayni merkezi politika verisine baglandi ve regresyon testine alindi.',
+                ],
+            ],
             [
                 'version' => 'v0.80.0',
                 'title' => 'Silinmis izinler kullanici ekranindan kaldirildi',
