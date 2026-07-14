@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.83.0';
+    private const CURRENT_RELEASE = 'v0.84.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,19 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.84.0',
+                'title' => 'Personel bolumleri ve yonetici hiyerarsisi Excel dosyasina gore duzenlendi',
+                'released_at' => '2026-07-14 12:28',
+                'status' => 'completed',
+                'changes' => [
+                    'Kitap1.xlsx dosyasindaki 73 personelin lokasyon, bolum ve ust yonetici eslesmeleri sisteme aktarildi.',
+                    'Ayni bolumde farkli yoneticilere bagli ekipler icin alt departmanlar ve 20 izin onay politikasi olusturuldu.',
+                    'On yoneticiye ekip goruntuleme ve izin onay yetkileri mevcut roller korunarak eklendi.',
+                    'Excel dosyasinda bulunmayan sekiz mevcut personel silinmedi; profil kimlikleri, sifreler, izinler ve vardiya bilgileri korundu.',
+                    'Personel listesi yaka grubu icinde lokasyon, bolum ve ad-soyad sirasiyla duzenlendi.',
+                ],
+            ],
             [
                 'version' => 'v0.83.0',
                 'title' => 'Yarim gun izin secenekleri acik hale getirildi',

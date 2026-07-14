@@ -278,6 +278,18 @@ class PersonnelController
                 return $groupComparison;
             }
 
+            $locationComparison = strcmp((string) ($a['location'] ?? ''), (string) ($b['location'] ?? ''));
+
+            if ($locationComparison !== 0) {
+                return $locationComparison;
+            }
+
+            $departmentComparison = strcmp((string) ($a['department'] ?? ''), (string) ($b['department'] ?? ''));
+
+            if ($departmentComparison !== 0) {
+                return $departmentComparison;
+            }
+
             return strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
         });
 
