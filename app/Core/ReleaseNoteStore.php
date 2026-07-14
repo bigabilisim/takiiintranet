@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.82.0';
+    private const CURRENT_RELEASE = 'v0.83.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.83.0',
+                'title' => 'Yarim gun izin secenekleri acik hale getirildi',
+                'released_at' => '2026-07-14 12:09',
+                'status' => 'completed',
+                'changes' => [
+                    'Ogleden once secenegi Yarim gun - Ogleden once olarak degistirildi.',
+                    'Ogleden sonra secenegi Yarim gun - Ogleden sonra olarak degistirildi.',
+                    'Ayni acik etiketler Ingilizce, Almanca ve Japonca arayuzlerde de esitlendi.',
+                ],
+            ],
             [
                 'version' => 'v0.82.0',
                 'title' => 'Excel acilis bakiyesi kullanici ekranindan kaldirildi',

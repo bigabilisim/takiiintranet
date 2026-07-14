@@ -1,7 +1,18 @@
 {
     "version": 1,
-    "current_version": "v0.82.0",
+    "current_version": "v0.83.0",
     "entries": [
+        {
+            "version": "v0.83.0",
+            "title": "Yarim gun izin secenekleri acik hale getirildi",
+            "released_at": "2026-07-14 12:09",
+            "status": "completed",
+            "changes": [
+                "Ogleden once secenegi Yarim gun - Ogleden once olarak degistirildi.",
+                "Ogleden sonra secenegi Yarim gun - Ogleden sonra olarak degistirildi.",
+                "Ayni acik etiketler Ingilizce, Almanca ve Japonca arayuzlerde de esitlendi."
+            ]
+        },
         {
             "version": "v0.82.0",
             "title": "Excel acilis bakiyesi kullanici ekranindan kaldirildi",
