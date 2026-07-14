@@ -14,7 +14,6 @@ class DashboardController
     public function __construct(
         private readonly View $view,
         private readonly Auth $auth,
-        private readonly array $modules,
         private readonly LeaveStore $leaveStore,
         private readonly WeatherStore $weatherStore,
     ) {
@@ -26,18 +25,12 @@ class DashboardController
             return Response::redirect('/login');
         }
 
-        $visibleModules = array_values(array_filter(
-            $this->modules,
-            fn (array $module): bool => empty($module['hidden_in_menu']) && $this->auth->can($module['permission'])
-        ));
         $showAnnouncementsPanel = false;
         $canViewAnnouncements = $showAnnouncementsPanel && $this->auth->can('module.announcements.access');
         $canViewLeaveCalendar = $this->auth->can('module.leave.access');
 
         return new Response($this->view->render('dashboard/index', [
             'title' => 'nav.dashboard',
-            'visibleModules' => $visibleModules,
-            'workQueue' => $this->workQueue(),
             'worldClocks' => $this->worldClocks(),
             'newsItems' => $canViewAnnouncements ? $this->newsItems() : [],
             'leaveCalendar' => $canViewLeaveCalendar ? $this->leaveStore->calendar('month', date('Y-m-d'), $this->auth->user() ?? [], $this->auth) : null,
@@ -94,17 +87,4 @@ class DashboardController
         ];
     }
 
-    private function workQueue(): array
-    {
-        $items = [
-            ['type_key' => 'queue.leave', 'count' => 7, 'status_key' => 'status.waiting_manager', 'permission' => 'module.leave.access'],
-            ['type_key' => 'queue.procurement', 'count' => 5, 'status_key' => 'status.waiting_finance', 'permission' => 'module.procurement.access'],
-            ['type_key' => 'queue.documents', 'count' => 4, 'status_key' => 'status.expiring_soon', 'permission' => 'module.documents.access'],
-        ];
-
-        return array_values(array_filter(
-            $items,
-            fn (array $item): bool => $this->auth->can($item['permission'])
-        ));
-    }
 }

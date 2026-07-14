@@ -1,7 +1,18 @@
 {
     "version": 1,
-    "current_version": "v0.76.0",
+    "current_version": "v0.77.0",
     "entries": [
+        {
+            "version": "v0.77.0",
+            "title": "Panel altindaki ikincil bolumler kaldirildi",
+            "released_at": "2026-07-14 11:22",
+            "status": "completed",
+            "changes": [
+                "Panelin en altindaki Onay kuyrugu bolumu kaldirildi.",
+                "Moduller basligi ile Takvim ve Mesajlar ozet kartlari panelden kaldirildi.",
+                "Kaldirilan alanlara veri hazirlayan kullanilmayan controller kodu temizlendi."
+            ]
+        },
         {
             "version": "v0.76.0",
             "title": "Operasyon paneli basligi sadelestirildi",

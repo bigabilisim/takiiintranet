@@ -257,7 +257,7 @@ $adminController = new AdminController(
     $identityMigration
 );
 $authController = new AuthController($view, $auth, $passwordResets);
-$dashboardController = new DashboardController($view, $auth, $modules, $leaveStore, new WeatherStore());
+$dashboardController = new DashboardController($view, $auth, $leaveStore, new WeatherStore());
 $leaveController = new LeaveController($view, $auth, $leaveStore, $pushStore, $translator, $accessControl, $auditLog);
 $messagesController = new MessagesController($view, $auth, $messageStore, $accessControl, $translator, $pushStore);
 $personnelController = new PersonnelController(

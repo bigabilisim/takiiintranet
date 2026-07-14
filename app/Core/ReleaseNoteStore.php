@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.76.0';
+    private const CURRENT_RELEASE = 'v0.77.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.77.0',
+                'title' => 'Panel altindaki ikincil bolumler kaldirildi',
+                'released_at' => '2026-07-14 11:22',
+                'status' => 'completed',
+                'changes' => [
+                    'Panelin en altindaki Onay kuyrugu bolumu kaldirildi.',
+                    'Moduller basligi ile Takvim ve Mesajlar ozet kartlari panelden kaldirildi.',
+                    'Kaldirilan alanlara veri hazirlayan kullanilmayan controller kodu temizlendi.',
+                ],
+            ],
             [
                 'version' => 'v0.76.0',
                 'title' => 'Operasyon paneli basligi sadelestirildi',
