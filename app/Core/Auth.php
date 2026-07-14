@@ -23,6 +23,7 @@ class Auth
         Session::put('user', [
             'email' => $profileKey,
             'personnel_id' => $user['personnel_id'] ?? '',
+            'username' => $user['username'] ?? '',
             'name' => $user['name'],
             'role' => $user['role'],
             'department' => $user['department'],
@@ -59,6 +60,7 @@ class Auth
             $email = (string) $user['email'];
             $sourceUser = $this->userProfiles->find($email) ?? [];
             $user['personnel_id'] = $sourceUser['personnel_id'] ?? $user['personnel_id'] ?? '';
+            $user['username'] = $sourceUser['username'] ?? $user['username'] ?? '';
             $user['name'] = $sourceUser['name'] ?? $user['name'] ?? '';
             $user['role'] = $sourceUser['role'] ?? $user['role'] ?? '';
             $user['department'] = $sourceUser['department'] ?? $user['department'] ?? '';

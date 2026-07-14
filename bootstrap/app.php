@@ -31,6 +31,7 @@ use App\Modules\Leave\LeaveApprovalMailer;
 use App\Modules\Leave\LeaveStore;
 use App\Modules\Auth\PasswordResetMailer;
 use App\Modules\Auth\PasswordResetStore;
+use App\Modules\Auth\PersonnelCredentialService;
 use App\Modules\Messaging\MessageStore;
 use App\Modules\Notifications\PushNotificationStore;
 use App\Modules\Procurement\ProcurementStore;
@@ -228,7 +229,9 @@ $messageStore = new MessageStore($accessControl->usersByIdentity(), $stateStore)
 $pushStore = new PushNotificationStore($stateStore);
 $auditLog = new AuditLogStore();
 $releaseNotes = new ReleaseNoteStore();
-$passwordResets = new PasswordResetStore($userProfiles, new PasswordResetMailer(), $stateStore);
+$passwordResetMailer = new PasswordResetMailer();
+$passwordResets = new PasswordResetStore($userProfiles, $passwordResetMailer, $stateStore);
+$personnelCredentials = new PersonnelCredentialService($userProfiles, $passwordResets, $passwordResetMailer);
 $shiftStore = new ShiftStore($userProfiles, $stateStore);
 $leaveStore = new LeaveStore($accessControl, new LeaveApprovalMailer(), $stateStore, $userProfiles, $shiftStore);
 $identityMigration = new UserIdentityMigrationService(
@@ -267,7 +270,8 @@ $personnelController = new PersonnelController(
     $accessControl,
     $auditLog,
     $shiftStore,
-    $identityMigration
+    $identityMigration,
+    $personnelCredentials
 );
 $procurementController = new ProcurementController($view, $auth, new ProcurementStore());
 $shiftController = new ShiftController($view, $auth, $shiftStore, $auditLog);
@@ -322,6 +326,7 @@ $router->get('/personnel/export', [$personnelController, 'export']);
 $router->get('/personnel/export/xlsx', [$personnelController, 'exportExcel']);
 $router->post('/personnel/create', [$personnelController, 'create']);
 $router->post('/personnel/update', [$personnelController, 'update']);
+$router->post('/personnel/reset-password', [$personnelController, 'resetPassword']);
 $router->post('/personnel/delete', [$personnelController, 'delete']);
 $router->get('/module/shift', [$shiftController, 'index']);
 $router->post('/shift/templates', [$shiftController, 'saveTemplate']);

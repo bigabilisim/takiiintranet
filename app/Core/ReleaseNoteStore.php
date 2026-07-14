@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.84.0';
+    private const CURRENT_RELEASE = 'v0.85.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,19 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.85.0',
+                'title' => 'Personel kullanici adi ve guvenli sifre yenileme yonetimi eklendi',
+                'released_at' => '2026-07-14 12:57',
+                'status' => 'completed',
+                'changes' => [
+                    'Mevcut ve yeni personeller icin Turkce karakterleri sadelestiren, benzersiz isimsoyisim biciminde kullanici adi uretimi eklendi; ayni adlarda sira numarasi kullanildi.',
+                    'Kullanici adi personel listesi, arama, ekleme/duzenleme formlari ve Excel/CSV aktarimlarina eklendi; personeller kullanici adiyla giris yapabilir hale getirildi.',
+                    'Admin, IK ve IK asistani icin personel kartina Sifreyi yenile islemi eklendi; guclu yeni sifre e-postali personele kullanici adiyla birlikte gonderiliyor.',
+                    'E-postasi olmayan veya mail teslimi basarisiz personelin yeni sifresi yonetici ekraninda yalnizca bir kez gosteriliyor; yanit onbellege alinmiyor ve acik sifre profil, audit ya da outbox kaydina yazilmiyor.',
+                    'Sifre yenilemede eski sifre sifirlama tokenlari iptal edildi; dort dil, responsive arayuz, PWA cache ve kullanici adi/sifre teslim regresyon testleri guncellendi.',
+                ],
+            ],
             [
                 'version' => 'v0.84.0',
                 'title' => 'Personel bolumleri ve yonetici hiyerarsisi Excel dosyasina gore duzenlendi',

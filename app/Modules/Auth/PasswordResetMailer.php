@@ -89,6 +89,45 @@ class PasswordResetMailer
         return ['ok' => true, 'status' => 'queued', 'transport' => 'outbox'];
     }
 
+    public function sendTemporaryPassword(array $profile, string $username, string $temporaryPassword): array
+    {
+        $toEmail = $this->cleanHeader((string) ($profile['email'] ?? ''));
+
+        if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'status' => 'invalid_recipient', 'transport' => 'none'];
+        }
+
+        $subject = 'Takii Intranet yeni giris sifreniz';
+        $text = $this->temporaryPasswordBody($profile, $username, $temporaryPassword);
+        $transport = strtolower((string) (getenv('PASSWORD_RESET_MAIL_TRANSPORT') ?: getenv('MAIL_TRANSPORT') ?: 'native'));
+        $transport = in_array($transport, ['native', 'smtp', 'sendmail', 'outbox'], true) ? $transport : 'native';
+
+        if ($transport === 'outbox') {
+            return ['ok' => false, 'status' => 'not_sent', 'transport' => 'outbox', 'error' => 'mail_transport_outbox'];
+        }
+
+        $result = match ($transport) {
+            'smtp' => $this->sendSmtp($toEmail, $subject, $text),
+            'sendmail' => $this->sendSendmail($toEmail, $subject, $text),
+            default => $this->sendNative($toEmail, $subject, $text),
+        };
+
+        if (!empty($result['ok'])) {
+            return [
+                'ok' => true,
+                'status' => 'sent',
+                'transport' => (string) ($result['transport'] ?? $transport),
+            ];
+        }
+
+        return [
+            'ok' => false,
+            'status' => 'not_sent',
+            'transport' => $transport,
+            'error' => $this->safeError((string) ($result['error'] ?? 'mail_failed')),
+        ];
+    }
+
     private function messageBody(array $profile, string $resetUrl, string $expiresAt): string
     {
         $name = trim((string) ($profile['name'] ?? ''));
@@ -104,6 +143,26 @@ class PasswordResetMailer
             '',
             'Bu baglanti ' . $expiresAt . ' tarihine kadar gecerlidir.',
             'Bu talebi siz olusturmadiysaniz bu e-postayi dikkate almayin.',
+            '',
+            'Takii Intranet',
+        ]);
+    }
+
+    private function temporaryPasswordBody(array $profile, string $username, string $temporaryPassword): string
+    {
+        $name = trim((string) ($profile['name'] ?? ''));
+        $name = $name !== '' ? $name : 'Kullanici';
+        $loginUrl = rtrim((string) (getenv('APP_URL') ?: 'https://takii.bigabilisim.com'), '/') . '/login';
+
+        return implode("\n", [
+            'Merhaba ' . $name . ',',
+            '',
+            'Takii Intranet hesabiniz icin yeni bir sifre olusturuldu.',
+            'Kullanici adi: ' . $username,
+            'Gecici sifre: ' . $temporaryPassword,
+            '',
+            'Giris adresi: ' . $loginUrl,
+            'Bu bilgileri ucuncu kisilerle paylasmayin.',
             '',
             'Takii Intranet',
         ]);

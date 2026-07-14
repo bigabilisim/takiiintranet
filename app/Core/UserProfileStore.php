@@ -4,11 +4,12 @@ namespace App\Core;
 
 class UserProfileStore
 {
-    private const VERSION = 3;
+    private const VERSION = 4;
     private const STATE_KEY = 'user_profiles';
     private const NO_EMAIL_KEY_PREFIX = 'no-email-';
     private const CSV_COLUMNS = [
         'personnel_id',
+        'username',
         'email',
         'first_name',
         'last_name',
@@ -81,6 +82,16 @@ class UserProfileStore
             }
         }
 
+        $username = $this->normalizeUsername($identifier);
+
+        if ($username !== '') {
+            foreach ($users as $profile) {
+                if (hash_equals((string) ($profile['username'] ?? ''), $username)) {
+                    return $profile;
+                }
+            }
+        }
+
         if ($identifier !== '') {
             foreach ($users as $profile) {
                 if (hash_equals((string) ($profile['personnel_id'] ?? ''), $identifier)) {
@@ -102,6 +113,7 @@ class UserProfileStore
         $profileKey = (string) ($user['profile_key'] ?? '');
         $email = (string) ($user['email'] ?? '');
         $normalizedEmail = $this->normalizeEmail($identifier);
+        $username = $this->normalizeUsername($identifier);
         $pdksId = trim((string) ($user['pdks_id'] ?? ''));
 
         if ($profileKey !== '' && hash_equals($profileKey, $identifier)) {
@@ -109,6 +121,10 @@ class UserProfileStore
         }
 
         if ($email !== '' && $normalizedEmail !== '' && hash_equals($email, $normalizedEmail)) {
+            return true;
+        }
+
+        if ($username !== '' && hash_equals((string) ($user['username'] ?? ''), $username)) {
             return true;
         }
 
@@ -270,6 +286,19 @@ class UserProfileStore
             return ['ok' => false, 'message' => 'admin.flash.user_profile_invalid'];
         }
 
+        $usernameInput = trim((string) ($input['username'] ?? ''));
+        $username = $usernameInput !== ''
+            ? $this->normalizeUsername($usernameInput)
+            : $this->generatedUsername($firstName, $lastName, '');
+
+        if (!$this->isValidUsername($username)) {
+            return ['ok' => false, 'message' => 'personnel.flash.username_invalid'];
+        }
+
+        if ($this->usernameBelongsToAnotherProfile($username, '')) {
+            return ['ok' => false, 'message' => 'personnel.flash.username_duplicate'];
+        }
+
         $password = (string) ($input['password'] ?? '');
         $passwordConfirmation = (string) ($input['password_confirmation'] ?? '');
 
@@ -279,6 +308,7 @@ class UserProfileStore
 
         $profile = [
             'email' => $email,
+            'username' => $username,
             'first_name' => $firstName,
             'last_name' => $lastName,
             'name' => trim($firstName . ' ' . $lastName),
@@ -332,6 +362,7 @@ class UserProfileStore
             'personnel_id' => $profile['personnel_id'],
             'name' => $profile['name'],
             'email' => $email,
+            'username' => $username,
         ];
     }
 
@@ -383,6 +414,21 @@ class UserProfileStore
             return ['ok' => false, 'message' => 'admin.flash.user_profile_invalid'];
         }
 
+        $usernameInput = array_key_exists('username', $input)
+            ? trim((string) $input['username'])
+            : (string) ($profile['username'] ?? '');
+        $username = $usernameInput !== ''
+            ? $this->normalizeUsername($usernameInput)
+            : $this->generatedUsername($firstName, $lastName, $email);
+
+        if (!$this->isValidUsername($username)) {
+            return ['ok' => false, 'message' => 'personnel.flash.username_invalid'];
+        }
+
+        if ($this->usernameBelongsToAnotherProfile($username, $email)) {
+            return ['ok' => false, 'message' => 'personnel.flash.username_duplicate'];
+        }
+
         $startedOn = $this->cleanDate((string) ($input['started_on'] ?? ''));
         $birthDate = $this->cleanDate((string) ($input['birth_date'] ?? ''));
         $leaveOpeningSnapshotDate = $this->cleanDate((string) ($input['leave_opening_snapshot_date'] ?? ''));
@@ -400,6 +446,7 @@ class UserProfileStore
 
         $profile = array_merge($profile, [
             'email' => $newEmail,
+            'username' => $username,
             'first_name' => $firstName,
             'last_name' => $lastName,
             'name' => trim($firstName . ' ' . $lastName),
@@ -657,8 +704,21 @@ class UserProfileStore
                 continue;
             }
 
+            $usernameInput = array_key_exists('username', $record)
+                ? trim((string) $record['username'])
+                : (string) ($profile['username'] ?? '');
+            $username = $usernameInput !== ''
+                ? $this->normalizeUsername($usernameInput)
+                : $this->generatedUsername($firstName, $lastName, $profileKey, $profiles);
+
+            if (!$this->isValidUsername($username) || $this->usernameBelongsToAnotherProfileIn($username, $profileKey, $profiles)) {
+                $skipped++;
+                continue;
+            }
+
             $profile = array_merge($profile, [
                 'email' => $email,
+                'username' => $username,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'name' => trim($firstName . ' ' . $lastName),
@@ -782,6 +842,10 @@ class UserProfileStore
             }
         }
 
+        if ($this->ensureUniqueUsernames($data['profiles'])) {
+            $dirty = true;
+        }
+
         if ($dirty) {
             $this->saveData($data);
         }
@@ -816,6 +880,7 @@ class UserProfileStore
             'profile_key' => $email,
             'personnel_id' => $this->generatedPersonnelId($email),
             'email' => $email,
+            'username' => '',
             'first_name' => $nameParts['first_name'],
             'last_name' => $nameParts['last_name'],
             'name' => (string) ($baseUser['name'] ?? $email),
@@ -897,6 +962,7 @@ class UserProfileStore
     {
         return [
             'personnel_id' => (string) ($profile['personnel_id'] ?? ''),
+            'username' => (string) ($profile['username'] ?? ''),
             'name' => (string) ($profile['name'] ?? ''),
             'role' => (string) ($profile['role'] ?? ''),
             'department' => (string) ($profile['department'] ?? ''),
@@ -935,6 +1001,9 @@ class UserProfileStore
             'mail' => 'email',
             'e_posta' => 'email',
             'eposta' => 'email',
+            'kullanici_adi' => 'username',
+            'kullaniciadi' => 'username',
+            'username' => 'username',
             'ad' => 'first_name',
             'adi' => 'first_name',
             'first_name' => 'first_name',
@@ -1229,6 +1298,141 @@ class UserProfileStore
         $email = strtolower($this->cleanText($email, 160));
 
         return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
+    }
+
+    private function normalizeUsername(string $username): string
+    {
+        $username = strtr(trim($username), [
+            'İ' => 'I',
+            'ı' => 'i',
+            'Ş' => 'S',
+            'ş' => 's',
+            'Ğ' => 'G',
+            'ğ' => 'g',
+            'Ü' => 'U',
+            'ü' => 'u',
+            'Ö' => 'O',
+            'ö' => 'o',
+            'Ç' => 'C',
+            'ç' => 'c',
+            'Ä' => 'A',
+            'ä' => 'a',
+            'ẞ' => 'SS',
+            'ß' => 'ss',
+        ]);
+
+        if (function_exists('iconv')) {
+            $transliterated = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $username);
+
+            if (is_string($transliterated) && $transliterated !== '') {
+                $username = $transliterated;
+            }
+        }
+
+        $username = strtolower($username);
+        $username = preg_replace('/[^a-z0-9]+/', '', $username) ?? '';
+
+        return substr($username, 0, 40);
+    }
+
+    private function isValidUsername(string $username): bool
+    {
+        return preg_match('/^[a-z0-9]{3,40}$/', $username) === 1;
+    }
+
+    private function generatedUsername(
+        string $firstName,
+        string $lastName,
+        string $currentProfileKey,
+        ?array $profiles = null,
+    ): string {
+        $base = $this->normalizeUsername($firstName . $lastName);
+
+        if (!$this->isValidUsername($base)) {
+            $base = 'personel';
+        }
+
+        return $this->uniqueUsername($base, $currentProfileKey, $profiles ?? $this->users());
+    }
+
+    private function usernameBelongsToAnotherProfile(string $username, string $currentProfileKey): bool
+    {
+        return $this->usernameBelongsToAnotherProfileIn($username, $currentProfileKey, $this->users());
+    }
+
+    private function usernameBelongsToAnotherProfileIn(string $username, string $currentProfileKey, array $profiles): bool
+    {
+        foreach ($profiles as $profileKey => $profile) {
+            if ((string) $profileKey === $currentProfileKey) {
+                continue;
+            }
+
+            $existing = $this->normalizeUsername((string) ($profile['username'] ?? ''));
+
+            if ($existing !== '' && hash_equals($existing, $username)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function uniqueUsername(string $base, string $currentProfileKey, array $profiles): string
+    {
+        $candidate = substr($base, 0, 40);
+        $suffix = 2;
+
+        while ($this->usernameBelongsToAnotherProfileIn($candidate, $currentProfileKey, $profiles)) {
+            $suffixText = (string) $suffix;
+            $candidate = substr($base, 0, 40 - strlen($suffixText)) . $suffixText;
+            $suffix++;
+        }
+
+        return $candidate;
+    }
+
+    private function ensureUniqueUsernames(array &$profiles): bool
+    {
+        $dirty = false;
+        $claimed = [];
+
+        foreach ($profiles as &$profile) {
+            if (!is_array($profile)) {
+                continue;
+            }
+
+            $username = $this->normalizeUsername((string) ($profile['username'] ?? ''));
+
+            if (!$this->isValidUsername($username) || isset($claimed[$username])) {
+                $base = $this->normalizeUsername(
+                    (string) ($profile['first_name'] ?? '') . (string) ($profile['last_name'] ?? '')
+                );
+
+                if (!$this->isValidUsername($base)) {
+                    $base = 'personel';
+                }
+
+                $username = substr($base, 0, 40);
+                $suffix = 2;
+
+                while (isset($claimed[$username])) {
+                    $suffixText = (string) $suffix;
+                    $username = substr($base, 0, 40 - strlen($suffixText)) . $suffixText;
+                    $suffix++;
+                }
+            }
+
+            if (($profile['username'] ?? '') !== $username) {
+                $profile['username'] = $username;
+                $dirty = true;
+            }
+
+            $claimed[$username] = true;
+        }
+
+        unset($profile);
+
+        return $dirty;
     }
 
     private function emailBelongsToAnotherProfile(string $email, string $currentProfileKey): bool

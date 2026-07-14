@@ -47,7 +47,7 @@ foreach ($plan['manager_emails'] as $managerEmail) {
     }
 }
 
-file_put_contents($profilePath, json_encode(['version' => 3, 'profiles' => $profiles], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+file_put_contents($profilePath, json_encode(['version' => 4, 'profiles' => $profiles], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 file_put_contents($accessPath, json_encode([
     'version' => 15,
     'departments' => [],

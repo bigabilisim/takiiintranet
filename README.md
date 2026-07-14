@@ -29,6 +29,7 @@ tasarlanmistir.
 - **Satin alma:** Yeni satin alma talebi acma, kategori/tutar/tarih/gerekce alanlari.
 - **PWA ve Web Push:** VAPID anahtarlari, push aboneligi, test bildirimi, service worker cache yonetimi.
 - **Rapor ve mail sablonlari:** GrapesJS ile surukle-birak mail ve rapor sablon editoru.
+- **Kullanici adi ve sifre yonetimi:** Personel kullanici adlari benzersiz `isimsoyisim` biciminde uretilir, duzenlenebilir ve giriste kullanilabilir. IK/Admin sifre yenilediginde e-postali personele bilgi maili gider; e-postasiz personelin yeni sifresi yalnizca bir kez ekranda gosterilir.
 - **Sifre sifirlama:** Giris ekranindan 2 saatlik token ile sifre sifirlama baglantisi gonderilir.
 - **Cok dilli altyapi:** `resources/lang` altinda `tr-TR`, `en-US`, `de-DE`, `ja-JP`.
 
@@ -89,7 +90,10 @@ STATE_STORE_DRIVER=file php -S 127.0.0.1:8080 -t public
 Sistem yoneticisi ve IK hesabi `.env` icindeki `APP_ADMIN_*` ve `APP_HR_*`
 alanlariyla tanimlanir. Ornek dosyada parola bulunmaz; ilk calistirmadan once
 guclu parolalar belirleyin. Personel hesaplari daha sonra Personeller ekranindan
-olusturulur ve parolalari sifrelenmis olarak durum deposunda tutulur.
+olusturulur. Kullanici adi varsayilan olarak Turkce karakterlerden arindirilmis
+`isimsoyisim` biciminde benzersiz uretilir ve personel kartindan degistirilebilir.
+Kullanicilar e-posta, kullanici adi, PDKS ID veya profil anahtariyla giris yapabilir;
+parolalar yalnizca guvenli hash olarak durum deposunda tutulur.
 
 ## Yetki Notlari
 
@@ -139,6 +143,13 @@ departman onaycilari, izinler, mesajlar, sabitlenmis konusmalar, Web Push
 abonelikleri ve aylik shift planlari tek transaction icinde yeni kimlige tasinir.
 Adimlardan biri basarisiz olursa degisikliklerin tamami geri alinir; eski adrese
 gonderilmis aktif parola sifirlama baglantilari guvenlik icin iptal edilir.
+
+IK veya Admin personel kartindaki `Sifreyi yenile` islemini kullandiginda 12
+karakterli yeni bir sifre uretilir ve eski sifre sifirlama tokenlari iptal edilir.
+E-posta teslimati basariliysa acik sifre arayuze veya outbox'a yazilmaz. E-posta
+yoksa ya da teslimat basarisizsa sifre sadece yoneticinin sonraki ekraninda bir
+kez gosterilir; bu yanit tarayici onbellegine alinmaz ve audit kaydi acik sifre
+icermez.
 
 Her personelin `personnel_id` alani sistem tarafindan bir kez uretilir ve profil
 adi ya da e-posta degisikliginde korunur. Yeni izinler bu kimligi dogrudan

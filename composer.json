@@ -23,6 +23,7 @@
     "test:identity:mariadb": "TEST_STATE_DRIVER=mariadb php tests/user-identity-migration.php",
     "test:leave-schedule": "php tests/leave-schedule-integrity.php",
     "test:leave-schedule:mariadb": "TEST_STATE_DRIVER=mariadb php tests/leave-schedule-integrity.php",
-    "test:location": "php tests/location-visibility.php"
+    "test:location": "php tests/location-visibility.php",
+    "test:personnel-credentials": "php tests/personnel-credentials.php"
   }
 }

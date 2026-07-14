@@ -45,7 +45,7 @@ final class PersonnelOrganizationSync
             [
                 'key' => 'user_profiles',
                 'path' => $this->profilesPath(),
-                'default' => ['version' => 3, 'profiles' => []],
+                'default' => ['version' => 4, 'profiles' => []],
             ],
             [
                 'key' => 'access_control',

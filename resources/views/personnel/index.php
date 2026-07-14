@@ -56,6 +56,7 @@ $departmentSelectOptions = static function (string $currentDepartment) use ($dep
 $locationOptions = is_array($locationOptions ?? null) ? $locationOptions : [];
 $shiftTemplates = is_array($shiftTemplates ?? null) ? $shiftTemplates : [];
 $shiftOptions = is_array($shiftOptions ?? null) ? $shiftOptions : [];
+$temporaryCredential = is_array($temporaryCredential ?? null) ? $temporaryCredential : [];
 $shiftOptionKeys = array_map(static fn (array $shiftOption): string => (string) ($shiftOption['key'] ?? ''), $shiftOptions);
 $shiftMap = [];
 
@@ -87,6 +88,25 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
 <?php endif; ?>
 <?php if ($flashError): ?>
     <p class="alert"><?= htmlspecialchars($t($flashError), ENT_QUOTES, 'UTF-8') ?></p>
+<?php endif; ?>
+<?php if ((string) ($temporaryCredential['password'] ?? '') !== ''): ?>
+    <section class="personnel-credential-reveal" role="alert" aria-live="assertive">
+        <div>
+            <strong><?= htmlspecialchars($t('personnel.credential_title'), ENT_QUOTES, 'UTF-8') ?></strong>
+            <span><?= htmlspecialchars((string) ($temporaryCredential['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
+        <dl>
+            <div>
+                <dt><?= htmlspecialchars($t('personnel.username'), ENT_QUOTES, 'UTF-8') ?></dt>
+                <dd><code><?= htmlspecialchars((string) ($temporaryCredential['username'] ?? ''), ENT_QUOTES, 'UTF-8') ?></code></dd>
+            </div>
+            <div>
+                <dt><?= htmlspecialchars($t('personnel.temporary_password'), ENT_QUOTES, 'UTF-8') ?></dt>
+                <dd><code><?= htmlspecialchars((string) $temporaryCredential['password'], ENT_QUOTES, 'UTF-8') ?></code></dd>
+            </div>
+        </dl>
+        <small><?= htmlspecialchars($t('personnel.credential_once'), ENT_QUOTES, 'UTF-8') ?></small>
+    </section>
 <?php endif; ?>
 
 <section class="personnel-panel">
@@ -143,6 +163,10 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                     <label>
                         <span><?= htmlspecialchars($t('auth.email'), ENT_QUOTES, 'UTF-8') ?></span>
                         <input type="email" name="new_email" maxlength="160" placeholder="<?= htmlspecialchars($t('personnel.email_none'), ENT_QUOTES, 'UTF-8') ?>">
+                    </label>
+                    <label>
+                        <span><?= htmlspecialchars($t('personnel.username'), ENT_QUOTES, 'UTF-8') ?></span>
+                        <input type="text" name="username" maxlength="40" pattern="[a-z0-9]{3,40}" placeholder="<?= htmlspecialchars($t('personnel.username_placeholder'), ENT_QUOTES, 'UTF-8') ?>" autocomplete="off">
                     </label>
                     <label>
                         <span><?= htmlspecialchars($t('admin.profile.first_name'), ENT_QUOTES, 'UTF-8') ?></span>
@@ -349,6 +373,7 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
             <?php
                 $profileKey = (string) ($profile['profile_key'] ?? ($profile['email'] ?? ''));
                 $email = (string) ($profile['email'] ?? '');
+                $username = (string) ($profile['username'] ?? '');
                 $emailLabel = $email !== '' ? $email : $t('personnel.email_none');
                 $profileGroup = (string) ($profile['personnel_group'] ?? 'office');
                 $profileGroup = array_key_exists($profileGroup, $personnelGroups) && $profileGroup !== 'all' ? $profileGroup : 'office';
@@ -370,6 +395,7 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                 $searchText = trim(implode(' ', [
                     $profileKey,
                     $email,
+                    $username,
                     $emailLabel,
                     (string) ($profile['name'] ?? ''),
                     (string) ($profile['first_name'] ?? ''),
@@ -404,6 +430,7 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                     <span>
                         <em class="personnel-group-chip personnel-group-chip--<?= htmlspecialchars($profileGroupClass, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($profileGroupLabel, ENT_QUOTES, 'UTF-8') ?></em>
                         <strong><?= htmlspecialchars((string) ($profile['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                        <small>@<?= htmlspecialchars($username, ENT_QUOTES, 'UTF-8') ?></small>
                         <small><?= htmlspecialchars($emailLabel, ENT_QUOTES, 'UTF-8') ?></small>
                         <?php if ($profileWorkforceRoles !== []): ?>
                             <span class="personnel-assignment-badges">
@@ -433,6 +460,10 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                             <label>
                                 <span><?= htmlspecialchars($t('auth.email'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <input type="email" name="new_email" maxlength="160" value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars($t('personnel.email_none'), ENT_QUOTES, 'UTF-8') ?>">
+                            </label>
+                            <label>
+                                <span><?= htmlspecialchars($t('personnel.username'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <input type="text" name="username" maxlength="40" pattern="[a-z0-9]{3,40}" value="<?= htmlspecialchars($username, ENT_QUOTES, 'UTF-8') ?>" autocomplete="off" required>
                             </label>
                             <label>
                                 <span><?= htmlspecialchars($t('admin.profile.first_name'), ENT_QUOTES, 'UTF-8') ?></span>
@@ -628,6 +659,15 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                         </div>
 
                         <div class="personnel-actions">
+                            <?php if ($canManageCredentials): ?>
+                                <button
+                                    class="button compact secondary"
+                                    type="submit"
+                                    formaction="/personnel/reset-password"
+                                    formnovalidate
+                                    onclick="return confirm('<?= htmlspecialchars($t('personnel.password_reset_confirm'), ENT_QUOTES, 'UTF-8') ?>')"
+                                ><?= htmlspecialchars($t('personnel.password_reset'), ENT_QUOTES, 'UTF-8') ?></button>
+                            <?php endif; ?>
                             <?php if ($canDeleteThisProfile): ?>
                                 <button
                                     class="button compact danger"

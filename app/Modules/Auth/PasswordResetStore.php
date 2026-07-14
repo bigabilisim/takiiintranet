@@ -127,7 +127,7 @@ class PasswordResetStore
         return ['ok' => true, 'message' => 'auth.password_reset.completed'];
     }
 
-    public function revokeForIdentity(string $oldProfileKey, string $oldEmail): int
+    public function revokeForIdentity(string $oldProfileKey, string $oldEmail, string $reason = 'identity_changed'): int
     {
         $identities = array_values(array_unique(array_filter([$oldProfileKey, $oldEmail])));
 
@@ -151,7 +151,7 @@ class PasswordResetStore
 
             $data['requests'][$index]['used_at'] = date('Y-m-d H:i');
             $data['requests'][$index]['invalidated_at'] = date('Y-m-d H:i');
-            $data['requests'][$index]['invalidated_reason'] = 'identity_changed';
+            $data['requests'][$index]['invalidated_reason'] = $reason;
             $revoked++;
         }
 

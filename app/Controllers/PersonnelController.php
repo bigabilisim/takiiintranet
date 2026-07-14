@@ -13,6 +13,7 @@ use App\Core\Session;
 use App\Core\UserIdentityMigrationService;
 use App\Core\UserProfileStore;
 use App\Core\View;
+use App\Modules\Auth\PersonnelCredentialService;
 use App\Modules\Shift\ShiftStore;
 
 class PersonnelController
@@ -25,6 +26,7 @@ class PersonnelController
         private readonly AuditLogStore $auditLog,
         private readonly ShiftStore $shiftStore,
         private readonly UserIdentityMigrationService $identityMigration,
+        private readonly PersonnelCredentialService $credentials,
     ) {
     }
 
@@ -39,6 +41,10 @@ class PersonnelController
         }
 
         $personnel = $this->sortedProfiles();
+        $temporaryCredential = Session::pullFlash('personnel_credential', []);
+        $headers = is_array($temporaryCredential) && (string) ($temporaryCredential['password'] ?? '') !== ''
+            ? ['Cache-Control' => 'no-store, no-cache, must-revalidate', 'Pragma' => 'no-cache']
+            : [];
 
         return new Response($this->view->render('personnel/index', [
             'title' => 'module.personnel.title',
@@ -49,11 +55,13 @@ class PersonnelController
             'canWritePersonnel' => $this->auth->can('personnel.write'),
             'canDeletePersonnel' => $this->auth->can('personnel.delete'),
             'canExportPersonnel' => $this->canExport(),
+            'canManageCredentials' => $this->canManageCredentials(),
+            'temporaryCredential' => $temporaryCredential,
             'deletableEmails' => $this->deletableEmails(),
             'personnelGroupCounts' => $this->personnelGroupCounts($personnel),
             'shiftOptions' => $this->shiftStore->enabledTemplates(),
             'shiftTemplates' => $this->shiftStore->templates(),
-        ]));
+        ]), 200, $headers);
     }
 
     public function export(Request $request): Response
@@ -135,6 +143,7 @@ class PersonnelController
                 'name' => (string) ($profile['name'] ?? ($result['name'] ?? '')),
                 'department' => (string) ($profile['department'] ?? ''),
                 'email' => (string) ($profile['email'] ?? ($result['email'] ?? '')),
+                'username' => (string) ($profile['username'] ?? ($result['username'] ?? '')),
             ]);
         }
 
@@ -182,12 +191,60 @@ class PersonnelController
                 'after_department' => (string) ($after['department'] ?? ''),
                 'before_email' => (string) ($result['old_email'] ?? ($before['email'] ?? '')),
                 'after_email' => (string) ($result['new_email'] ?? ($after['email'] ?? '')),
+                'before_username' => (string) ($before['username'] ?? ''),
+                'after_username' => (string) ($after['username'] ?? ''),
                 'identity_migrated' => !empty($result['identity_migrated']) ? 'yes' : 'no',
                 'identity_references' => is_array($result['migration'] ?? null) ? $result['migration'] : [],
             ]);
         }
 
         Session::flash($result['ok'] ? 'success' : 'error', $result['ok'] ? 'personnel.flash.saved' : $result['message']);
+
+        return Response::redirect('/module/personnel');
+    }
+
+    public function resetPassword(Request $request): Response
+    {
+        if (!$this->canMutate('personnel.write', $request) || !$this->canManageCredentials()) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
+
+        $profileKey = (string) $request->input('profile_key', '');
+        $profile = $this->userProfiles->find($profileKey);
+
+        if ($profile === null || !$this->canViewProfile($profile)) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
+
+        $result = $this->credentials->reset($profileKey);
+
+        if (!empty($result['ok'])) {
+            $this->auditLog->record($this->auth->user() ?? [], 'personnel.password_reset', 'personnel', $profileKey, [
+                'name' => (string) ($result['name'] ?? ''),
+                'username' => (string) ($result['username'] ?? ''),
+                'delivery' => (string) ($result['delivery'] ?? ''),
+                'mail_transport' => (string) ($result['mail_transport'] ?? ''),
+                'revoked_tokens' => (string) ($result['revoked_tokens'] ?? 0),
+            ]);
+
+            if ((string) ($result['password'] ?? '') !== '') {
+                Session::flash('personnel_credential', [
+                    'name' => (string) ($result['name'] ?? ''),
+                    'username' => (string) ($result['username'] ?? ''),
+                    'password' => (string) $result['password'],
+                    'delivery' => (string) ($result['delivery'] ?? 'screen'),
+                ]);
+            }
+        }
+
+        $flashType = !empty($result['ok']) && ($result['delivery'] ?? '') !== 'screen_fallback'
+            ? 'success'
+            : 'error';
+        Session::flash($flashType, (string) ($result['message'] ?? 'personnel.flash.password_reset_failed'));
 
         return Response::redirect('/module/personnel');
     }
@@ -236,6 +293,19 @@ class PersonnelController
     private function canExport(): bool
     {
         return $this->canRead() && $this->auth->can('personnel.export');
+    }
+
+    private function canManageCredentials(): bool
+    {
+        $user = $this->auth->user() ?? [];
+        $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
+        $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
+
+        return in_array('*', $permissions, true)
+            || in_array('admin.company.manage', $permissions, true)
+            || in_array('leave.request.manage.hr', $permissions, true)
+            || in_array('hr', $workforceRoles, true)
+            || in_array('hr_assistant', $workforceRoles, true);
     }
 
     private function canMutate(string $permission, Request $request): bool
