@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.73.0';
+    private const CURRENT_RELEASE = 'v0.74.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.74.0',
+                'title' => 'Giris ekranindaki sabit kullanici adi kaldirildi',
+                'released_at' => '2026-07-14 10:41',
+                'status' => 'completed',
+                'changes' => [
+                    'Giris formunda otomatik gelen bilal@bigabilisim.com adresi kaldirildi.',
+                    'Kullanici adi alani her yeni oturumda uygulama tarafindan bos gosterilecek hale getirildi.',
+                    'Tarayicilarin standart parola yoneticisi destegi icin autocomplete username davranisi korundu.',
+                ],
+            ],
             [
                 'version' => 'v0.73.0',
                 'title' => 'Izin takvimi onay tarihcesi ve notlardan arindirildi',

@@ -13,7 +13,7 @@
             <?= $csrf() ?>
             <label>
                 <span><?= htmlspecialchars($t('auth.login_identifier'), ENT_QUOTES, 'UTF-8') ?></span>
-                <input type="text" name="email" value="bilal@bigabilisim.com" autocomplete="username" required>
+                <input type="text" name="email" autocomplete="username" required>
             </label>
             <label>
                 <span><?= htmlspecialchars($t('auth.password'), ENT_QUOTES, 'UTF-8') ?></span>

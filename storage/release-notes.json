@@ -1,7 +1,18 @@
 {
     "version": 1,
-    "current_version": "v0.73.0",
+    "current_version": "v0.74.0",
     "entries": [
+        {
+            "version": "v0.74.0",
+            "title": "Giris ekranindaki sabit kullanici adi kaldirildi",
+            "released_at": "2026-07-14 10:41",
+            "status": "completed",
+            "changes": [
+                "Giris formunda otomatik gelen bilal@bigabilisim.com adresi kaldirildi.",
+                "Kullanici adi alani her yeni oturumda uygulama tarafindan bos gosterilecek hale getirildi.",
+                "Tarayicilarin standart parola yoneticisi destegi icin autocomplete username davranisi korundu."
+            ]
+        },
         {
             "version": "v0.43.0",
             "title": "RD Long Term departman adi duzeltildi",
