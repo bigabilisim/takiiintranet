@@ -48,7 +48,6 @@ class LeaveController
             'cancellationQueue' => $this->leaveStore->cancellableRequestsFor($this->auth),
             'requesterEditableRequests' => $this->leaveStore->requesterEditableRequestsFor($user),
             'requesterCancellableRequests' => $this->leaveStore->requesterCancellableRequestsFor($user),
-            'requesterDeletedRequests' => $this->leaveStore->requesterDeletedRequestsFor($user),
             'requesterHistoryRequests' => $this->leaveStore->requesterHistoryRequestsFor($user),
             'calendar' => $this->leaveStore->calendar(
                 (string) $request->input('view', 'month'),

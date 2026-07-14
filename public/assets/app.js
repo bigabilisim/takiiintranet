@@ -99,57 +99,6 @@
 })();
 
 (function () {
-  const openButton = document.querySelector('[data-leave-deleted-open]');
-  const dialog = document.querySelector('[data-leave-deleted-dialog]');
-
-  if (!openButton || !dialog) {
-    return;
-  }
-
-  const closeButtons = dialog.querySelectorAll('[data-leave-deleted-close]');
-  let previousFocus = null;
-
-  function openDialog() {
-    previousFocus = document.activeElement;
-    dialog.hidden = false;
-    document.body.classList.add('has-modal-open');
-
-    const closeButton = dialog.querySelector('[data-leave-deleted-close]');
-
-    if (closeButton) {
-      closeButton.focus();
-    }
-  }
-
-  function closeDialog() {
-    dialog.hidden = true;
-    document.body.classList.remove('has-modal-open');
-
-    if (previousFocus && typeof previousFocus.focus === 'function') {
-      previousFocus.focus();
-    }
-  }
-
-  openButton.addEventListener('click', openDialog);
-
-  closeButtons.forEach((button) => {
-    button.addEventListener('click', closeDialog);
-  });
-
-  dialog.addEventListener('click', (event) => {
-    if (event.target === dialog) {
-      closeDialog();
-    }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !dialog.hidden) {
-      closeDialog();
-    }
-  });
-})();
-
-(function () {
   const input = document.querySelector('[data-personnel-filter]');
   const rows = Array.from(document.querySelectorAll('[data-personnel-row]'));
   const emptyState = document.querySelector('[data-personnel-empty]');

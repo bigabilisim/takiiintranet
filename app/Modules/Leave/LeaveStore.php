@@ -243,27 +243,6 @@ class LeaveStore
         return $requests;
     }
 
-    public function requesterDeletedRequestsFor(array $user): array
-    {
-        $requests = [];
-
-        foreach ($this->all() as $request) {
-            if (!$this->requestBelongsToUser($request, $user) || (string) ($request['status'] ?? '') !== 'cancelled') {
-                continue;
-            }
-
-            $requests[] = $this->decorateForRequester($request);
-        }
-
-        usort($requests, function (array $a, array $b): int {
-            $cancelled = strcmp((string) ($b['cancelled_at'] ?? ''), (string) ($a['cancelled_at'] ?? ''));
-
-            return $cancelled !== 0 ? $cancelled : strcmp((string) ($b['created_at'] ?? ''), (string) ($a['created_at'] ?? ''));
-        });
-
-        return $requests;
-    }
-
     public function requesterHistoryRequestsFor(array $user): array
     {
         $requests = [];

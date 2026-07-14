@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.79.0';
+    private const CURRENT_RELEASE = 'v0.80.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.80.0',
+                'title' => 'Silinmis izinler kullanici ekranindan kaldirildi',
+                'released_at' => '2026-07-14 11:44',
+                'status' => 'completed',
+                'changes' => [
+                    'Kullanici izin ekranindaki Silinmis izinler dugmesi, sayaci ve acilir arsiv penceresi kaldirildi.',
+                    'Kaldirilan pencereye ait istemci kodu, stiller ve dort dilde kullanilmayan metinler temizlendi.',
+                    'Silinen izin kayitlari audit ve yonetim ihtiyaclari icin veri katmaninda korunmaya devam ediyor.',
+                ],
+            ],
             [
                 'version' => 'v0.79.0',
                 'title' => 'Izin modulunun menu adi Izin Talep olarak degistirildi',

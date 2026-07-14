@@ -28,7 +28,6 @@ $canCancelLeave = $auth->can('admin.company.manage') || $auth->can('leave.reques
 $approvalStageOrder = ['manager_1', 'manager_2', 'hr', 'calendar'];
 $leaveTypeOptions = ['leave.type.annual', 'leave.type.excuse', 'leave.type.remote'];
 $dayPartOptions = ['full', 'morning', 'afternoon'];
-$deletedLeaveCount = count($requesterDeletedRequests ?? []);
 $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDateRange): string {
     $attributes = [
         'type' => 'button',
@@ -262,12 +261,6 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                 <strong><?= htmlspecialchars($formatDays($leaveBalance['remaining_days']), ENT_QUOTES, 'UTF-8') ?></strong>
             </div>
         </div>
-        <div class="leave-deleted-summary">
-            <button class="button ghost" type="button" data-leave-deleted-open>
-                <?= htmlspecialchars($t('leave.deleted_requests_button'), ENT_QUOTES, 'UTF-8') ?>
-                <span><?= htmlspecialchars((string) $deletedLeaveCount, ENT_QUOTES, 'UTF-8') ?></span>
-            </button>
-        </div>
         <?php if (($leaveBalance['opening_total_days'] ?? 0) > 0 || ($leaveBalance['opening_used_days'] ?? 0) > 0): ?>
             <div class="leave-opening-balance">
                 <span><?= htmlspecialchars($t('leave.opening_balance.title'), ENT_QUOTES, 'UTF-8') ?></span>
@@ -360,46 +353,6 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
         </label>
         <button class="button primary" type="submit"><?= htmlspecialchars($t('leave.create'), ENT_QUOTES, 'UTF-8') ?></button>
     </form>
-
-    <div class="leave-deleted-overlay" data-leave-deleted-dialog hidden>
-        <section class="leave-deleted-modal" role="dialog" aria-modal="true" aria-labelledby="leave-deleted-title">
-            <header>
-                <div>
-                    <p class="eyebrow"><?= htmlspecialchars($t('leave.deleted_requests_eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
-                    <h2 id="leave-deleted-title"><?= htmlspecialchars($t('leave.deleted_requests_title'), ENT_QUOTES, 'UTF-8') ?></h2>
-                </div>
-                <button class="calendar-popover-close" type="button" data-leave-deleted-close aria-label="<?= htmlspecialchars($t('leave.popover.close'), ENT_QUOTES, 'UTF-8') ?>">×</button>
-            </header>
-            <div class="requester-group-title">
-                <strong><?= htmlspecialchars($t('leave.deleted_requests_count', ['count' => $deletedLeaveCount]), ENT_QUOTES, 'UTF-8') ?></strong>
-            </div>
-            <?php if (!empty($requesterDeletedRequests)): ?>
-                <div class="leave-deleted-list">
-                    <?php foreach ($requesterDeletedRequests as $deletedRequest): ?>
-                        <article class="leave-deleted-card">
-                            <header>
-                                <div>
-                                    <span class="module-code">LV</span>
-                                    <strong><?= htmlspecialchars((string) ($deletedRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
-                                </div>
-                                <span class="status-pill state-cancelled"><?= htmlspecialchars($t((string) ($deletedRequest['status_key'] ?? 'leave.status.cancelled')), ENT_QUOTES, 'UTF-8') ?></span>
-                            </header>
-                            <div class="leave-deleted-meta">
-                                <span><?= htmlspecialchars($t('leave.type'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars($t((string) ($deletedRequest['type_key'] ?? 'leave.type.annual')), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                                <span><?= htmlspecialchars($t('leave.popover.date_range'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars($formatDateRange($deletedRequest['starts_on'] ?? '', $deletedRequest['ends_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                                <span><?= htmlspecialchars($t('leave.day_part'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars($t((string) ($deletedRequest['day_part_key'] ?? 'leave.day_part.full')), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                                <span><?= htmlspecialchars($t('leave.popover.total_days'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars($formatDays($deletedRequest['total_days'] ?? 0) . ' ' . $t('leave.days'), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                                <span><?= htmlspecialchars($t('leave.deleted_at'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars((string) ($deletedRequest['cancelled_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                                <span><?= htmlspecialchars($t('leave.deleted_by'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars(trim((string) ($deletedRequest['cancelled_by'] ?? '') . ' / ' . (string) ($deletedRequest['cancelled_source'] ?? ''), ' /'), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                            </div>
-                        </article>
-                    <?php endforeach; ?>
-                </div>
-            <?php else: ?>
-                <div class="empty-inline"><?= htmlspecialchars($t('leave.deleted_requests_empty'), ENT_QUOTES, 'UTF-8') ?></div>
-            <?php endif; ?>
-        </section>
-    </div>
 
     <?php if (!empty($requesterEditableRequests) || !empty($requesterCancellableRequests)): ?>
         <section class="requester-panel leave-module-accent is-self-service" aria-label="<?= htmlspecialchars($t('leave.my_requests'), ENT_QUOTES, 'UTF-8') ?>">

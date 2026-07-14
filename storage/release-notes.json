@@ -1,7 +1,18 @@
 {
     "version": 1,
-    "current_version": "v0.79.0",
+    "current_version": "v0.80.0",
     "entries": [
+        {
+            "version": "v0.80.0",
+            "title": "Silinmis izinler kullanici ekranindan kaldirildi",
+            "released_at": "2026-07-14 11:44",
+            "status": "completed",
+            "changes": [
+                "Kullanici izin ekranindaki Silinmis izinler dugmesi, sayaci ve acilir arsiv penceresi kaldirildi.",
+                "Kaldirilan pencereye ait istemci kodu, stiller ve dort dilde kullanilmayan metinler temizlendi.",
+                "Silinen izin kayitlari audit ve yonetim ihtiyaclari icin veri katmaninda korunmaya devam ediyor."
+            ]
+        },
         {
             "version": "v0.79.0",
             "title": "Izin modulunun menu adi Izin Talep olarak degistirildi",

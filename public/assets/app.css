@@ -1861,114 +1861,6 @@ th {
     font-size: 24px;
 }
 
-.leave-deleted-summary {
-    display: grid;
-}
-
-.leave-deleted-summary .button {
-    justify-content: space-between;
-    width: 100%;
-}
-
-.leave-deleted-summary .button span {
-    display: inline-grid;
-    place-items: center;
-    min-width: 28px;
-    min-height: 28px;
-    padding: 0 8px;
-    border-radius: 999px;
-    background: #f1f3f4;
-    color: #4f5661;
-    font-weight: 800;
-}
-
-.leave-deleted-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 95;
-    display: grid;
-    place-items: center;
-    padding: 20px;
-    background: rgba(31, 36, 40, 0.48);
-}
-
-.leave-deleted-overlay[hidden] {
-    display: none;
-}
-
-.has-modal-open {
-    overflow: hidden;
-}
-
-.leave-deleted-modal {
-    display: grid;
-    gap: 14px;
-    width: min(760px, 100%);
-    max-height: calc(100vh - 40px);
-    overflow: auto;
-    padding: 18px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--panel);
-    box-shadow: 0 24px 70px rgba(31, 36, 40, 0.28);
-}
-
-.leave-deleted-modal > header,
-.leave-deleted-card > header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.leave-deleted-modal > header h2,
-.leave-deleted-modal > header p {
-    margin: 0;
-}
-
-.leave-deleted-list {
-    display: grid;
-    gap: 10px;
-}
-
-.leave-deleted-card {
-    display: grid;
-    gap: 10px;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-left: 4px solid #68707d;
-    border-radius: 8px;
-    background: #f8faf7;
-}
-
-.leave-deleted-card > header > div {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-}
-
-.leave-deleted-meta {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-}
-
-.leave-deleted-meta span {
-    display: grid;
-    gap: 4px;
-    min-width: 0;
-    color: var(--muted);
-    font-size: 12px;
-}
-
-.leave-deleted-meta strong {
-    color: var(--ink);
-    font-size: 13px;
-    overflow-wrap: anywhere;
-}
-
 .leave-opening-balance,
 .leave-ledger {
     display: grid;
@@ -4373,7 +4265,6 @@ th {
 
     .stage-line,
     .leave-meta,
-    .leave-deleted-meta,
     .procurement-meta,
     .profile-grid,
     .profile-assignment-grid,
@@ -4485,7 +4376,6 @@ th {
     .form-pair,
     .stage-line,
     .leave-meta,
-    .leave-deleted-meta,
     .procurement-meta,
     .shift-layout,
     .shift-form-grid,
