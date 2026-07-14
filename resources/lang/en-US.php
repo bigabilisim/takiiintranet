@@ -446,8 +446,6 @@ return [
     'leave.balance.used' => 'Used',
     'leave.balance.pending' => 'Pending',
     'leave.balance.remaining' => 'Remaining',
-    'leave.opening_balance.title' => 'Excel opening balance',
-    'leave.opening_balance.body' => 'Total :total days / used :used days / remaining :remaining days',
     'leave.entitlement.policy_title' => 'Annual leave by service year',
     'leave.entitlement.days_value' => ':days days',
     'leave.entitlement.minimum_days_value' => 'At least :days days',

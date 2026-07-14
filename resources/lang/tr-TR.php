@@ -446,8 +446,6 @@ return [
     'leave.balance.used' => 'Kullanılan',
     'leave.balance.pending' => 'Bekleyen',
     'leave.balance.remaining' => 'Kalan',
-    'leave.opening_balance.title' => 'Excel açılış bakiyesi',
-    'leave.opening_balance.body' => 'Toplam :total gün / kullanılan :used gün / kalan :remaining gün',
     'leave.entitlement.policy_title' => 'Hizmet yılına göre yıllık izin',
     'leave.entitlement.days_value' => ':days gün',
     'leave.entitlement.minimum_days_value' => 'En az :days gün',

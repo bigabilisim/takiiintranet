@@ -446,8 +446,6 @@ return [
     'leave.balance.used' => 'Genutzt',
     'leave.balance.pending' => 'Ausstehend',
     'leave.balance.remaining' => 'Verbleibend',
-    'leave.opening_balance.title' => 'Excel-Eröffnungssaldo',
-    'leave.opening_balance.body' => 'Gesamt :total Tage / genutzt :used Tage / verbleibend :remaining Tage',
     'leave.entitlement.policy_title' => 'Jahresurlaub nach Dienstjahren',
     'leave.entitlement.days_value' => ':days Tage',
     'leave.entitlement.minimum_days_value' => 'Mindestens :days Tage',

@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.81.0';
+    private const CURRENT_RELEASE = 'v0.82.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.82.0',
+                'title' => 'Excel acilis bakiyesi kullanici ekranindan kaldirildi',
+                'released_at' => '2026-07-14 12:04',
+                'status' => 'completed',
+                'changes' => [
+                    'Izin ekranindaki Excel acilis bakiyesi bilgi kutusu kullanici gorunumunden kaldirildi.',
+                    'Kullanilmayan kutu stilleri ve dort dildeki gorunum metinleri temizlendi.',
+                    'Acilis bakiyesi verileri izin hesaplamasi ile personel ve IK yonetim alanlarinda korunmaya devam ediyor.',
+                ],
+            ],
             [
                 'version' => 'v0.81.0',
                 'title' => 'Hak edis numaratoru izin kademesi bilgisine donusturuldu',

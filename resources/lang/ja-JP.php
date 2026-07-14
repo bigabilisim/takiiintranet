@@ -446,8 +446,6 @@ return [
     'leave.balance.used' => '使用済み',
     'leave.balance.pending' => '申請中',
     'leave.balance.remaining' => '残日数',
-    'leave.opening_balance.title' => 'Excel開始残高',
-    'leave.opening_balance.body' => '合計 :total 日 / 使用 :used 日 / 残 :remaining 日',
     'leave.entitlement.policy_title' => '勤続年数別の年次休暇',
     'leave.entitlement.days_value' => ':days 日',
     'leave.entitlement.minimum_days_value' => '最低 :days 日',

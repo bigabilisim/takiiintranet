@@ -289,21 +289,6 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                 <strong><?= htmlspecialchars($formatDays($leaveBalance['remaining_days']), ENT_QUOTES, 'UTF-8') ?></strong>
             </div>
         </div>
-        <?php if (($leaveBalance['opening_total_days'] ?? 0) > 0 || ($leaveBalance['opening_used_days'] ?? 0) > 0): ?>
-            <div class="leave-opening-balance">
-                <span><?= htmlspecialchars($t('leave.opening_balance.title'), ENT_QUOTES, 'UTF-8') ?></span>
-                <strong>
-                    <?= htmlspecialchars($t('leave.opening_balance.body', [
-                        'total' => $formatDays($leaveBalance['opening_total_days'] ?? 0),
-                        'used' => $formatDays($leaveBalance['opening_used_days'] ?? 0),
-                        'remaining' => $formatDays($leaveBalance['opening_remaining_days'] ?? 0),
-                    ]), ENT_QUOTES, 'UTF-8') ?>
-                </strong>
-                <?php if (($leaveBalance['opening_snapshot_date'] ?? '') !== '' || ($leaveBalance['opening_source'] ?? '') !== ''): ?>
-                    <small><?= htmlspecialchars(trim(($leaveBalance['opening_source'] ?? '') . ' / ' . ($leaveBalance['opening_snapshot_date'] ?? ''), ' /'), ENT_QUOTES, 'UTF-8') ?></small>
-                <?php endif; ?>
-            </div>
-        <?php endif; ?>
         <div class="section-title">
             <h2><?= htmlspecialchars($t('leave.request_form'), ENT_QUOTES, 'UTF-8') ?></h2>
         </div>

@@ -1960,27 +1960,6 @@ th {
     white-space: nowrap;
 }
 
-.leave-opening-balance {
-    display: grid;
-    gap: 8px;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #ffffff;
-}
-
-.leave-opening-balance span,
-.leave-opening-balance small {
-    color: var(--muted);
-    font-size: 12px;
-}
-
-.leave-opening-balance strong {
-    color: var(--ink);
-    font-size: 13px;
-    line-height: 1.45;
-}
-
 .leave-entitlement-notice {
     display: grid;
     gap: 4px;
