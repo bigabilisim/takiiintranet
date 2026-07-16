@@ -1774,7 +1774,6 @@ th {
 }
 
 .leave-form,
-.requester-panel,
 .approval-card,
 .calendar-panel {
     min-width: 0;
@@ -1817,11 +1816,6 @@ th {
     color: #36558f;
 }
 
-.requester-panel.leave-module-accent.is-self-service {
-    border-top-color: #b0643c;
-    background: #fffdfb;
-}
-
 .calendar-panel.leave-module-accent.is-calendar {
     border-top-color: #258194;
     background: #fbfefe;
@@ -1834,12 +1828,6 @@ th {
 
 .calendar-panel.is-calendar .calendar-header .eyebrow {
     color: #1e6775;
-}
-
-.requester-panel {
-    display: grid;
-    gap: 14px;
-    padding: 16px;
 }
 
 .leave-person-card {
@@ -2075,61 +2063,447 @@ th {
     gap: 10px;
 }
 
-.requester-group,
-.requester-request,
-.requester-request-form {
-    display: grid;
-    gap: 10px;
+.leave-self-service {
     min-width: 0;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
 }
 
-.requester-group {
-    gap: 12px;
-}
-
-.requester-group-title,
-.requester-request > header,
-.requester-card-actions {
+.leave-self-service-header {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
     flex-wrap: wrap;
 }
 
-.requester-group-title {
-    justify-content: space-between;
-    padding-top: 4px;
+.leave-self-service-header > div {
+    min-width: 0;
 }
 
-.requester-group-title span {
+.leave-self-service-header .eyebrow {
+    color: var(--mauve);
+}
+
+.leave-self-service-header h2,
+.leave-self-service-panel-title h3 {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.leave-self-service-header h2 {
+    font-size: 24px;
+}
+
+.leave-self-service-search {
+    display: grid;
+    gap: 5px;
+    width: min(360px, 100%);
+}
+
+.leave-self-service-search span {
     color: var(--muted);
     font-size: 12px;
     font-weight: 700;
 }
 
-.requester-request {
-    padding: 12px;
+.leave-self-service-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #f8faf7;
+    padding: 0 12px;
+    background: #ffffff;
+    color: var(--ink);
 }
 
-.requester-group.is-editable .requester-request {
-    border-left: 4px solid #4a68a8;
-    background: #f7f9ff;
+.leave-self-service-search input:focus,
+.leave-self-service-tabs button:focus-visible,
+.leave-request-editor summary:focus-visible,
+.leave-history-record summary:focus-visible {
+    outline: 3px solid rgba(74, 104, 168, 0.22);
+    outline-offset: 2px;
 }
 
-.requester-group.is-cancellable .requester-request {
-    border-left: 4px solid #b0643c;
-    background: #fff8f4;
+.leave-self-service-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
 }
 
-.requester-request > header {
+.leave-self-service-tabs button {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 58px;
+    border: 1px solid var(--line);
+    border-bottom-width: 3px;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    color: var(--muted);
+    cursor: pointer;
+    text-align: left;
+}
+
+.leave-self-service-tabs button span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-weight: 800;
+}
+
+.leave-self-service-tabs button strong {
+    display: inline-grid;
+    place-items: center;
+    min-width: 30px;
+    height: 28px;
+    border-radius: 999px;
+    padding: 0 7px;
+    background: #eef1ee;
+    color: var(--ink);
+    font-size: 12px;
+}
+
+.leave-self-service-tabs button[data-leave-self-service-tab="requests"].is-active {
+    border-color: #7e97c8;
+    background: #f2f5fc;
+    color: #2f4f88;
+}
+
+.leave-self-service-tabs button[data-leave-self-service-tab="history"].is-active {
+    border-color: #78aa92;
+    background: #f0f7f3;
+    color: #235f49;
+}
+
+.leave-self-service-tabs button[data-leave-self-service-tab="cancellation"].is-active {
+    border-color: #cc8a6e;
+    background: #fff5ef;
+    color: #8a4328;
+}
+
+.leave-self-service.is-enhanced .leave-self-service-panel:not(.is-active) {
+    display: none;
+}
+
+.leave-self-service-panel {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    padding-top: 16px;
+}
+
+.leave-self-service-panel-title,
+.leave-request-card-header,
+.requester-card-actions,
+.leave-request-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.leave-self-service-panel-title,
+.leave-request-card-header {
     justify-content: space-between;
 }
 
-.requester-request-meta {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+.leave-self-service-panel-title h3 {
+    font-size: 18px;
+}
+
+.leave-self-service-panel-title > span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.leave-request-list,
+.leave-personal-history-list,
+.leave-cancellation-list {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+}
+
+.leave-cancellation-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.leave-request-card,
+.leave-cancellation-card,
+.leave-history-record {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(31, 36, 40, 0.05);
+}
+
+.leave-request-card,
+.leave-cancellation-card {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+}
+
+.leave-request-card {
+    border-left: 4px solid #4a68a8;
+}
+
+.leave-request-card.is-editable {
+    background: #fbfcff;
+}
+
+.leave-cancellation-card {
+    border-left: 4px solid var(--rust);
+    background: #fffdfb;
+}
+
+.leave-request-card-header > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.leave-request-card-header small,
+.leave-request-highlight span,
+.leave-request-facts dt,
+.leave-history-record small,
+.leave-history-record-range,
+.leave-history-open-label,
+.leave-personal-timeline small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.leave-request-highlight {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    padding: 11px 12px;
+    border: 1px solid #dce6e1;
+    border-radius: 8px;
+    background: #f5f8f7;
+}
+
+.leave-request-highlight > div:first-child {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.leave-request-highlight strong {
+    overflow-wrap: anywhere;
+}
+
+.leave-request-days {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: baseline;
+    gap: 4px;
+    min-width: 72px;
+    color: #24594e;
+}
+
+.leave-request-days strong {
+    font-size: 22px;
+}
+
+.leave-request-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+}
+
+.leave-request-facts > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.leave-request-facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-weight: 800;
+}
+
+.leave-request-editor {
+    border: 1px solid #cdd8ed;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.leave-request-editor summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 12px;
+    color: #36558f;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.leave-request-editor summary small {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.leave-request-editor-body {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border-top: 1px solid #dce3f1;
+}
+
+.requester-request-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    min-width: 0;
+}
+
+.requester-request-form .form-pair,
+.requester-request-form .leave-edit-note,
+.requester-request-form .requester-card-actions {
+    grid-column: 1 / -1;
+}
+
+.requester-card-actions,
+.leave-request-card-actions {
+    justify-content: flex-end;
+}
+
+.leave-request-editor .button.primary {
+    width: auto;
+}
+
+.leave-request-cancel-direct {
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+}
+
+.leave-history-record {
+    border-left: 4px solid var(--green);
+    overflow: clip;
+}
+
+.leave-history-record > summary {
+    display: grid;
+    grid-template-columns: minmax(130px, 0.7fr) minmax(220px, 1.4fr) auto minmax(130px, auto);
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    min-height: 64px;
+    padding: 12px 14px;
+    cursor: pointer;
+}
+
+.leave-history-record > summary::marker {
+    color: var(--green);
+}
+
+.leave-history-record[open] > summary {
+    background: #f4f8f5;
+}
+
+.leave-history-record-id {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.leave-history-record-range {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.leave-history-open-label {
+    text-align: right;
+}
+
+.leave-history-record-body {
+    padding: 14px;
+    border-top: 1px solid var(--line);
+}
+
+.leave-personal-timeline {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.leave-personal-timeline li {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 10px;
+    min-width: 0;
+    padding: 0 0 16px;
+}
+
+.leave-personal-timeline li:last-child {
+    padding-bottom: 0;
+}
+
+.leave-personal-timeline li > div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.leave-timeline-marker {
+    width: 12px;
+    height: 12px;
+    margin-top: 3px;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    background: #7b8580;
+    box-shadow: 0 0 0 2px #b9c0bc;
+}
+
+.leave-personal-timeline li.is-positive .leave-timeline-marker {
+    background: #2f7655;
+    box-shadow: 0 0 0 2px #8ec2a5;
+}
+
+.leave-personal-timeline li.is-negative .leave-timeline-marker {
+    background: #a63d34;
+    box-shadow: 0 0 0 2px #e1a69f;
+}
+
+.leave-personal-timeline p {
+    margin: 3px 0 0;
+    color: #8a341f;
+    font-size: 12px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.leave-cancellation-action {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0;
+    padding-top: 2px;
+}
+
+.leave-filter-empty {
+    margin-top: 2px;
+}
+
+.leave-self-service [hidden] {
+    display: none !important;
 }
 
 .approval-panel {
@@ -2773,7 +3147,6 @@ th {
 
 .calendar-popover-flow ol,
 .calendar-popover-history ol,
-.requester-history-card ol,
 .leave-history ol {
     display: grid;
     gap: 8px;
@@ -2808,15 +3181,13 @@ th {
 }
 
 .calendar-popover-history small,
-.leave-history small,
-.requester-history-card span {
+.leave-history small {
     color: var(--muted);
     font-size: 12px;
 }
 
 .calendar-popover-history p,
-.leave-history p,
-.requester-history-card em {
+.leave-history p {
     color: #8a341f;
     font-style: normal;
     font-size: 12px;
@@ -2853,35 +3224,6 @@ th {
 
 .leave-history ol {
     margin-top: 10px;
-}
-
-.requester-history-list {
-    display: grid;
-    gap: 10px;
-}
-
-.requester-history-card {
-    display: grid;
-    gap: 8px;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fbfcfb;
-}
-
-.requester-history-card header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.requester-history-card li {
-    display: grid;
-    gap: 3px;
-    padding-left: 10px;
-    border-left: 3px solid #9bc4ac;
 }
 
 .empty-inline {
@@ -4383,6 +4725,10 @@ th {
         grid-template-columns: 1fr;
     }
 
+    .leave-cancellation-list {
+        grid-template-columns: 1fr;
+    }
+
     .stage-line,
     .leave-meta,
     .procurement-meta,
@@ -4436,6 +4782,21 @@ th {
     .topbar {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .leave-self-service-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .leave-self-service-search {
+        width: 100%;
+    }
+
+    .leave-self-service-tabs {
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+        overflow-x: auto;
+        padding-bottom: 4px;
     }
 
     .topbar-actions,
@@ -4499,6 +4860,10 @@ th {
     .compact-calendar-grid,
     .weather-grid,
     .form-pair,
+    .requester-request-form,
+    .leave-request-facts,
+    .leave-request-highlight,
+    .leave-history-record > summary,
     .stage-line,
     .leave-meta,
     .procurement-meta,
@@ -4515,6 +4880,28 @@ th {
     .permission-grid,
     .department-policy-grid {
         grid-template-columns: 1fr;
+    }
+
+    .leave-history-open-label {
+        text-align: left;
+    }
+
+    .leave-request-days {
+        justify-self: start;
+    }
+
+    .requester-card-actions,
+    .leave-request-card-actions,
+    .leave-cancellation-action {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .requester-card-actions .button,
+    .leave-request-card-actions .button,
+    .leave-cancellation-action .button,
+    .leave-request-editor .button.primary {
+        width: 100%;
     }
 
     .shift-holiday-row {
@@ -4657,6 +5044,12 @@ th {
     .template-sidebar,
     .template-editor-panel {
         padding: 14px;
+    }
+
+    .leave-request-card,
+    .leave-cancellation-card,
+    .leave-history-record-body {
+        padding: 12px;
     }
 
     .page-header h1,

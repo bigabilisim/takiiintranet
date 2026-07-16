@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.86.0';
+    private const CURRENT_RELEASE = 'v0.87.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,19 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.87.0',
+                'title' => 'Izin kullanici deneyimi ve lokasyon bazli IK asistanligi gelistirildi',
+                'released_at' => '2026-07-16 15:28',
+                'status' => 'completed',
+                'changes' => [
+                    'Taleplerim, Izin islem tarihcem ve Iptal Talebi alanlari tam genislikte sekmeli bir Izin islemlerim merkezine tasindi; tum talepler, arama, acilir duzenleme ve zaman cizelgesi eklendi.',
+                    'Kullanici ekranlari masaustu ve mobil icin responsive hale getirildi; sekmeler klavye ile gezilebilir ve JavaScript olmadan da icerik erisilebilir tutuldu.',
+                    'Departman onay semasindaki Tek yonetici metni Tek Yonetici / Insan Kaynaklari olarak dort dilde guncellendi.',
+                    'IK asistani gorevi IK Asistani Antalya ve IK Asistani Bursa olarak ayrildi; personel, izin takvimi ve izin defteri bildirim kapsamı ilgili lokasyonla sinirlandi.',
+                    'E-postasiz mavi yaka hesaplarina izin modulu ve talep olusturma yetkisi verildi; mevcut bos yetki kayitlari icin tek seferlik veri migrasyonu ve regresyon testi eklendi.',
+                ],
+            ],
             [
                 'version' => 'v0.86.0',
                 'title' => 'Izin sayfasi basligi sadelestirildi',

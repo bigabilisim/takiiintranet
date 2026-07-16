@@ -1561,7 +1561,7 @@ class LeaveStore
     {
         $permissions = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
 
-        if (in_array('*', $permissions, true) || in_array('admin.company.manage', $permissions, true) || in_array('leave.request.manage.hr', $permissions, true)) {
+        if (in_array('*', $permissions, true) || in_array('admin.company.manage', $permissions, true)) {
             return true;
         }
 
@@ -1571,6 +1571,10 @@ class LeaveStore
 
         if (!LocationScope::canView($user, $this->requesterProfileForRequest($request))) {
             return false;
+        }
+
+        if (in_array('leave.request.manage.hr', $permissions, true)) {
+            return true;
         }
 
         $userEmail = (string) ($user['email'] ?? '');
@@ -2498,8 +2502,22 @@ class LeaveStore
             $candidates[] = (string) ($request['approval_policy']['hr_email'] ?? '');
         }
 
-        foreach ($this->accessControl?->usersWithWorkforceRole('hr_assistant') ?? [] as $user) {
-            $candidates[] = (string) ($user['email'] ?? '');
+        $requestLocation = LocationScope::locationForProfile($this->requesterProfileForRequest($request));
+        $assistantRoles = ['hr_assistant'];
+
+        if ($requestLocation === LocationScope::ANTALYA) {
+            $assistantRoles[] = 'hr_assistant_antalya';
+        } elseif ($requestLocation === LocationScope::BURSA) {
+            $assistantRoles[] = 'hr_assistant_bursa';
+        } else {
+            $assistantRoles[] = 'hr_assistant_antalya';
+            $assistantRoles[] = 'hr_assistant_bursa';
+        }
+
+        foreach ($assistantRoles as $assistantRole) {
+            foreach ($this->accessControl?->usersWithWorkforceRole($assistantRole) ?? [] as $user) {
+                $candidates[] = (string) ($user['email'] ?? '');
+            }
         }
 
         $recipients = [];

@@ -28,6 +28,28 @@ $canCancelLeave = $auth->can('admin.company.manage') || $auth->can('leave.reques
 $approvalStageOrder = ['manager_1', 'manager_2', 'hr', 'calendar'];
 $leaveTypeOptions = ['leave.type.annual', 'leave.type.excuse', 'leave.type.remote'];
 $dayPartOptions = ['full', 'morning', 'afternoon'];
+$requesterEditableById = [];
+$requesterCancellableById = [];
+
+foreach ($requesterEditableRequests as $requesterEditableRequest) {
+    $requesterEditableById[(string) ($requesterEditableRequest['id'] ?? '')] = $requesterEditableRequest;
+}
+
+foreach ($requesterCancellableRequests as $requesterCancellableRequest) {
+    $requesterCancellableById[(string) ($requesterCancellableRequest['id'] ?? '')] = $requesterCancellableRequest;
+}
+
+$requestSearchText = static function (array $request) use ($t, $formatDays, $formatDateRange): string {
+    return implode(' ', array_filter([
+        (string) ($request['id'] ?? ''),
+        $t((string) ($request['status_key'] ?? '')),
+        $t((string) ($request['type_key'] ?? 'leave.type.annual')),
+        $t((string) ($request['day_part_key'] ?? 'leave.day_part.full')),
+        $formatDateRange($request['starts_on'] ?? '', $request['ends_on'] ?? ''),
+        $formatDays($request['total_days'] ?? 0),
+        (string) ($request['created_at'] ?? ''),
+    ]));
+};
 $entitlementBands = is_array($entitlementPolicy['bands'] ?? null) ? $entitlementPolicy['bands'] : [];
 $ageMinimumEntitlement = is_array($entitlementPolicy['age_minimum'] ?? null) ? $entitlementPolicy['age_minimum'] : [];
 $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDateRange): string {
@@ -350,141 +372,6 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
         <button class="button primary" type="submit"><?= htmlspecialchars($t('leave.create'), ENT_QUOTES, 'UTF-8') ?></button>
     </form>
 
-    <?php if (!empty($requesterEditableRequests) || !empty($requesterCancellableRequests)): ?>
-        <section class="requester-panel leave-module-accent is-self-service" aria-label="<?= htmlspecialchars($t('leave.my_requests'), ENT_QUOTES, 'UTF-8') ?>">
-            <div class="section-title">
-                <h2><?= htmlspecialchars($t('leave.my_requests'), ENT_QUOTES, 'UTF-8') ?></h2>
-            </div>
-            <?php if (!empty($requesterEditableRequests)): ?>
-                <div class="requester-group is-editable">
-                    <div class="requester-group-title">
-                        <strong><?= htmlspecialchars($t('leave.editable_requests'), ENT_QUOTES, 'UTF-8') ?></strong>
-                        <span><?= htmlspecialchars($t('leave.editable_requests_count', ['count' => count($requesterEditableRequests)]), ENT_QUOTES, 'UTF-8') ?></span>
-                    </div>
-                    <?php foreach ($requesterEditableRequests as $editableRequest): ?>
-                        <article class="requester-request">
-                            <header>
-                                <strong><?= htmlspecialchars((string) ($editableRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
-                                <span class="status-pill state-<?= htmlspecialchars((string) ($editableRequest['display_status'] ?? $editableRequest['status']), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t((string) ($editableRequest['status_key'] ?? '')), ENT_QUOTES, 'UTF-8') ?></span>
-                            </header>
-                            <form class="requester-request-form" method="post" action="/leave/requests/<?= htmlspecialchars((string) ($editableRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>/requester-update" data-leave-edit-form>
-                                <?= $csrf() ?>
-                                <label>
-                                    <span><?= htmlspecialchars($t('leave.type'), ENT_QUOTES, 'UTF-8') ?></span>
-                                    <select name="type_key">
-                                        <?php foreach ($leaveTypeOptions as $typeOption): ?>
-                                            <option value="<?= htmlspecialchars($typeOption, ENT_QUOTES, 'UTF-8') ?>" <?= (string) ($editableRequest['type_key'] ?? '') === $typeOption ? 'selected' : '' ?>><?= htmlspecialchars($t($typeOption), ENT_QUOTES, 'UTF-8') ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </label>
-                                <label>
-                                    <span><?= htmlspecialchars($t('leave.day_part'), ENT_QUOTES, 'UTF-8') ?></span>
-                                    <select name="day_part" data-leave-day-part>
-                                        <?php foreach ($dayPartOptions as $dayPartOption): ?>
-                                            <option value="<?= htmlspecialchars($dayPartOption, ENT_QUOTES, 'UTF-8') ?>" <?= (string) ($editableRequest['day_part'] ?? 'full') === $dayPartOption ? 'selected' : '' ?>><?= htmlspecialchars($t('leave.day_part.' . $dayPartOption), ENT_QUOTES, 'UTF-8') ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </label>
-                                <div class="form-pair">
-                                    <label>
-                                        <span><?= htmlspecialchars($t('leave.starts_on'), ENT_QUOTES, 'UTF-8') ?></span>
-                                        <input type="date" name="starts_on" value="<?= htmlspecialchars((string) ($editableRequest['starts_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-leave-starts-on required>
-                                    </label>
-                                    <label>
-                                        <span><?= htmlspecialchars($t('leave.ends_on'), ENT_QUOTES, 'UTF-8') ?></span>
-                                        <input type="date" name="ends_on" value="<?= htmlspecialchars((string) ($editableRequest['ends_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-leave-ends-on required>
-                                    </label>
-                                </div>
-                                <label>
-                                    <span><?= htmlspecialchars($t('leave.note'), ENT_QUOTES, 'UTF-8') ?></span>
-                                    <textarea name="note" rows="3"><?= htmlspecialchars((string) ($editableRequest['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                                </label>
-                                <div class="requester-card-actions">
-                                    <button class="button compact primary" type="submit"><?= htmlspecialchars($t('leave.update_request'), ENT_QUOTES, 'UTF-8') ?></button>
-                                </div>
-                            </form>
-                            <form class="requester-card-actions" method="post" action="/leave/requests/<?= htmlspecialchars((string) ($editableRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>/requester-cancel">
-                                <?= $csrf() ?>
-                                <button class="button compact reject" type="submit" onclick="return confirm('<?= htmlspecialchars($t('leave.cancel_my_request_confirm'), ENT_QUOTES, 'UTF-8') ?>')"><?= htmlspecialchars($t('leave.cancel_my_request'), ENT_QUOTES, 'UTF-8') ?></button>
-                            </form>
-                        </article>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-            <?php if (!empty($requesterCancellableRequests)): ?>
-                <div class="requester-group is-cancellable">
-                    <div class="requester-group-title">
-                        <strong><?= htmlspecialchars($t('leave.cancellable_requests'), ENT_QUOTES, 'UTF-8') ?></strong>
-                        <span><?= htmlspecialchars($t('leave.cancellable_requests_count', ['count' => count($requesterCancellableRequests)]), ENT_QUOTES, 'UTF-8') ?></span>
-                    </div>
-                    <?php foreach ($requesterCancellableRequests as $cancellableRequest): ?>
-                        <article class="requester-request">
-                            <header>
-                                <strong><?= htmlspecialchars((string) ($cancellableRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
-                                <span class="status-pill state-<?= htmlspecialchars((string) ($cancellableRequest['display_status'] ?? $cancellableRequest['status']), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t((string) ($cancellableRequest['status_key'] ?? '')), ENT_QUOTES, 'UTF-8') ?></span>
-                            </header>
-                            <div class="leave-meta requester-request-meta">
-                                <span><?= htmlspecialchars($t('leave.popover.date_range'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars($formatDateRange($cancellableRequest['starts_on'] ?? '', $cancellableRequest['ends_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                                <span><?= htmlspecialchars($t('leave.day_part'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars($t((string) ($cancellableRequest['day_part_key'] ?? 'leave.day_part.full')), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                                <span><?= htmlspecialchars($t('leave.popover.total_days'), ENT_QUOTES, 'UTF-8') ?><strong><?= htmlspecialchars($formatDays($cancellableRequest['total_days'] ?? 0) . ' ' . $t('leave.days'), ENT_QUOTES, 'UTF-8') ?></strong></span>
-                            </div>
-                            <form class="requester-card-actions" method="post" action="/leave/requests/<?= htmlspecialchars((string) ($cancellableRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>/request-cancellation">
-                                <?= $csrf() ?>
-                                <button class="button compact reject" type="submit" onclick="return confirm('<?= htmlspecialchars($t('leave.request_cancellation_confirm'), ENT_QUOTES, 'UTF-8') ?>')"><?= htmlspecialchars($t('leave.request_cancellation'), ENT_QUOTES, 'UTF-8') ?></button>
-                            </form>
-                        </article>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </section>
-    <?php endif; ?>
-    <?php if (!empty($requesterHistoryRequests)): ?>
-        <section class="requester-panel" aria-label="<?= htmlspecialchars($t('leave.history.my_title'), ENT_QUOTES, 'UTF-8') ?>">
-            <div class="section-title">
-                <h2><?= htmlspecialchars($t('leave.history.my_title'), ENT_QUOTES, 'UTF-8') ?></h2>
-                <span><?= htmlspecialchars($t('leave.history.my_count', ['count' => count($requesterHistoryRequests)]), ENT_QUOTES, 'UTF-8') ?></span>
-            </div>
-            <div class="requester-history-list">
-                <?php foreach (array_slice($requesterHistoryRequests, 0, 8) as $historyRequest): ?>
-                    <article class="requester-history-card">
-                        <header>
-                            <strong><?= htmlspecialchars((string) ($historyRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
-                            <span class="status-pill state-<?= htmlspecialchars((string) ($historyRequest['display_status'] ?? $historyRequest['status']), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t((string) ($historyRequest['status_key'] ?? '')), ENT_QUOTES, 'UTF-8') ?></span>
-                        </header>
-                        <small><?= htmlspecialchars($formatDateRange($historyRequest['starts_on'] ?? '', $historyRequest['ends_on'] ?? '') . ' / ' . $formatDays($historyRequest['total_days'] ?? 0) . ' ' . $t('leave.days'), ENT_QUOTES, 'UTF-8') ?></small>
-                        <?php if (!empty($historyRequest['history'])): ?>
-                            <ol>
-                                <?php foreach (array_slice((array) $historyRequest['history'], -4) as $historyEntry): ?>
-                                    <?php
-                                        $historyStage = (string) ($historyEntry['stage_key'] ?? '');
-                                        $historySource = (string) ($historyEntry['source'] ?? '');
-                                        $historyMeta = array_filter([
-                                            (string) ($historyEntry['actor'] ?? ''),
-                                            $historySource !== '' ? $t('leave.source.' . $historySource) : '',
-                                            (string) ($historyEntry['at'] ?? ''),
-                                        ]);
-                                        $historyLabel = $t((string) ($historyEntry['label_key'] ?? ''));
-                                        if ($historyStage !== '') {
-                                            $historyLabel = $t($historyStage) . ' / ' . $historyLabel;
-                                        }
-                                    ?>
-                                    <li>
-                                        <strong><?= htmlspecialchars($historyLabel, ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <?php if ($historyMeta !== []): ?>
-                                            <span><?= htmlspecialchars(implode(' / ', $historyMeta), ENT_QUOTES, 'UTF-8') ?></span>
-                                        <?php endif; ?>
-                                        <?php if ((string) ($historyEntry['note'] ?? '') !== ''): ?>
-                                            <em><?= htmlspecialchars((string) ($historyEntry['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?></em>
-                                        <?php endif; ?>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ol>
-                        <?php endif; ?>
-                    </article>
-                <?php endforeach; ?>
-            </div>
-        </section>
-    <?php endif; ?>
     </div>
 
     <section class="calendar-panel leave-module-accent is-calendar">
@@ -551,4 +438,281 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
         </div>
     <?php endif; ?>
     </section>
+</section>
+
+<section class="leave-self-service" data-leave-self-service aria-labelledby="leave-self-service-title">
+    <header class="leave-self-service-header">
+        <div>
+            <p class="eyebrow"><?= htmlspecialchars($t('leave.self_service.eyebrow'), ENT_QUOTES, 'UTF-8') ?></p>
+            <h2 id="leave-self-service-title"><?= htmlspecialchars($t('leave.self_service.title'), ENT_QUOTES, 'UTF-8') ?></h2>
+        </div>
+        <label class="leave-self-service-search">
+            <span><?= htmlspecialchars($t('leave.self_service.search'), ENT_QUOTES, 'UTF-8') ?></span>
+            <input type="search" placeholder="<?= htmlspecialchars($t('leave.self_service.search_placeholder'), ENT_QUOTES, 'UTF-8') ?>" autocomplete="off" data-leave-self-service-search>
+        </label>
+    </header>
+
+    <div class="leave-self-service-tabs" role="tablist" aria-label="<?= htmlspecialchars($t('leave.self_service.title'), ENT_QUOTES, 'UTF-8') ?>">
+        <button class="is-active" id="leave-tab-requests" type="button" role="tab" aria-selected="true" aria-controls="leave-panel-requests" data-leave-self-service-tab="requests">
+            <span><?= htmlspecialchars($t('leave.my_requests'), ENT_QUOTES, 'UTF-8') ?></span>
+            <strong><?= count($requesterHistoryRequests) ?></strong>
+        </button>
+        <button id="leave-tab-history" type="button" role="tab" aria-selected="false" aria-controls="leave-panel-history" tabindex="-1" data-leave-self-service-tab="history">
+            <span><?= htmlspecialchars($t('leave.history.my_title'), ENT_QUOTES, 'UTF-8') ?></span>
+            <strong><?= count($requesterHistoryRequests) ?></strong>
+        </button>
+        <button id="leave-tab-cancellation" type="button" role="tab" aria-selected="false" aria-controls="leave-panel-cancellation" tabindex="-1" data-leave-self-service-tab="cancellation">
+            <span><?= htmlspecialchars($t('leave.cancellable_requests'), ENT_QUOTES, 'UTF-8') ?></span>
+            <strong><?= count($requesterCancellableRequests) ?></strong>
+        </button>
+    </div>
+
+    <div class="leave-self-service-panel is-active" id="leave-panel-requests" role="tabpanel" aria-labelledby="leave-tab-requests" data-leave-self-service-panel="requests">
+        <div class="leave-self-service-panel-title">
+            <h3><?= htmlspecialchars($t('leave.my_requests'), ENT_QUOTES, 'UTF-8') ?></h3>
+            <span><?= htmlspecialchars($t('leave.my_requests_count', ['count' => count($requesterHistoryRequests)]), ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
+
+        <?php if (!empty($requesterHistoryRequests)): ?>
+            <div class="leave-request-list">
+                <?php foreach ($requesterHistoryRequests as $requestOverview): ?>
+                    <?php
+                        $requestId = (string) ($requestOverview['id'] ?? '');
+                        $editableRequest = $requesterEditableById[$requestId] ?? null;
+                        $canRequestCancellation = isset($requesterCancellableById[$requestId]);
+                        $requestStatus = (string) ($requestOverview['display_status'] ?? $requestOverview['status'] ?? '');
+                    ?>
+                    <article
+                        class="leave-request-card<?= is_array($editableRequest) ? ' is-editable' : '' ?>"
+                        data-leave-self-service-record
+                        data-leave-search-text="<?= htmlspecialchars($requestSearchText($requestOverview), ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                        <header class="leave-request-card-header">
+                            <div>
+                                <strong><?= htmlspecialchars($requestId, ENT_QUOTES, 'UTF-8') ?></strong>
+                                <small><?= htmlspecialchars($t('leave.created_at', ['date' => (string) ($requestOverview['created_at'] ?? '')]), ENT_QUOTES, 'UTF-8') ?></small>
+                            </div>
+                            <span class="status-pill state-<?= htmlspecialchars($requestStatus, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t((string) ($requestOverview['status_key'] ?? '')), ENT_QUOTES, 'UTF-8') ?></span>
+                        </header>
+
+                        <div class="leave-request-highlight">
+                            <div>
+                                <span><?= htmlspecialchars($t('leave.popover.date_range'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <strong><?= htmlspecialchars($formatDateRange($requestOverview['starts_on'] ?? '', $requestOverview['ends_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+                            <div class="leave-request-days">
+                                <strong><?= htmlspecialchars($formatDays($requestOverview['total_days'] ?? 0), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <span><?= htmlspecialchars($t('leave.days'), ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                        </div>
+
+                        <dl class="leave-request-facts">
+                            <div>
+                                <dt><?= htmlspecialchars($t('leave.type'), ENT_QUOTES, 'UTF-8') ?></dt>
+                                <dd><?= htmlspecialchars($t((string) ($requestOverview['type_key'] ?? 'leave.type.annual')), ENT_QUOTES, 'UTF-8') ?></dd>
+                            </div>
+                            <div>
+                                <dt><?= htmlspecialchars($t('leave.day_part'), ENT_QUOTES, 'UTF-8') ?></dt>
+                                <dd><?= htmlspecialchars($t((string) ($requestOverview['day_part_key'] ?? 'leave.day_part.full')), ENT_QUOTES, 'UTF-8') ?></dd>
+                            </div>
+                        </dl>
+
+                        <?php if (is_array($editableRequest)): ?>
+                            <details class="leave-request-editor">
+                                <summary>
+                                    <span><?= htmlspecialchars($t('leave.request_edit'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <small><?= htmlspecialchars($t('leave.request_edit_hint'), ENT_QUOTES, 'UTF-8') ?></small>
+                                </summary>
+                                <div class="leave-request-editor-body">
+                                    <form class="requester-request-form" method="post" action="/leave/requests/<?= htmlspecialchars($requestId, ENT_QUOTES, 'UTF-8') ?>/requester-update" data-leave-edit-form>
+                                        <?= $csrf() ?>
+                                        <label>
+                                            <span><?= htmlspecialchars($t('leave.type'), ENT_QUOTES, 'UTF-8') ?></span>
+                                            <select name="type_key">
+                                                <?php foreach ($leaveTypeOptions as $typeOption): ?>
+                                                    <option value="<?= htmlspecialchars($typeOption, ENT_QUOTES, 'UTF-8') ?>" <?= (string) ($editableRequest['type_key'] ?? '') === $typeOption ? 'selected' : '' ?>><?= htmlspecialchars($t($typeOption), ENT_QUOTES, 'UTF-8') ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </label>
+                                        <label>
+                                            <span><?= htmlspecialchars($t('leave.day_part'), ENT_QUOTES, 'UTF-8') ?></span>
+                                            <select name="day_part" data-leave-day-part>
+                                                <?php foreach ($dayPartOptions as $dayPartOption): ?>
+                                                    <option value="<?= htmlspecialchars($dayPartOption, ENT_QUOTES, 'UTF-8') ?>" <?= (string) ($editableRequest['day_part'] ?? 'full') === $dayPartOption ? 'selected' : '' ?>><?= htmlspecialchars($t('leave.day_part.' . $dayPartOption), ENT_QUOTES, 'UTF-8') ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </label>
+                                        <div class="form-pair">
+                                            <label>
+                                                <span><?= htmlspecialchars($t('leave.starts_on'), ENT_QUOTES, 'UTF-8') ?></span>
+                                                <input type="date" name="starts_on" value="<?= htmlspecialchars((string) ($editableRequest['starts_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-leave-starts-on required>
+                                            </label>
+                                            <label>
+                                                <span><?= htmlspecialchars($t('leave.ends_on'), ENT_QUOTES, 'UTF-8') ?></span>
+                                                <input type="date" name="ends_on" value="<?= htmlspecialchars((string) ($editableRequest['ends_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" data-leave-ends-on required>
+                                            </label>
+                                        </div>
+                                        <label class="leave-edit-note">
+                                            <span><?= htmlspecialchars($t('leave.note'), ENT_QUOTES, 'UTF-8') ?></span>
+                                            <textarea name="note" rows="3"><?= htmlspecialchars((string) ($editableRequest['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                                        </label>
+                                        <div class="requester-card-actions">
+                                            <button class="button compact primary" type="submit"><?= htmlspecialchars($t('leave.update_request'), ENT_QUOTES, 'UTF-8') ?></button>
+                                        </div>
+                                    </form>
+                                    <form class="requester-card-actions leave-request-cancel-direct" method="post" action="/leave/requests/<?= htmlspecialchars($requestId, ENT_QUOTES, 'UTF-8') ?>/requester-cancel">
+                                        <?= $csrf() ?>
+                                        <button class="button compact reject" type="submit" onclick="return confirm('<?= htmlspecialchars($t('leave.cancel_my_request_confirm'), ENT_QUOTES, 'UTF-8') ?>')"><?= htmlspecialchars($t('leave.cancel_my_request'), ENT_QUOTES, 'UTF-8') ?></button>
+                                    </form>
+                                </div>
+                            </details>
+                        <?php elseif ($canRequestCancellation): ?>
+                            <div class="leave-request-card-actions">
+                                <button class="button compact secondary" type="button" data-leave-open-panel="cancellation"><?= htmlspecialchars($t('leave.request_cancellation_view'), ENT_QUOTES, 'UTF-8') ?></button>
+                            </div>
+                        <?php endif; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="empty-inline" data-leave-static-empty><?= htmlspecialchars($t('leave.my_requests_empty'), ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
+        <div class="empty-inline leave-filter-empty" data-leave-filter-empty hidden><?= htmlspecialchars($t('leave.self_service.no_results'), ENT_QUOTES, 'UTF-8') ?></div>
+    </div>
+
+    <div class="leave-self-service-panel" id="leave-panel-history" role="tabpanel" aria-labelledby="leave-tab-history" data-leave-self-service-panel="history">
+        <div class="leave-self-service-panel-title">
+            <h3><?= htmlspecialchars($t('leave.history.my_title'), ENT_QUOTES, 'UTF-8') ?></h3>
+            <span><?= htmlspecialchars($t('leave.history.my_count', ['count' => count($requesterHistoryRequests)]), ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
+
+        <?php if (!empty($requesterHistoryRequests)): ?>
+            <div class="leave-personal-history-list">
+                <?php foreach ($requesterHistoryRequests as $historyRequest): ?>
+                    <?php
+                        $historyStatus = (string) ($historyRequest['display_status'] ?? $historyRequest['status'] ?? '');
+                        $historySummary = $formatDateRange($historyRequest['starts_on'] ?? '', $historyRequest['ends_on'] ?? '')
+                            . ' / ' . $formatDays($historyRequest['total_days'] ?? 0) . ' ' . $t('leave.days');
+                    ?>
+                    <details
+                        class="leave-history-record"
+                        data-leave-self-service-record
+                        data-leave-search-text="<?= htmlspecialchars($requestSearchText($historyRequest), ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                        <summary>
+                            <span class="leave-history-record-id">
+                                <strong><?= htmlspecialchars((string) ($historyRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <small><?= htmlspecialchars((string) ($historyRequest['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></small>
+                            </span>
+                            <span class="leave-history-record-range"><?= htmlspecialchars($historySummary, ENT_QUOTES, 'UTF-8') ?></span>
+                            <span class="status-pill state-<?= htmlspecialchars($historyStatus, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t((string) ($historyRequest['status_key'] ?? '')), ENT_QUOTES, 'UTF-8') ?></span>
+                            <span class="leave-history-open-label"><?= htmlspecialchars($t('leave.history.open'), ENT_QUOTES, 'UTF-8') ?></span>
+                        </summary>
+                        <div class="leave-history-record-body">
+                            <?php if (!empty($historyRequest['history'])): ?>
+                                <ol class="leave-personal-timeline">
+                                    <?php foreach ((array) $historyRequest['history'] as $historyEntry): ?>
+                                        <?php
+                                            $historyStage = (string) ($historyEntry['stage_key'] ?? '');
+                                            $historySource = (string) ($historyEntry['source'] ?? '');
+                                            $historyLabelKey = (string) ($historyEntry['label_key'] ?? '');
+                                            $historyMeta = array_filter([
+                                                (string) ($historyEntry['actor'] ?? ''),
+                                                $historySource !== '' ? $t('leave.source.' . $historySource) : '',
+                                                (string) ($historyEntry['at'] ?? ''),
+                                            ]);
+                                            $historyLabel = $t($historyLabelKey);
+                                            $historyTone = 'is-neutral';
+
+                                            if (str_contains($historyLabelKey, 'rejected') || str_contains($historyLabelKey, 'cancelled') || str_contains($historyLabelKey, 'not_signed')) {
+                                                $historyTone = 'is-negative';
+                                            } elseif (str_contains($historyLabelKey, 'approved') || str_contains($historyLabelKey, 'signed')) {
+                                                $historyTone = 'is-positive';
+                                            }
+
+                                            if ($historyStage !== '') {
+                                                $historyLabel = $t($historyStage) . ' / ' . $historyLabel;
+                                            }
+                                        ?>
+                                        <li class="<?= $historyTone ?>">
+                                            <span class="leave-timeline-marker" aria-hidden="true"></span>
+                                            <div>
+                                                <strong><?= htmlspecialchars($historyLabel, ENT_QUOTES, 'UTF-8') ?></strong>
+                                                <?php if ($historyMeta !== []): ?>
+                                                    <small><?= htmlspecialchars(implode(' / ', $historyMeta), ENT_QUOTES, 'UTF-8') ?></small>
+                                                <?php endif; ?>
+                                                <?php if ((string) ($historyEntry['note'] ?? '') !== ''): ?>
+                                                    <p><?= htmlspecialchars((string) ($historyEntry['note'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                                                <?php endif; ?>
+                                            </div>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ol>
+                            <?php else: ?>
+                                <div class="empty-inline"><?= htmlspecialchars($t('leave.history.my_empty'), ENT_QUOTES, 'UTF-8') ?></div>
+                            <?php endif; ?>
+                        </div>
+                    </details>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="empty-inline" data-leave-static-empty><?= htmlspecialchars($t('leave.history.my_empty'), ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
+        <div class="empty-inline leave-filter-empty" data-leave-filter-empty hidden><?= htmlspecialchars($t('leave.self_service.no_results'), ENT_QUOTES, 'UTF-8') ?></div>
+    </div>
+
+    <div class="leave-self-service-panel" id="leave-panel-cancellation" role="tabpanel" aria-labelledby="leave-tab-cancellation" data-leave-self-service-panel="cancellation">
+        <div class="leave-self-service-panel-title">
+            <h3><?= htmlspecialchars($t('leave.cancellable_requests'), ENT_QUOTES, 'UTF-8') ?></h3>
+            <span><?= htmlspecialchars($t('leave.cancellable_requests_count', ['count' => count($requesterCancellableRequests)]), ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
+
+        <?php if (!empty($requesterCancellableRequests)): ?>
+            <div class="leave-cancellation-list">
+                <?php foreach ($requesterCancellableRequests as $cancellableRequest): ?>
+                    <?php $cancellableStatus = (string) ($cancellableRequest['display_status'] ?? $cancellableRequest['status'] ?? ''); ?>
+                    <article
+                        class="leave-cancellation-card"
+                        data-leave-self-service-record
+                        data-leave-search-text="<?= htmlspecialchars($requestSearchText($cancellableRequest), ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                        <header class="leave-request-card-header">
+                            <div>
+                                <strong><?= htmlspecialchars((string) ($cancellableRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <small><?= htmlspecialchars($t('leave.created_at', ['date' => (string) ($cancellableRequest['created_at'] ?? '')]), ENT_QUOTES, 'UTF-8') ?></small>
+                            </div>
+                            <span class="status-pill state-<?= htmlspecialchars($cancellableStatus, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t((string) ($cancellableRequest['status_key'] ?? '')), ENT_QUOTES, 'UTF-8') ?></span>
+                        </header>
+                        <div class="leave-request-highlight">
+                            <div>
+                                <span><?= htmlspecialchars($t('leave.popover.date_range'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <strong><?= htmlspecialchars($formatDateRange($cancellableRequest['starts_on'] ?? '', $cancellableRequest['ends_on'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
+                            </div>
+                            <div class="leave-request-days">
+                                <strong><?= htmlspecialchars($formatDays($cancellableRequest['total_days'] ?? 0), ENT_QUOTES, 'UTF-8') ?></strong>
+                                <span><?= htmlspecialchars($t('leave.days'), ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                        </div>
+                        <dl class="leave-request-facts">
+                            <div>
+                                <dt><?= htmlspecialchars($t('leave.type'), ENT_QUOTES, 'UTF-8') ?></dt>
+                                <dd><?= htmlspecialchars($t((string) ($cancellableRequest['type_key'] ?? 'leave.type.annual')), ENT_QUOTES, 'UTF-8') ?></dd>
+                            </div>
+                            <div>
+                                <dt><?= htmlspecialchars($t('leave.day_part'), ENT_QUOTES, 'UTF-8') ?></dt>
+                                <dd><?= htmlspecialchars($t((string) ($cancellableRequest['day_part_key'] ?? 'leave.day_part.full')), ENT_QUOTES, 'UTF-8') ?></dd>
+                            </div>
+                        </dl>
+                        <form class="leave-cancellation-action" method="post" action="/leave/requests/<?= htmlspecialchars((string) ($cancellableRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>/request-cancellation">
+                            <?= $csrf() ?>
+                            <button class="button compact reject" type="submit" onclick="return confirm('<?= htmlspecialchars($t('leave.request_cancellation_confirm'), ENT_QUOTES, 'UTF-8') ?>')"><?= htmlspecialchars($t('leave.request_cancellation'), ENT_QUOTES, 'UTF-8') ?></button>
+                        </form>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="empty-inline" data-leave-static-empty><?= htmlspecialchars($t('leave.cancellable_requests_empty'), ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
+        <div class="empty-inline leave-filter-empty" data-leave-filter-empty hidden><?= htmlspecialchars($t('leave.self_service.no_results'), ENT_QUOTES, 'UTF-8') ?></div>
+    </div>
 </section>

@@ -85,6 +85,7 @@ function calendarRequesters(array $calendar): array
 try {
     mkdir($testRoot . '/storage', 0770, true);
     putenv('MAIL_TRANSPORT=outbox');
+    putenv('LEAVE_BOOK_SIGNATURE_FOLLOWUP_EMAILS');
     Session::start();
     $appConfig = require $projectRoot . '/config/app.php';
     $modules = require $projectRoot . '/config/modules.php';
@@ -117,6 +118,47 @@ try {
         'department' => 'Prod ofis',
         'shift_key' => 'bursa-shift',
     ]);
+    $antalyaAssistant = createLocationProfile($profiles, [
+        'new_email' => 'antalya.hr.assistant@takii.com.tr',
+        'first_name' => 'Antalya',
+        'last_name' => 'HR Assistant',
+        'department' => 'IK Antalya',
+        'location' => LocationScope::ANTALYA,
+        'workforce_roles' => ['hr_assistant_antalya'],
+    ]);
+    $bursaAssistant = createLocationProfile($profiles, [
+        'new_email' => 'bursa.hr.assistant@takii.com.tr',
+        'first_name' => 'Bursa',
+        'last_name' => 'HR Assistant',
+        'department' => 'IK Bursa',
+        'location' => LocationScope::BURSA,
+        'workforce_roles' => ['hr_assistant_bursa'],
+    ]);
+    $legacyAssistant = createLocationProfile($profiles, [
+        'new_email' => 'legacy.hr.assistant@takii.com.tr',
+        'first_name' => 'Legacy',
+        'last_name' => 'HR Assistant',
+        'department' => 'IK Antalya',
+        'location' => LocationScope::ANTALYA,
+        'workforce_roles' => ['hr_assistant'],
+    ]);
+    locationAssert(in_array('hr_assistant_antalya', $legacyAssistant['workforce_roles'] ?? [], true), 'Legacy HR assistant role was not scoped to Antalya.');
+    locationAssert(!in_array('hr_assistant', $legacyAssistant['workforce_roles'] ?? [], true), 'Legacy HR assistant role remained unscoped.');
+
+    $conflictingAssistant = $profiles->createProfile([
+        'new_email' => 'conflicting.hr.assistant@takii.com.tr',
+        'first_name' => 'Conflicting',
+        'last_name' => 'HR Assistant',
+        'role' => 'Specialist',
+        'department' => 'IK',
+        'location' => LocationScope::ANTALYA,
+        'started_on' => '2020-01-01',
+        'employment_type' => 'full_time',
+        'workforce_roles' => ['hr_assistant_antalya', 'hr_assistant_bursa'],
+        'password' => 'location-test-123',
+        'password_confirmation' => 'location-test-123',
+    ]);
+    locationAssert(empty($conflictingAssistant['ok']) && ($conflictingAssistant['message'] ?? '') === 'personnel.flash.hr_assistant_location_conflict', 'Conflicting HR assistant locations were accepted.');
 
     locationAssert(($antalyaOne['location'] ?? '') === LocationScope::ANTALYA, 'RD profile was not migrated to Antalya.');
     locationAssert(($bursa['location'] ?? '') === LocationScope::BURSA, 'Prod profile was not migrated to Bursa.');
@@ -128,6 +170,11 @@ try {
     $hr = $directory['y.ekici@takii.com.tr'];
     locationAssert(LocationScope::hasGlobalVisibility($hr), 'HR manager did not receive global location visibility.');
     locationAssert(LocationScope::canView($hr, $bursa), 'HR manager cannot see Bursa.');
+    locationAssert(!LocationScope::hasGlobalVisibility($antalyaAssistant), 'Antalya HR assistant received global visibility.');
+    locationAssert(LocationScope::canView($antalyaAssistant, $antalyaOne), 'Antalya HR assistant cannot see Antalya.');
+    locationAssert(!LocationScope::canView($antalyaAssistant, $bursa), 'Antalya HR assistant can see Bursa.');
+    locationAssert(LocationScope::canView($bursaAssistant, $bursa), 'Bursa HR assistant cannot see Bursa.');
+    locationAssert(!LocationScope::canView($bursaAssistant, $antalyaOne), 'Bursa HR assistant can see Antalya.');
 
     $messages = new MessageStore($directory, $stateStore);
     $antalyaRecipients = array_column($messages->recipients('antalya.one@takii.com.tr'), 'email');
@@ -156,6 +203,12 @@ try {
         'messaging.send',
     ]);
     $expandedDirectory = $access->usersByIdentity();
+    $expandedAntalyaAssistant = $expandedDirectory['antalya.hr.assistant@takii.com.tr'] ?? [];
+    $expandedBursaAssistant = $expandedDirectory['bursa.hr.assistant@takii.com.tr'] ?? [];
+    locationAssert(in_array('leave.request.manage.hr', $expandedAntalyaAssistant['permissions'] ?? [], true), 'Antalya HR assistant did not receive HR leave permission.');
+    locationAssert(!LocationScope::hasGlobalVisibility($expandedAntalyaAssistant), 'Antalya HR assistant permission bypassed the location scope.');
+    locationAssert(!LocationScope::canView($expandedAntalyaAssistant, $bursa), 'Antalya HR assistant permission exposed Bursa.');
+    locationAssert(in_array('leave.request.manage.hr', $expandedBursaAssistant['permissions'] ?? [], true), 'Bursa HR assistant did not receive HR leave permission.');
     locationAssert(LocationScope::hasGlobalVisibility($expandedDirectory['antalya.two@takii.com.tr'] ?? []), 'Delegated admin did not receive global location visibility.');
     $expandedMessages = new MessageStore($expandedDirectory, $stateStore);
     $delegatedAdminRecipients = array_column($expandedMessages->recipients('antalya.two@takii.com.tr'), 'email');
@@ -193,15 +246,28 @@ try {
 
     locationAssert(is_array($antalyaLeaveResult) && ($antalyaLeaveResult['notifications'] ?? []) === [], 'Cross-location manager received an approval notification.');
     $antalyaLeaveRequest = null;
+    $bursaLeaveRequest = null;
 
     foreach ($leave->all() as $leaveRequest) {
         if (($leaveRequest['requester_email'] ?? '') === 'antalya.one@takii.com.tr') {
             $antalyaLeaveRequest = $leaveRequest;
-            break;
+        }
+
+        if (($leaveRequest['requester_email'] ?? '') === 'bursa.one@takii.com.tr') {
+            $bursaLeaveRequest = $leaveRequest;
         }
     }
 
     locationAssert(is_array($antalyaLeaveRequest), 'Antalya leave request fixture is missing.');
+    locationAssert(is_array($bursaLeaveRequest), 'Bursa leave request fixture is missing.');
+    $signatureRecipients = new ReflectionMethod($leave, 'signatureFollowupRecipients');
+    $signatureRecipients->setAccessible(true);
+    $antalyaSignatureRecipients = $signatureRecipients->invoke($leave, $antalyaLeaveRequest);
+    $bursaSignatureRecipients = $signatureRecipients->invoke($leave, $bursaLeaveRequest);
+    locationAssert(in_array('antalya.hr.assistant@takii.com.tr', $antalyaSignatureRecipients, true), 'Antalya HR assistant is missing from Antalya signature reminders.');
+    locationAssert(!in_array('bursa.hr.assistant@takii.com.tr', $antalyaSignatureRecipients, true), 'Bursa HR assistant received an Antalya signature reminder.');
+    locationAssert(in_array('bursa.hr.assistant@takii.com.tr', $bursaSignatureRecipients, true), 'Bursa HR assistant is missing from Bursa signature reminders.');
+    locationAssert(!in_array('antalya.hr.assistant@takii.com.tr', $bursaSignatureRecipients, true), 'Antalya HR assistant received a Bursa signature reminder.');
     $crossLocationToken = (string) ($antalyaLeaveRequest['approval_tokens']['manager_1'] ?? '');
     $crossLocationDecision = $leave->advanceByToken($crossLocationToken, 'approve');
     locationAssert(empty($crossLocationDecision['ok']) && ($crossLocationDecision['message'] ?? '') === 'leave.flash.not_allowed', 'Cross-location mail token approved the leave request.');
@@ -216,12 +282,18 @@ try {
 
     $hrCalendar = calendarRequesters($leave->calendar('day', '2030-01-07', $hr));
     locationAssert(in_array('Antalya One', $hrCalendar, true) && in_array('Bursa One', $hrCalendar, true), 'HR cannot see both location calendars.');
+    $antalyaAssistantCalendar = calendarRequesters($leave->calendar('day', '2030-01-07', $expandedAntalyaAssistant));
+    locationAssert(in_array('Antalya One', $antalyaAssistantCalendar, true), 'Antalya HR assistant cannot see Antalya calendar.');
+    locationAssert(!in_array('Bursa One', $antalyaAssistantCalendar, true), 'Antalya HR assistant can see Bursa calendar.');
+    $bursaAssistantCalendar = calendarRequesters($leave->calendar('day', '2030-01-07', $expandedBursaAssistant));
+    locationAssert(in_array('Bursa One', $bursaAssistantCalendar, true), 'Bursa HR assistant cannot see Bursa calendar.');
+    locationAssert(!in_array('Antalya One', $bursaAssistantCalendar, true), 'Bursa HR assistant can see Antalya calendar.');
 
     $csv = $profiles->exportProfilesCsv([$antalyaOne]);
     locationAssert(str_contains($csv, 'department,location,pdks_id'), 'Location is missing from personnel export.');
     locationAssert(str_contains($csv, ',antalya,'), 'Export did not include the profile location.');
 
-    echo "Location visibility passed: personnel policy, messages, shifts, leave calendar, HR exception, and export verified.\n";
+    echo "Location visibility passed: personnel policy, messages, shifts, leave calendar, scoped HR assistants, HR exception, and export verified.\n";
 } catch (Throwable $exception) {
     fwrite(STDERR, 'Location visibility failed: ' . $exception->getMessage() . "\n");
     exit(1);

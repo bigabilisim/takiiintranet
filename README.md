@@ -10,18 +10,18 @@ tasarlanmistir.
 - Uluslararasi firmalara beyaz etiketli olarak sunulabilecek intranet urunu
 - Turkce, Ingilizce ve Japonca arayuz destegi
 - Admin tarafindan kisi bazli modul ve surec yetkisi yonetimi
-- Departman bazli izin onay semasi: tek yonetici, iki yonetici ve IK onayi
+- Departman bazli izin onay semasi: tek yonetici / IK veya iki yonetici / IK onayi
 - PWA uyumlulugu, offline sayfasi ve Web Push bildirim altyapisi
 - PHP 8.3+ ve MariaDB 10.11+ hedefli, moduler monolith mimarisi
 
 ## Guncel Moduller
 
 - **Operasyon paneli:** Haberler, duyurular, izin takvimi, hava durumu ve is kuyrugu.
-- **Izin yonetimi:** Izin talebi, aylik/haftalik/gunluk takvim, bakiye karti, 60 gun icinde yeni izin hakki uyarisi.
+- **Izin yonetimi:** Izin talebi, aylik/haftalik/gunluk takvim, bakiye karti, 60 gun icinde yeni izin hakki uyarisi; Taleplerim, Izin islem tarihcem ve Iptal Talebi sekmeleri.
 - **Guvenli izin sahipligi:** Izinler ve bakiyeler, ad-soyad veya e-posta degisse de korunan sabit personel kimligiyle eslestirilir.
 - **Tatil ve nobet takvimi:** Turkiye resmi tatilleri, yarim gunler, sirket tatilleri ve tarih bazli aylik ozel nobet planlari izin hesabina katilir.
 - **Takvim gizliligi:** Takvim olaylari onay tarihcesi, karar veren kisi, red nedeni, talep notu veya onay akisi tasimaz; bu bilgiler yalnizca kisinin kendi tarihcesinde ve yetkili islem ekranlarinda kalir.
-- **Lokasyon gorunurlugu:** Antalya ve Bursa personeli yalnizca kendi lokasyonundaki personel, izin, mesaj ve shift kayitlarini gorur; Admin, IK yoneticisi ve IK asistanlari iki lokasyona da erisir.
+- **Lokasyon gorunurlugu:** Antalya ve Bursa personeli yalnizca kendi lokasyonundaki personel, izin, mesaj ve shift kayitlarini gorur. Admin ve IK yoneticisi iki lokasyona erisir; IK Asistani Antalya ve IK Asistani Bursa rolleri yalnizca atandiklari lokasyonu yonetir.
 - **Mail ile izin onayi:** Yoneticilere 96 saatlik token linki ile approve/reject akisi.
 - **Admin yetki merkezi:** Tum modulleri ve surec yetkilerini kisi bazinda acma/kapama; departman izin semasi tanimlama.
 - **Ic mesajlasma:** Konusma thread'i, hizli kisiler, pinleme, okundu takibi, menu bildirimi.
@@ -30,6 +30,7 @@ tasarlanmistir.
 - **PWA ve Web Push:** VAPID anahtarlari, push aboneligi, test bildirimi, service worker cache yonetimi.
 - **Rapor ve mail sablonlari:** GrapesJS ile surukle-birak mail ve rapor sablon editoru.
 - **Kullanici adi ve sifre yonetimi:** Personel kullanici adlari benzersiz `isimsoyisim` biciminde uretilir, duzenlenebilir ve giriste kullanilabilir. IK/Admin sifre yenilediginde e-postali personele bilgi maili gider; e-postasiz personelin yeni sifresi yalnizca bir kez ekranda gosterilir.
+- **E-postasiz mavi yaka girisi:** E-posta adresi olmayan mavi yaka personel kullanici adi ve sifreyle giris yapabilir, izin talebi olusturabilir.
 - **Sifre sifirlama:** Giris ekranindan 2 saatlik token ile sifre sifirlama baglantisi gonderilir.
 - **Cok dilli altyapi:** `resources/lang` altinda `tr-TR`, `en-US`, `de-DE`, `ja-JP`.
 

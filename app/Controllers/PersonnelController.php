@@ -305,7 +305,9 @@ class PersonnelController
             || in_array('admin.company.manage', $permissions, true)
             || in_array('leave.request.manage.hr', $permissions, true)
             || in_array('hr', $workforceRoles, true)
-            || in_array('hr_assistant', $workforceRoles, true);
+            || in_array('hr_assistant', $workforceRoles, true)
+            || in_array('hr_assistant_antalya', $workforceRoles, true)
+            || in_array('hr_assistant_bursa', $workforceRoles, true);
     }
 
     private function canMutate(string $permission, Request $request): bool
@@ -371,7 +373,7 @@ class PersonnelController
         $viewer = $this->auth->user() ?? [];
         $permissions = is_array($viewer['permissions'] ?? null) ? $viewer['permissions'] : [];
 
-        if (in_array('*', $permissions, true) || in_array('admin.company.manage', $permissions, true) || in_array('leave.request.manage.hr', $permissions, true)) {
+        if (LocationScope::hasGlobalVisibility($viewer)) {
             return true;
         }
 
@@ -384,6 +386,10 @@ class PersonnelController
 
         if (!LocationScope::canView($viewer, $profile)) {
             return false;
+        }
+
+        if (in_array('leave.request.manage.hr', $permissions, true)) {
+            return true;
         }
 
         $viewerDepartment = (string) ($viewer['department'] ?? '');
@@ -443,9 +449,8 @@ class PersonnelController
         }
 
         $viewer = $this->auth->user() ?? [];
-        $permissions = is_array($viewer['permissions'] ?? null) ? $viewer['permissions'] : [];
 
-        if (in_array('*', $permissions, true) || in_array('admin.company.manage', $permissions, true) || in_array('leave.request.manage.hr', $permissions, true)) {
+        if (LocationScope::hasGlobalVisibility($viewer)) {
             return true;
         }
 
@@ -462,7 +467,7 @@ class PersonnelController
 
         $location = LocationScope::normalize($location);
 
-        return $location !== '' && $location === LocationScope::locationForProfile($viewer);
+        return $location !== '' && $location === LocationScope::locationForViewer($viewer);
     }
 
     private function personnelGroupCounts(array $profiles): array

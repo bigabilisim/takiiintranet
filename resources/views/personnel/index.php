@@ -19,7 +19,8 @@ $personnelGroups = [
 ];
 $workforceAssignments = [
     'hr' => ['label' => 'personnel.assignment.hr', 'hint' => 'personnel.assignment.hr_hint'],
-    'hr_assistant' => ['label' => 'personnel.assignment.hr_assistant', 'hint' => 'personnel.assignment.hr_assistant_hint'],
+    'hr_assistant_antalya' => ['label' => 'personnel.assignment.hr_assistant_antalya', 'hint' => 'personnel.assignment.hr_assistant_antalya_hint'],
+    'hr_assistant_bursa' => ['label' => 'personnel.assignment.hr_assistant_bursa', 'hint' => 'personnel.assignment.hr_assistant_bursa_hint'],
     'manager' => ['label' => 'personnel.assignment.manager', 'hint' => 'personnel.assignment.manager_hint'],
     'shift_planner' => ['label' => 'personnel.assignment.shift_planner', 'hint' => 'personnel.assignment.shift_planner_hint'],
     'weekend_duty' => ['label' => 'personnel.assignment.weekend_duty', 'hint' => 'personnel.assignment.weekend_duty_hint'],
@@ -230,7 +231,7 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                 <div class="profile-assignment-grid">
                     <?php foreach ($workforceAssignments as $assignmentKey => $assignmentMeta): ?>
                         <label class="profile-assignment-card">
-                            <input type="checkbox" name="workforce_roles[]" value="<?= htmlspecialchars($assignmentKey, ENT_QUOTES, 'UTF-8') ?>">
+                            <input type="checkbox" name="workforce_roles[]" value="<?= htmlspecialchars($assignmentKey, ENT_QUOTES, 'UTF-8') ?>"<?= str_starts_with($assignmentKey, 'hr_assistant_') ? ' data-hr-assistant-location-role' : '' ?>>
                             <span>
                                 <strong><?= htmlspecialchars($t($assignmentMeta['label']), ENT_QUOTES, 'UTF-8') ?></strong>
                                 <small><?= htmlspecialchars($t($assignmentMeta['hint']), ENT_QUOTES, 'UTF-8') ?></small>
@@ -530,6 +531,7 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                                         type="checkbox"
                                         name="workforce_roles[]"
                                         value="<?= htmlspecialchars($assignmentKey, ENT_QUOTES, 'UTF-8') ?>"
+                                        <?= str_starts_with($assignmentKey, 'hr_assistant_') ? 'data-hr-assistant-location-role' : '' ?>
                                         <?= in_array($assignmentKey, $profileWorkforceRoles, true) ? 'checked' : '' ?>
                                     >
                                     <span>

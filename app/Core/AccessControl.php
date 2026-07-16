@@ -4,7 +4,7 @@ namespace App\Core;
 
 class AccessControl
 {
-    private const VERSION = 15;
+    private const VERSION = 16;
     private const STATE_KEY = 'access_control';
     private const ADMIN_EMAIL = 'bilal@bigabilisim.com';
     private const HR_EMAIL = 'y.ekici@takii.com.tr';
@@ -30,6 +30,22 @@ class AccessControl
             'shift.manage',
         ],
         'hr_assistant' => [
+            'module.leave.access',
+            'leave.request.manage.hr',
+            'module.personnel.access',
+            'personnel.read',
+            'personnel.write',
+            'personnel.export',
+        ],
+        'hr_assistant_antalya' => [
+            'module.leave.access',
+            'leave.request.manage.hr',
+            'module.personnel.access',
+            'personnel.read',
+            'personnel.write',
+            'personnel.export',
+        ],
+        'hr_assistant_bursa' => [
             'module.leave.access',
             'leave.request.manage.hr',
             'module.personnel.access',
@@ -486,6 +502,10 @@ class AccessControl
 
             if ($previousVersion > 0 && $previousVersion < 9 && !$this->isSystemAdmin($email)) {
                 $currentPermissions = $this->migratePersonnelExportPermission($email, $user, is_array($currentPermissions) ? $currentPermissions : []);
+            }
+
+            if ($previousVersion > 0 && $previousVersion < 16 && !$this->isSystemAdmin($email)) {
+                $currentPermissions = $this->migratePasswordOnlyLeaveAccess($user, is_array($currentPermissions) ? $currentPermissions : []);
             }
 
             if (!$this->isSystemAdmin($email)) {
@@ -972,6 +992,18 @@ class AccessControl
             'module.personnel.access',
             'personnel.read',
             'personnel.export',
+        ])));
+    }
+
+    private function migratePasswordOnlyLeaveAccess(array $user, array $currentPermissions): array
+    {
+        if (trim((string) ($user['email'] ?? '')) !== '') {
+            return $currentPermissions;
+        }
+
+        return array_values(array_unique(array_merge($currentPermissions, [
+            'module.leave.access',
+            'leave.request.create',
         ])));
     }
 

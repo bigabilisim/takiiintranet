@@ -4,7 +4,7 @@ namespace App\Core;
 
 class UserProfileStore
 {
-    private const VERSION = 4;
+    private const VERSION = 5;
     private const STATE_KEY = 'user_profiles';
     private const NO_EMAIL_KEY_PREFIX = 'no-email-';
     private const CSV_COLUMNS = [
@@ -40,7 +40,15 @@ class UserProfileStore
         'shift_key',
         'password',
     ];
-    private const WORKFORCE_ROLE_CHOICES = ['hr', 'hr_assistant', 'manager', 'shift_planner', 'weekend_duty'];
+    private const WORKFORCE_ROLE_CHOICES = [
+        'hr',
+        'hr_assistant',
+        'hr_assistant_antalya',
+        'hr_assistant_bursa',
+        'manager',
+        'shift_planner',
+        'weekend_duty',
+    ];
     private const DEFAULT_IMPORTED_PERMISSIONS = [
         'module.announcements.access',
         'module.leave.access',
@@ -286,6 +294,14 @@ class UserProfileStore
             return ['ok' => false, 'message' => 'admin.flash.user_profile_invalid'];
         }
 
+        $workforceRoles = $this->cleanWorkforceRoles($input['workforce_roles'] ?? []);
+
+        if ($this->hasConflictingHrAssistantRoles($workforceRoles)) {
+            return ['ok' => false, 'message' => 'personnel.flash.hr_assistant_location_conflict'];
+        }
+
+        $workforceRoles = $this->scopeLegacyHrAssistantRole($workforceRoles, $location);
+
         $usernameInput = trim((string) ($input['username'] ?? ''));
         $username = $usernameInput !== ''
             ? $this->normalizeUsername($usernameInput)
@@ -335,7 +351,7 @@ class UserProfileStore
             'faculty' => $this->cleanText((string) ($input['faculty'] ?? ''), 160),
             'graduation_year' => $this->cleanYear((string) ($input['graduation_year'] ?? '')),
             'hr_notes' => $this->cleanText((string) ($input['hr_notes'] ?? ''), 600),
-            'workforce_roles' => $this->cleanWorkforceRoles($input['workforce_roles'] ?? []),
+            'workforce_roles' => $workforceRoles,
             'shift_key' => $this->cleanText((string) ($input['shift_key'] ?? ''), 80),
             'password_hash' => $password !== '' ? password_hash($password, PASSWORD_DEFAULT) : '',
             'created_at' => date('Y-m-d H:i'),
@@ -414,6 +430,14 @@ class UserProfileStore
             return ['ok' => false, 'message' => 'admin.flash.user_profile_invalid'];
         }
 
+        $workforceRoles = $this->cleanWorkforceRoles($input['workforce_roles'] ?? []);
+
+        if ($this->hasConflictingHrAssistantRoles($workforceRoles)) {
+            return ['ok' => false, 'message' => 'personnel.flash.hr_assistant_location_conflict'];
+        }
+
+        $workforceRoles = $this->scopeLegacyHrAssistantRole($workforceRoles, $location);
+
         $usernameInput = array_key_exists('username', $input)
             ? trim((string) $input['username'])
             : (string) ($profile['username'] ?? '');
@@ -473,7 +497,7 @@ class UserProfileStore
             'faculty' => $this->cleanText((string) ($input['faculty'] ?? ''), 160),
             'graduation_year' => $graduationYear,
             'hr_notes' => $this->cleanText((string) ($input['hr_notes'] ?? ''), 600),
-            'workforce_roles' => $this->cleanWorkforceRoles($input['workforce_roles'] ?? []),
+            'workforce_roles' => $workforceRoles,
             'shift_key' => $this->cleanText((string) ($input['shift_key'] ?? ''), 80),
             'updated_at' => date('Y-m-d H:i'),
         ]);
@@ -923,6 +947,10 @@ class UserProfileStore
 
         $profile['email'] = $emailValue;
         $profile['location'] = LocationScope::locationForProfile($profile);
+        $profile['workforce_roles'] = $this->scopeLegacyHrAssistantRole(
+            $profile['workforce_roles'] ?? [],
+            $profile['location']
+        );
         $profile['permissions'] = $baseUser['permissions'] ?? [];
         $profile['password'] = (string) ($baseUser['password'] ?? '');
 
@@ -947,7 +975,7 @@ class UserProfileStore
             'role' => (string) ($stored['role'] ?? 'Employee'),
             'department' => (string) ($stored['department'] ?? 'General'),
             'started_on' => (string) ($stored['started_on'] ?? ''),
-            'permissions' => $this->normalizeEmail((string) ($stored['email'] ?? '')) === '' ? [] : self::DEFAULT_IMPORTED_PERMISSIONS,
+            'permissions' => self::DEFAULT_IMPORTED_PERMISSIONS,
         ];
     }
 
@@ -1625,6 +1653,12 @@ class UserProfileStore
             'hr_assistant' => 'hr_assistant',
             'human_resources_assistant' => 'hr_assistant',
             'insan_kaynaklari_asistani' => 'hr_assistant',
+            'ik_asistani_antalya' => 'hr_assistant_antalya',
+            'hr_assistant_antalya' => 'hr_assistant_antalya',
+            'insan_kaynaklari_asistani_antalya' => 'hr_assistant_antalya',
+            'ik_asistani_bursa' => 'hr_assistant_bursa',
+            'hr_assistant_bursa' => 'hr_assistant_bursa',
+            'insan_kaynaklari_asistani_bursa' => 'hr_assistant_bursa',
             'manager' => 'manager',
             'menajer' => 'manager',
             'mudur' => 'manager',
@@ -1640,6 +1674,35 @@ class UserProfileStore
         $role = $aliases[$role] ?? $role;
 
         return in_array($role, self::WORKFORCE_ROLE_CHOICES, true) ? $role : '';
+    }
+
+    private function scopeLegacyHrAssistantRole(mixed $value, string $location): array
+    {
+        $roles = $this->cleanWorkforceRoles($value);
+
+        if (!in_array('hr_assistant', $roles, true)) {
+            return $roles;
+        }
+
+        $roles = array_values(array_diff($roles, ['hr_assistant']));
+
+        if (array_intersect($roles, ['hr_assistant_antalya', 'hr_assistant_bursa']) !== []) {
+            return $roles;
+        }
+
+        $scopedRole = match (LocationScope::normalize($location)) {
+            LocationScope::ANTALYA => 'hr_assistant_antalya',
+            LocationScope::BURSA => 'hr_assistant_bursa',
+            default => 'hr_assistant',
+        };
+        $roles[] = $scopedRole;
+
+        return array_values(array_unique($roles));
+    }
+
+    private function hasConflictingHrAssistantRoles(array $roles): bool
+    {
+        return count(array_intersect($roles, ['hr_assistant_antalya', 'hr_assistant_bursa'])) > 1;
     }
 
     private function exportValue(mixed $value): string

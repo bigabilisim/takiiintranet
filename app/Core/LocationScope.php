@@ -74,18 +74,27 @@ final class LocationScope
     public static function hasGlobalVisibility(array $viewer): bool
     {
         $permissions = is_array($viewer['permissions'] ?? null) ? $viewer['permissions'] : [];
+        $roles = is_array($viewer['workforce_roles'] ?? null) ? $viewer['workforce_roles'] : [];
 
         if (
             in_array('*', $permissions, true)
             || in_array('admin.company.manage', $permissions, true)
-            || in_array('leave.request.manage.hr', $permissions, true)
         ) {
             return true;
         }
 
-        $roles = is_array($viewer['workforce_roles'] ?? null) ? $viewer['workforce_roles'] : [];
+        if (in_array('hr', $roles, true) || in_array('hr_assistant', $roles, true)) {
+            return true;
+        }
 
-        return in_array('hr', $roles, true) || in_array('hr_assistant', $roles, true);
+        if (
+            in_array('hr_assistant_antalya', $roles, true)
+            || in_array('hr_assistant_bursa', $roles, true)
+        ) {
+            return false;
+        }
+
+        return in_array('leave.request.manage.hr', $permissions, true);
     }
 
     public static function canView(array $viewer, array $target): bool
@@ -94,7 +103,7 @@ final class LocationScope
             return true;
         }
 
-        $viewerLocation = self::locationForProfile($viewer);
+        $viewerLocation = self::locationForViewer($viewer);
         $targetLocation = self::locationForProfile($target);
 
         return $viewerLocation !== '' && $targetLocation !== '' && $viewerLocation === $targetLocation;
@@ -108,9 +117,26 @@ final class LocationScope
             return $options;
         }
 
-        $location = self::locationForProfile($viewer);
+        $location = self::locationForViewer($viewer);
 
         return $location !== '' && isset($options[$location]) ? [$location => $options[$location]] : [];
+    }
+
+    public static function locationForViewer(array $viewer): string
+    {
+        $roles = is_array($viewer['workforce_roles'] ?? null) ? $viewer['workforce_roles'] : [];
+        $antalyaAssistant = in_array('hr_assistant_antalya', $roles, true);
+        $bursaAssistant = in_array('hr_assistant_bursa', $roles, true);
+
+        if ($antalyaAssistant !== $bursaAssistant) {
+            return $antalyaAssistant ? self::ANTALYA : self::BURSA;
+        }
+
+        if ($antalyaAssistant && $bursaAssistant) {
+            return '';
+        }
+
+        return self::locationForProfile($viewer);
     }
 
     private static function sameIdentity(array $viewer, array $target): bool
