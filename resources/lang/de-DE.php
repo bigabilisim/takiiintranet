@@ -418,7 +418,7 @@ return [
     'templates.flash.test_mail_failed' => 'Testmail konnte nicht gesendet werden.',
     'templates.flash.test_mail_invalid_recipient' => 'Bitte Empfänger-E-Mail prüfen.',
     'leave.eyebrow' => 'Jahresurlaub',
-    'leave.title' => 'Urlaubsantrag und Kalendercenter',
+    'leave.title' => 'Urlaubsantrag',
     'leave.request_form' => 'Neuer Antrag',
     'leave.type' => 'Urlaubsart',
     'leave.type.annual' => 'Jahresurlaub',

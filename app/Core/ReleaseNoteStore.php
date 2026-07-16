@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.85.0';
+    private const CURRENT_RELEASE = 'v0.86.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.86.0',
+                'title' => 'Izin sayfasi basligi sadelestirildi',
+                'released_at' => '2026-07-16 09:08',
+                'status' => 'completed',
+                'changes' => [
+                    'Izin talep ve takvim merkezi basligi Izin Talep olarak degistirildi.',
+                    'Ayni baslik Ingilizce, Almanca ve Japonca arayuzlerde de esitlendi.',
+                    'Menu adi ve izin takvimi bolumu korunarak yalniz sayfa basligi sadelestirildi.',
+                ],
+            ],
             [
                 'version' => 'v0.85.0',
                 'title' => 'Personel kullanici adi ve guvenli sifre yenileme yonetimi eklendi',

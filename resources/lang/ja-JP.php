@@ -418,7 +418,7 @@ return [
     'templates.flash.test_mail_failed' => 'テストメールを送信できませんでした。',
     'templates.flash.test_mail_invalid_recipient' => '宛先メールアドレスを確認してください。',
     'leave.eyebrow' => '年次休暇',
-    'leave.title' => '休暇申請とカレンダー',
+    'leave.title' => '休暇申請',
     'leave.request_form' => '新規申請',
     'leave.type' => '休暇種別',
     'leave.type.annual' => '年次休暇',

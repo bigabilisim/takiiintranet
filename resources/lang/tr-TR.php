@@ -418,7 +418,7 @@ return [
     'templates.flash.test_mail_failed' => 'Test maili gönderilemedi.',
     'templates.flash.test_mail_invalid_recipient' => 'Alıcı e-posta adresini kontrol edin.',
     'leave.eyebrow' => 'Yıllık izin',
-    'leave.title' => 'İzin talep ve takvim merkezi',
+    'leave.title' => 'İzin Talep',
     'leave.request_form' => 'Yeni talep',
     'leave.type' => 'İzin türü',
     'leave.type.annual' => 'Yıllık izin',

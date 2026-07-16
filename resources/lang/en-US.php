@@ -418,7 +418,7 @@ return [
     'templates.flash.test_mail_failed' => 'Test mail could not be sent.',
     'templates.flash.test_mail_invalid_recipient' => 'Check the recipient email address.',
     'leave.eyebrow' => 'Annual leave',
-    'leave.title' => 'Leave request and calendar center',
+    'leave.title' => 'Leave Request',
     'leave.request_form' => 'New request',
     'leave.type' => 'Leave type',
     'leave.type.annual' => 'Annual leave',
