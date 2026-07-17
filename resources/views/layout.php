@@ -173,7 +173,6 @@
                                     <small><?= htmlspecialchars($t('leave.signature_alert.due', ['date' => (string) $signatureAlert['due_at']]), ENT_QUOTES, 'UTF-8') ?></small>
                                 <?php endif; ?>
                             </div>
-                            <a class="button compact" href="/module/leave"><?= htmlspecialchars($t('leave.signature_alert.cta'), ENT_QUOTES, 'UTF-8') ?></a>
                         </article>
                     <?php endforeach; ?>
                 </section>

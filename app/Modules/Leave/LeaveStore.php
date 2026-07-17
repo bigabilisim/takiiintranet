@@ -2139,7 +2139,6 @@ class LeaveStore
     private function leaveBookSignatureMailHtml(array $request): string
     {
         $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
-        $portalUrl = $this->absoluteUrl('/module/leave');
         $hrContact = (string) ($request['approval_policy']['hr_email'] ?? '');
         $hrLine = $hrContact !== ''
             ? 'IK asistani / IK birimi ile iletisime gecin: ' . $hrContact
@@ -2166,7 +2165,6 @@ class LeaveStore
             . $this->approvalMailRow('Gun', $this->requestTotalDaysLabel($request))
             . $this->approvalMailRow('Durum', 'IK onaylandi / defter imzasi bekliyor')
             . '</table>'
-            . '<a href="' . $escape($portalUrl) . '" style="display:inline-block;background:#1f2428;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">Izin merkezini ac</a>'
             . '</td></tr></table>'
             . '</td></tr></table></body></html>';
     }

@@ -521,7 +521,6 @@ return [
     'leave.signature_alert.title' => 'Yıllık izin defteri imzası gerekli',
     'leave.signature_alert.body' => ':request_id numaralı :date_range tarihli yıllık izin kaydınız için izin dönüşü yıllık izin defterini imzalamanız gerekiyor. Lütfen İK asistanına başvurun.',
     'leave.signature_alert.due' => 'İmza son takip zamanı: :date',
-    'leave.signature_alert.cta' => 'İzin merkezini aç',
     'leave.signature_queue.eyebrow' => 'İK defter takibi',
     'leave.signature_queue.title' => 'Defter İmzası Bekleyenler',
     'leave.signature_queue.summary' => 'Mail hatırlatması destekleyici kalır; ana takip bu listeden yapılır.',

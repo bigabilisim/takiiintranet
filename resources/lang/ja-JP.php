@@ -521,7 +521,6 @@ return [
     'leave.signature_alert.title' => '年次休暇台帳への署名が必要です',
     'leave.signature_alert.body' => ':date_range の年次休暇記録 :request_id について、復帰後に年次休暇台帳へ署名する必要があります。HRアシスタントへ連絡してください。',
     'leave.signature_alert.due' => '署名フォロー期限: :date',
-    'leave.signature_alert.cta' => '休暇画面を開く',
     'leave.signature_queue.eyebrow' => 'HR台帳管理',
     'leave.signature_queue.title' => '休暇台帳署名待ち',
     'leave.signature_queue.summary' => 'メール通知は補助として残し、主な管理はこの一覧で行います。',

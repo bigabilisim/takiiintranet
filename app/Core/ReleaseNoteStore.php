@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.88.0';
+    private const CURRENT_RELEASE = 'v0.89.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.89.0',
+                'title' => 'Izin defteri imza yonlendirmesi sadelestirildi',
+                'released_at' => '2026-07-17 10:30',
+                'status' => 'completed',
+                'changes' => [
+                    'Kullanicinin izin defteri imza uyarisindaki Izin merkezini ac butonu kaldirildi.',
+                    'Izin defteri imza gerekliligi e-postasindaki ayni yonlendirme butonu kaldirildi; uyari metni, takip tarihi ve IK asistani yonlendirmesi korundu.',
+                    'Uyari kartinin masaustu ve mobil yerlesimi butonsuz iki sutunlu yapiya uyarlandi; kullanilmayan dort dil ceviri anahtari temizlendi.',
+                ],
+            ],
             [
                 'version' => 'v0.88.0',
                 'title' => 'Izin talep formundaki personel kimlik ozeti kaldirildi',

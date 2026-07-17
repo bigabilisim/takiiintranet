@@ -521,7 +521,6 @@ return [
     'leave.signature_alert.title' => 'Unterschrift im Jahresurlaubsbuch erforderlich',
     'leave.signature_alert.body' => 'Für den Jahresurlaubseintrag :request_id vom :date_range müssen Sie nach Ihrer Rückkehr das Jahresurlaubsbuch unterschreiben. Bitte wenden Sie sich an die HR-Assistenz.',
     'leave.signature_alert.due' => 'Frist für die Unterschrift-Nachverfolgung: :date',
-    'leave.signature_alert.cta' => 'Urlaubscenter öffnen',
     'leave.signature_queue.eyebrow' => 'HR-Buchverfolgung',
     'leave.signature_queue.title' => 'Ausstehende Urlaubsbuch-Unterschriften',
     'leave.signature_queue.summary' => 'E-Mail-Erinnerungen bleiben unterstützend; die Hauptverfolgung erfolgt über diese Liste.',

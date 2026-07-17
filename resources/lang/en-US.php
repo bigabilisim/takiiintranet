@@ -521,7 +521,6 @@ return [
     'leave.signature_alert.title' => 'Annual leave book signature required',
     'leave.signature_alert.body' => 'For annual leave record :request_id dated :date_range, you need to sign the annual leave book after your return. Please contact the HR assistant.',
     'leave.signature_alert.due' => 'Signature follow-up deadline: :date',
-    'leave.signature_alert.cta' => 'Open leave center',
     'leave.signature_queue.eyebrow' => 'HR book tracking',
     'leave.signature_queue.title' => 'Pending Leave Book Signatures',
     'leave.signature_queue.summary' => 'Email reminders remain supportive; the main tracking happens from this list.',
