@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'app.subtitle' => 'People. Processes. One place.',
     'pwa.enable' => 'Enable notifications',
     'pwa.enabled' => 'Notifications on',
     'pwa.test' => 'Test push',

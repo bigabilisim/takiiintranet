@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'app.subtitle' => '人と業務を、ひとつに。',
     'pwa.enable' => '通知を有効化',
     'pwa.enabled' => '通知有効',
     'pwa.test' => 'テスト通知',

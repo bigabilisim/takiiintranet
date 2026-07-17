@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'app.subtitle' => 'Menschen. Prozesse. Ein Ort.',
     'pwa.enable' => 'Benachrichtigungen aktivieren',
     'pwa.enabled' => 'Benachrichtigungen aktiv',
     'pwa.test' => 'Push testen',

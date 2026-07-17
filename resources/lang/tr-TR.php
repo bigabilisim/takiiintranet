@@ -1,7 +1,6 @@
 <?php
 
 return [
-    'app.subtitle' => 'İnsanlar. Süreçler. Tek merkez.',
     'pwa.enable' => 'Bildirimleri aç',
     'pwa.enabled' => 'Bildirimler açık',
     'pwa.test' => 'Test bildirimi',
