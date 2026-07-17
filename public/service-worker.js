@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mytakii-intranet-v45';
+const CACHE_NAME = 'mytakii-intranet-v46';
 const STATIC_ASSETS = [
   '/offline.html',
   '/assets/app.css',
@@ -6,6 +6,7 @@ const STATIC_ASSETS = [
   '/assets/pwa.js',
   '/assets/templates-editor.js',
   '/assets/icon.svg',
+  '/assets/logo-horizontal.svg',
   '/assets/icon-maskable.svg',
   '/assets/icon-192.png',
   '/assets/icon-512.png',

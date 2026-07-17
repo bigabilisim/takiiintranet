@@ -57,10 +57,10 @@ textarea {
 }
 
 .brand {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
 }
 
 .module-code,
@@ -73,26 +73,14 @@ textarea {
     font-weight: 800;
 }
 
-.brand-logo {
+.brand-wordmark {
     display: block;
-    width: 44px;
-    height: 44px;
-    aspect-ratio: 1;
-    border-radius: 8px;
-    box-shadow: 0 6px 16px rgba(31, 36, 40, 0.14);
+    width: 180px;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 12 / 7;
 }
 
-.brand strong,
-.brand small {
-    display: block;
-    min-width: 0;
-}
-
-.brand strong {
-    font-size: 16px;
-}
-
-.brand small,
 .topbar p,
 .eyebrow,
 .queue-row small,
@@ -1665,10 +1653,9 @@ th {
     margin: 0;
 }
 
-.offline-page .brand-logo {
-    width: 64px;
-    height: 64px;
-    border-radius: 12px;
+.offline-page .brand-wordmark {
+    width: min(220px, 80vw);
+    height: auto;
 }
 
 .alert.success {

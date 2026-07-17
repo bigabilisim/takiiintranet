@@ -24,11 +24,13 @@
     <div class="app-shell <?= $user ? 'is-authenticated' : 'is-guest' ?>">
         <aside class="sidebar" aria-label="<?= htmlspecialchars($t('nav.primary'), ENT_QUOTES, 'UTF-8') ?>">
             <a class="brand" href="/">
-                <img class="brand-logo" src="<?= htmlspecialchars($asset('icon.svg'), ENT_QUOTES, 'UTF-8') ?>" width="44" height="44" alt="">
-                <span>
-                    <strong><?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?></strong>
-                    <small><?= htmlspecialchars($t('app.subtitle'), ENT_QUOTES, 'UTF-8') ?></small>
-                </span>
+                <img
+                    class="brand-wordmark"
+                    src="<?= htmlspecialchars($asset('logo-horizontal.svg'), ENT_QUOTES, 'UTF-8') ?>"
+                    width="180"
+                    height="105"
+                    alt="<?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?>"
+                >
             </a>
 
             <?php if ($user): ?>

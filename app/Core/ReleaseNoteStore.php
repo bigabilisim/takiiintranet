@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.95.1';
+    private const CURRENT_RELEASE = 'v0.96.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,16 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.96.0',
+                'title' => 'MyTakii gorunen logosu sade metin kimligine gecirildi',
+                'released_at' => '2026-07-17 14:19',
+                'status' => 'completed',
+                'changes' => [
+                    'Gorunen monogram sembolu kaldirildi; MyTakii, Intranet ve uc kurumsal renk cizgisinden olusan sade marka alani eklendi.',
+                    'Sol menu ve cevrim disi PWA ekrani ayni metin logosuna baglandi; kare PWA uygulama ikonlari teknik kullanim icin korundu.',
+                ],
+            ],
             [
                 'version' => 'v0.95.1',
                 'title' => 'Izin mail kuyrugundaki hassas icerikler temizlendi',
