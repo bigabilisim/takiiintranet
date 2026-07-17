@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.87.0';
+    private const CURRENT_RELEASE = 'v0.88.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.88.0',
+                'title' => 'Izin talep formundaki personel kimlik ozeti kaldirildi',
+                'released_at' => '2026-07-17 10:20',
+                'status' => 'completed',
+                'changes' => [
+                    'Izin talep formunun ustundeki Talep sahibi, ad-soyad ve departman/rol bilgilerini gosteren kimlik blogu kaldirildi.',
+                    'Izin bakiyesi ve talep formu korunarak sol panel daha sade ve kisa hale getirildi.',
+                    'Kaldirilan kimlik bloguna ait kullanilmayan stiller temizlendi ve PWA onbellegi guncellendi.',
+                ],
+            ],
             [
                 'version' => 'v0.87.0',
                 'title' => 'Izin kullanici deneyimi ve lokasyon bazli IK asistanligi gelistirildi',

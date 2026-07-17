@@ -259,14 +259,6 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
     <div class="leave-sidebar">
     <form class="leave-form leave-module-accent is-request" method="post" action="/leave/requests" data-leave-request-form>
         <?= $csrf() ?>
-        <div class="leave-person-card">
-            <span class="module-code">LV</span>
-            <div>
-                <p><?= htmlspecialchars($t('leave.requester'), ENT_QUOTES, 'UTF-8') ?></p>
-                <h2><?= htmlspecialchars($user['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></h2>
-                <small><?= htmlspecialchars(($user['department'] ?? '') . ' / ' . ($user['role'] ?? ''), ENT_QUOTES, 'UTF-8') ?></small>
-            </div>
-        </div>
         <div class="leave-balance-grid" aria-label="<?= htmlspecialchars($t('leave.balance_title'), ENT_QUOTES, 'UTF-8') ?>">
             <div class="leave-balance-entitlement" data-leave-entitlement-rules>
                 <button

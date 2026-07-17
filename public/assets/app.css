@@ -1830,31 +1830,9 @@ th {
     color: #1e6775;
 }
 
-.leave-person-card {
-    display: grid;
-    grid-template-columns: 40px minmax(0, 1fr);
-    gap: 12px;
-    align-items: center;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--line);
-}
-
-.leave-person-card p,
-.leave-person-card h2,
-.leave-person-card small {
-    margin: 0;
-}
-
-.leave-person-card p,
-.leave-person-card small,
 .leave-balance-grid span {
     color: var(--muted);
     font-size: 12px;
-}
-
-.leave-person-card h2 {
-    font-size: 22px;
-    overflow-wrap: anywhere;
 }
 
 .leave-balance-grid {
@@ -5058,8 +5036,7 @@ th {
         font-size: 24px;
     }
 
-    .calendar-header h2,
-    .leave-person-card h2 {
+    .calendar-header h2 {
         font-size: 20px;
     }
 

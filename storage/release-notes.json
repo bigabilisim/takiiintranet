@@ -1,7 +1,18 @@
 {
     "version": 1,
-    "current_version": "v0.87.0",
+    "current_version": "v0.88.0",
     "entries": [
+        {
+            "version": "v0.88.0",
+            "title": "Izin talep formundaki personel kimlik ozeti kaldirildi",
+            "released_at": "2026-07-17 10:20",
+            "status": "completed",
+            "changes": [
+                "Izin talep formunun ustundeki Talep sahibi, ad-soyad ve departman/rol bilgilerini gosteren kimlik blogu kaldirildi.",
+                "Izin bakiyesi ve talep formu korunarak sol panel daha sade ve kisa hale getirildi.",
+                "Kaldirilan kimlik bloguna ait kullanilmayan stiller temizlendi ve PWA onbellegi guncellendi."
+            ]
+        },
         {
             "version": "v0.87.0",
             "title": "Izin kullanici deneyimi ve lokasyon bazli IK asistanligi gelistirildi",
