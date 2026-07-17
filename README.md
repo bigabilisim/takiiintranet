@@ -41,20 +41,22 @@ Canli ortam: `https://mytakii.com`
 ## GrapesJS Sablon Editoru
 
 `/module/templates` ekraninda rapor ve mail sablonlari GrapesJS ile duzenlenir.
-Editor HTML, CSS ve GrapesJS project data bilgisini `storage/templates.json`
-dosyasinda saklar.
+Editor yalnizca sunucuda temizlenmis HTML ve CSS bilgisini merkezi StateStore
+icinde saklar. Calistirilabilir GrapesJS project data verisi guvenlik nedeniyle
+kalici kayda alinmaz.
 
 Varsayilan seed sablonlar:
 
 - `TPL-MAIL-1001`: Yillik izin onay maili
 - `TPL-REPORT-1001`: Aylik IK izin raporu
 
-GrapesJS CDN uzerinden yuklenir. Canli ortamda CDN politikasi kapaliysa
-GrapesJS dosyalari `public/assets/vendor` gibi lokal bir klasore alinabilir.
+GrapesJS, html2canvas ve jsPDF sabitlenmis surumlerle `public/vendor` altindan
+yerel olarak yuklenir; editor calisirken ucuncu taraf CDN veya telemetri istegi
+yapmaz.
 
 Sablon ekranindaki test mail formu, editorun kaydedilmemis son HTML/CSS halini
-ornek degiskenlerle render edip gonderir. Varsayilan demo davranisi
-`storage/template-test-mail-outbox.json` dosyasina kuyruk kaydi eklemektir.
+ornek degiskenlerle render edip gonderir. Test mail kayitlari StateStore
+uzerinden eszamanli yazma korumasiyla tutulur.
 PHP `mail()` ile gercek gonderim icin `TEMPLATE_TEST_MAIL_TRANSPORT=native`,
 `MAIL_FROM_ADDRESS` ve `MAIL_FROM_NAME` ortam degiskenleri ayarlanabilir.
 
@@ -120,11 +122,33 @@ Onemli yetkiler:
 - `templates.manage`
 - `admin.company.manage`
 
+## Guvenlik
+
+- Oturum kimligi giriste yenilenir; 30 dakika hareketsizlik ve 12 saat mutlak
+  oturum siniri uygulanir. Sifre degisikligi eski oturumlari kapatir.
+- Giris ve sifre sifirlama istekleri IP ve kimlik bazinda hiz sinirina tabidir.
+- Yeni ve sifirlanan parolalar en az 12 karakterdir. `APP_SESSION_SECRET` canli
+  ortamda en az 32 bayt rastgele degerle ayarlanmalidir.
+- Izin onay maili baglantilari 96 saatlik, hashli ve tek kullanimliktir. GET
+  istegi yalniz teyit ekrani acar; karar CSRF korumali POST ile kaydedilir.
+- Kayitli sablonlar sunucu tarafinda allowlist ile temizlenir ve rapor onizlemesi
+  sandbox iframe icinde calisir. CSP, HSTS, nosniff ve no-referrer basliklari
+  uygulama ve statik dosyalarda etkindir.
+- Sifre sifirlama ve izin tokenlari outbox, audit veya API yanitlarinda acik
+  metin olarak saklanmaz. Teslim edilmeyen reset tokeni aninda iptal edilir.
+
+Yerel veya canli ortam icin secret uretimi:
+
+```bash
+php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+```
+
 ## Transactional State Store
 
-Izinler, personeller, mesajlar, yetkiler, shift planlari, parola sifirlama kayitlari,
-Web Push abonelikleri, VAPID anahtarlari, izin mail kuyrugu ve izin defteri
-zamanlayicisi `app_state_documents` tablosunda saklanir. Her degisiklik InnoDB
+Izinler, personeller, mesajlar, yetkiler, shift planlari, satin alma talepleri,
+parola sifirlama kayitlari, guvenli mail metadatasi, Web Push abonelikleri,
+denetim loglari, sablonlar ve izin defteri zamanlayicisi `app_state_documents`
+tablosunda saklanir. Her degisiklik InnoDB
 transaction'i ve `SELECT ... FOR UPDATE` satir
 kilidi altinda yapilir. Ayni anda gelen iki onay veya mesaj birbirinin verisini
 ezemez.
@@ -168,8 +192,8 @@ tarihlerine bir kez genisletilerek kayipsiz donusturulur. Turkiye resmi tatil
 takvimi 2025-2035 icin tam gun ve saat 13:00 sonrasi yarim gun ayrimiyla izin
 suresine uygulanir; IK yoneticisi ayni ekrandan sirket tatili de tanimlayabilir.
 
-Sablonlar, sifre sifirlama outbox'i ve hava durumu cache'i henuz cekirdek state
-store kapsami disindadir; bunlar ayri modul migrasyonlariyla ele alinacaktir.
+Hava durumu verisi yalnizca yeniden uretilebilir kisa sureli bir cache dosyasidir;
+personel veya islem verisi tasimaz.
 
 ## MariaDB Migration Taslaklari
 

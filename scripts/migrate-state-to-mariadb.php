@@ -50,8 +50,14 @@ $documents = [
     'leave_mail_outbox' => 'leave-mail-outbox.json',
     'leave_signature_scheduler' => 'leave-book-signature-followup-scheduler.json',
     'password_resets' => 'password-resets.json',
+    'password_reset_mail_outbox' => 'password-reset-mail-outbox.json',
     'push_subscriptions' => 'push-subscriptions.json',
     'shifts' => 'shifts.json',
+    'procurement' => 'procurement.json',
+    'audit_log' => 'audit-log.json',
+    'templates' => 'templates.json',
+    'template_test_mail_outbox' => 'template-test-mail-outbox.json',
+    'release_notes' => 'release-notes.json',
     'vapid_keys' => 'vapid.json',
 ];
 

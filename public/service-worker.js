@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mytakii-intranet-v44';
+const CACHE_NAME = 'mytakii-intranet-v45';
 const STATIC_ASSETS = [
   '/offline.html',
   '/assets/app.css',
@@ -11,6 +11,10 @@ const STATIC_ASSETS = [
   '/assets/icon-512.png',
   '/assets/icon-maskable-512.png',
   '/assets/apple-touch-icon.png',
+  '/vendor/grapesjs/0.23.2/grapes.min.css',
+  '/vendor/grapesjs/0.23.2/grapes.min.js',
+  '/vendor/html2canvas/1.4.1/html2canvas.min.js',
+  '/vendor/jspdf/4.2.1/jspdf.umd.min.js',
   '/manifest.webmanifest'
 ];
 
@@ -38,7 +42,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/assets/') || url.pathname === '/manifest.webmanifest') {
+  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/vendor/') || url.pathname === '/manifest.webmanifest') {
     event.respondWith(
       fetch(request)
         .then((response) => {

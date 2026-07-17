@@ -1,7 +1,21 @@
 {
     "version": 1,
-    "current_version": "v0.94.0",
+    "current_version": "v0.95.0",
     "entries": [
+        {
+            "version": "v0.95.0",
+            "title": "Uygulama guvenlik katmanlari guclendirildi",
+            "released_at": "2026-07-17 13:21",
+            "status": "completed",
+            "changes": [
+                "Personel alan yetkileri sistem rollerine gore sinirlandi; gorev unvaniyla yetki kazanma ve bolgesel IK asistanlarinin global izin politikalarini degistirme yollari kapatildi.",
+                "Mail onaylari CSRF korumali POST teyidine alindi; 96 saatlik izin ve defter tokenlari hashli, tek kullanimlik hale getirildi ve outbox kayitlarindan hassas baglantilar temizlendi.",
+                "Oturum suresi, kimlik yenileme, sifre degisikliginde oturum iptali, 12 karakter parola politikasi ve giris/sifre sifirlama hiz sinirlari eklendi.",
+                "Sablon HTML/CSS icerigi sunucuda temizlendi, rapor onizlemesi sandbox iframe icine alindi, CSP guvenlik basliklari eklendi ve editor bagimliliklari yerel guvenli surumlere guncellendi.",
+                "Sablon, test maili, denetim logu, satin alma ve reset outbox kayitlari kilitli StateStore kapsamina alindi; CSV formul enjeksiyonu ve personel import dosya kontrolleri guclendirildi.",
+                "Composer guvenlik bildirimleri kapatildi ve dokuz regresyon testi ile 120 eszamanli yazma senaryosu basariyla dogrulandi."
+            ]
+        },
         {
             "version": "v0.91.0",
             "title": "mytakii.com canli ortami yayina alindi",

@@ -4,14 +4,15 @@ namespace App\Core;
 
 class ReleaseNoteStore
 {
+    private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.94.0';
+    private const CURRENT_RELEASE = 'v0.95.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
     ];
 
-    public function __construct()
+    public function __construct(private readonly StateStore $stateStore)
     {
         $this->data();
     }
@@ -81,6 +82,7 @@ class ReleaseNoteStore
 
     private function data(): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath(), $this->emptyData());
         $data = $this->loadData();
         $dirty = false;
 
@@ -139,6 +141,20 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.95.0',
+                'title' => 'Uygulama guvenlik katmanlari guclendirildi',
+                'released_at' => '2026-07-17 13:21',
+                'status' => 'completed',
+                'changes' => [
+                    'Personel alan yetkileri sistem rollerine gore sinirlandi; gorev unvaniyla yetki kazanma ve bolgesel IK asistanlarinin global izin politikalarini degistirme yollari kapatildi.',
+                    'Mail onaylari CSRF korumali POST teyidine alindi; 96 saatlik izin ve defter tokenlari hashli, tek kullanimlik hale getirildi ve outbox kayitlarindan hassas baglantilar temizlendi.',
+                    'Oturum suresi, kimlik yenileme, sifre degisikliginde oturum iptali, 12 karakter parola politikasi ve giris/sifre sifirlama hiz sinirlari eklendi.',
+                    'Sablon HTML/CSS icerigi sunucuda temizlendi, rapor onizlemesi sandbox iframe icine alindi, CSP guvenlik basliklari eklendi ve editor bagimliliklari yerel guvenli surumlere guncellendi.',
+                    'Sablon, test maili, denetim logu, satin alma ve reset outbox kayitlari kilitli StateStore kapsamina alindi; CSV formul enjeksiyonu ve personel import dosya kontrolleri guclendirildi.',
+                    'Composer guvenlik bildirimleri kapatildi ve dokuz regresyon testi ile 120 eszamanli yazma senaryosu basariyla dogrulandi.',
+                ],
+            ],
             [
                 'version' => 'v0.94.0',
                 'title' => 'MyTakii marka slogani ve dijital kimligi tamamlandi',
@@ -1224,27 +1240,17 @@ class ReleaseNoteStore
 
     private function loadData(): array
     {
-        $path = $this->dataPath();
-
-        if (!is_file($path)) {
-            return [];
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-
-        return is_array($decoded) ? $decoded : [];
+        return $this->stateStore->read(self::STATE_KEY, $this->dataPath(), $this->emptyData());
     }
 
     private function saveData(array $data): void
     {
-        $path = $this->dataPath();
-        $directory = dirname($path);
+        $this->stateStore->write(self::STATE_KEY, $this->dataPath(), $data);
+    }
 
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    private function emptyData(): array
+    {
+        return ['version' => self::VERSION, 'current_version' => '', 'entries' => []];
     }
 
     private function dataPath(): string
