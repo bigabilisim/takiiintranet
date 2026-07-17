@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.89.0';
+    private const CURRENT_RELEASE = 'v0.90.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,18 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.90.0',
+                'title' => 'Bolgesel IK asistanlarina izin onay yetkisi verildi',
+                'released_at' => '2026-07-17 10:40',
+                'status' => 'completed',
+                'changes' => [
+                    'IK Manager onay asamasina gelen izinler Antalya ve Bursa IK asistanlarinin bekleyen izin listesine kendi bolgelerine gore eklendi.',
+                    'Bolgesel IK asistanlari kendi lokasyonlarindaki izinleri platformdan ve takvim hizli onayindan onaylayabilir veya gerekceli olarak reddedebilir hale getirildi.',
+                    'Antalya asistani Bursa, Bursa asistani Antalya talebini goremez ve onaylayamaz; IK Manager ile Admin tum lokasyonlardaki mevcut yetkilerini korur.',
+                    'Personel gorev aciklamalari dort dilde bolgesel izin onayi yetkisini belirtecek sekilde guncellendi.',
+                ],
+            ],
             [
                 'version' => 'v0.89.0',
                 'title' => 'Izin defteri imza yonlendirmesi sadelestirildi',

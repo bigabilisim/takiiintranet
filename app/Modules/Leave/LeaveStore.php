@@ -1444,14 +1444,35 @@ class LeaveStore
         }
 
         if ($stage === 'hr') {
+            if (!$auth->can('leave.request.manage.hr')) {
+                return false;
+            }
+
+            if ($this->isRegionalHrAssistant($user)) {
+                return true;
+            }
+
             $hrEmail = $policy['hr_email'] ?? '';
 
-            return $auth->can('leave.request.manage.hr') && ($hrEmail === '' || $userEmail === $hrEmail);
+            return $hrEmail === '' || $userEmail === $hrEmail;
         }
 
         $managerEmail = $policy[$stage . '_email'] ?? '';
 
         return $auth->can('leave.request.approve.department') && ($managerEmail === '' || $userEmail === $managerEmail);
+    }
+
+    private function isRegionalHrAssistant(array $user): bool
+    {
+        $roles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
+        $regionalRoles = array_intersect($roles, [
+            'hr_assistant_antalya',
+            'hr_assistant_bursa',
+        ]);
+
+        return count($regionalRoles) === 1
+            && !in_array('hr', $roles, true)
+            && !in_array('hr_assistant', $roles, true);
     }
 
     private function canCancelRequest(Auth $auth, array $request): bool

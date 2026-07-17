@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Core\AccessControl;
+use App\Core\Auth;
 use App\Core\LocationScope;
 use App\Core\Session;
 use App\Core\StateStore;
@@ -86,6 +87,7 @@ try {
     mkdir($testRoot . '/storage', 0770, true);
     putenv('MAIL_TRANSPORT=outbox');
     putenv('LEAVE_BOOK_SIGNATURE_FOLLOWUP_EMAILS');
+    putenv('APP_HR_PASSWORD=location-test-123');
     Session::start();
     $appConfig = require $projectRoot . '/config/app.php';
     $modules = require $projectRoot . '/config/modules.php';
@@ -289,11 +291,95 @@ try {
     locationAssert(in_array('Bursa One', $bursaAssistantCalendar, true), 'Bursa HR assistant cannot see Bursa calendar.');
     locationAssert(!in_array('Antalya One', $bursaAssistantCalendar, true), 'Bursa HR assistant can see Antalya calendar.');
 
+    $leavePath = $testRoot . '/storage/leave-requests.json';
+    $leaveGuard = $stateStore->beginWrite('leave_requests', $leavePath, ['version' => 1, 'requests' => []]);
+    $leaveData = $stateStore->read('leave_requests', $leavePath, ['version' => 1, 'requests' => []]);
+    $regionalHrRequestIds = [];
+
+    foreach ($leaveData['requests'] as &$regionalHrRequest) {
+        $requesterEmail = (string) ($regionalHrRequest['requester_email'] ?? '');
+
+        if (!in_array($requesterEmail, ['antalya.one@takii.com.tr', 'bursa.one@takii.com.tr'], true)) {
+            continue;
+        }
+
+        $regionalHrRequest['status'] = 'waiting_hr';
+        $regionalHrRequest['calendar_state'] = 'pending';
+        $regionalHrRequest['approval_policy']['hr_email'] = 'y.ekici@takii.com.tr';
+        $regionalHrRequest['approvals']['manager_1']['status'] = 'approved';
+        $regionalHrRequest['approvals']['manager_2']['status'] = 'skipped';
+        $regionalHrRequest['approvals']['hr']['status'] = 'pending';
+        $regionalHrRequest['approvals']['hr']['assignee'] = 'y.ekici@takii.com.tr';
+        $regionalHrRequest['approvals']['hr']['actor'] = null;
+        $regionalHrRequest['approvals']['hr']['source'] = null;
+        $regionalHrRequest['approvals']['hr']['acted_at'] = null;
+        $regionalHrRequest['approval_tokens']['hr'] = bin2hex(random_bytes(16));
+        $regionalHrRequest['approval_token_expires_at']['hr'] = '2030-01-11 12:00';
+        $regionalHrRequestIds[$requesterEmail] = (string) ($regionalHrRequest['id'] ?? '');
+    }
+    unset($regionalHrRequest);
+
+    $stateStore->write('leave_requests', $leavePath, $leaveData);
+    $leaveGuard->release();
+    locationAssert(count($regionalHrRequestIds) === 2, 'Regional HR approval fixtures could not be prepared.');
+    $leave = new LeaveStore($access, new LeaveApprovalMailer(), $stateStore, $profiles, $shifts);
+
+    $hrAuth = new Auth($profiles, $access);
+    locationAssert($hrAuth->attempt('y.ekici@takii.com.tr', 'location-test-123'), 'HR manager login failed.');
+    $hrPendingIds = array_column($leave->pendingApprovalsFor($hrAuth), 'id');
+    locationAssert(in_array($regionalHrRequestIds['antalya.one@takii.com.tr'], $hrPendingIds, true), 'HR manager cannot see the Antalya HR-stage request.');
+    locationAssert(in_array($regionalHrRequestIds['bursa.one@takii.com.tr'], $hrPendingIds, true), 'HR manager cannot see the Bursa HR-stage request.');
+    $hrAuth->logout();
+
+    $antalyaAssistantAuth = new Auth($profiles, $access);
+    locationAssert($antalyaAssistantAuth->attempt('antalya.hr.assistant@takii.com.tr', 'location-test-123'), 'Antalya HR assistant login failed.');
+    $antalyaPendingIds = array_column($leave->pendingApprovalsFor($antalyaAssistantAuth), 'id');
+    locationAssert(in_array($regionalHrRequestIds['antalya.one@takii.com.tr'], $antalyaPendingIds, true), 'Antalya HR assistant cannot see the Antalya HR-stage request.');
+    locationAssert(!in_array($regionalHrRequestIds['bursa.one@takii.com.tr'], $antalyaPendingIds, true), 'Antalya HR assistant can see the Bursa HR-stage request.');
+    $antalyaApprovalCalendar = $leave->calendar('day', '2030-01-07', $antalyaAssistantAuth->user(), $antalyaAssistantAuth);
+    $antalyaApprovalEvent = $antalyaApprovalCalendar['days'][0]['events'][0] ?? null;
+    locationAssert(is_array($antalyaApprovalEvent) && !empty($antalyaApprovalEvent['can_act']), 'Antalya HR assistant cannot use calendar quick approval for Antalya.');
+    $blockedBursaApproval = $leave->advanceByPlatform(
+        $regionalHrRequestIds['bursa.one@takii.com.tr'],
+        $antalyaAssistantAuth->user() ?? [],
+        $antalyaAssistantAuth,
+        'approve'
+    );
+    locationAssert(empty($blockedBursaApproval['ok']) && ($blockedBursaApproval['message'] ?? '') === 'leave.flash.not_allowed', 'Antalya HR assistant approved a Bursa request.');
+    $approvedAntalya = $leave->advanceByPlatform(
+        $regionalHrRequestIds['antalya.one@takii.com.tr'],
+        $antalyaAssistantAuth->user() ?? [],
+        $antalyaAssistantAuth,
+        'approve'
+    );
+    locationAssert(!empty($approvedAntalya['ok']), 'Antalya HR assistant could not approve an Antalya request.');
+    $approvedAntalyaRequest = $leave->findById($regionalHrRequestIds['antalya.one@takii.com.tr']);
+    locationAssert(($approvedAntalyaRequest['status'] ?? '') === 'approved', 'Antalya request did not complete after regional HR approval.');
+    locationAssert(($approvedAntalyaRequest['approvals']['hr']['actor'] ?? '') === 'Antalya HR Assistant', 'Antalya HR assistant was not recorded in approval history.');
+    $antalyaAssistantAuth->logout();
+
+    $bursaAssistantAuth = new Auth($profiles, $access);
+    locationAssert($bursaAssistantAuth->attempt('bursa.hr.assistant@takii.com.tr', 'location-test-123'), 'Bursa HR assistant login failed.');
+    $bursaPendingIds = array_column($leave->pendingApprovalsFor($bursaAssistantAuth), 'id');
+    locationAssert(in_array($regionalHrRequestIds['bursa.one@takii.com.tr'], $bursaPendingIds, true), 'Bursa HR assistant cannot see the Bursa HR-stage request.');
+    locationAssert(!in_array($regionalHrRequestIds['antalya.one@takii.com.tr'], $bursaPendingIds, true), 'Bursa HR assistant can see the Antalya HR-stage request.');
+    $approvedBursa = $leave->advanceByPlatform(
+        $regionalHrRequestIds['bursa.one@takii.com.tr'],
+        $bursaAssistantAuth->user() ?? [],
+        $bursaAssistantAuth,
+        'approve'
+    );
+    locationAssert(!empty($approvedBursa['ok']), 'Bursa HR assistant could not approve a Bursa request.');
+    $approvedBursaRequest = $leave->findById($regionalHrRequestIds['bursa.one@takii.com.tr']);
+    locationAssert(($approvedBursaRequest['status'] ?? '') === 'approved', 'Bursa request did not complete after regional HR approval.');
+    locationAssert(($approvedBursaRequest['approvals']['hr']['actor'] ?? '') === 'Bursa HR Assistant', 'Bursa HR assistant was not recorded in approval history.');
+    $bursaAssistantAuth->logout();
+
     $csv = $profiles->exportProfilesCsv([$antalyaOne]);
     locationAssert(str_contains($csv, 'department,location,pdks_id'), 'Location is missing from personnel export.');
     locationAssert(str_contains($csv, ',antalya,'), 'Export did not include the profile location.');
 
-    echo "Location visibility passed: personnel policy, messages, shifts, leave calendar, scoped HR assistants, HR exception, and export verified.\n";
+    echo "Location visibility passed: personnel policy, messages, shifts, leave calendar, regional HR approvals, HR exception, and export verified.\n";
 } catch (Throwable $exception) {
     fwrite(STDERR, 'Location visibility failed: ' . $exception->getMessage() . "\n");
     exit(1);
