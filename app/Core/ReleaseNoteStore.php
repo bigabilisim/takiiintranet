@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.90.0';
+    private const CURRENT_RELEASE = 'v0.91.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -139,6 +139,18 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.91.0',
+                'title' => 'mytakii.com canli ortami yayina alindi',
+                'released_at' => '2026-07-17 11:20',
+                'status' => 'completed',
+                'changes' => [
+                    'mytakii.com alan adi mevcut v0.90.0 uygulama cekirdegi ve canli veri deposuna baglanarak yayina alindi.',
+                    'HTTP ve www istekleri kalici olarak https://mytakii.com adresine yonlendirildi; SSL, PWA manifesti ve Service Worker kok kapsaminda dogrulandi.',
+                    'Sifre sifirlama, izin onay maili ve Web Push baglantilarinin yeni domaini kullanmasi icin canli APP_URL ve VAPID_SUBJECT ayarlari guncellendi.',
+                    'Oturum cerezlerine Secure, HttpOnly ve SameSite=Lax politikalari ile strict session kimligi korumasi eklendi.',
+                ],
+            ],
             [
                 'version' => 'v0.90.0',
                 'title' => 'Bolgesel IK asistanlarina izin onay yetkisi verildi',

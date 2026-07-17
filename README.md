@@ -5,6 +5,8 @@ intranet platformu. Sistem; izin, duyuru, mesajlasma, satin alma, butce,
 belge, PWA bildirimleri, rapor ve mail sablonlarini tek merkezden yonetmek icin
 tasarlanmistir.
 
+Canli ortam: `https://mytakii.com`
+
 ## Urun Ozeti
 
 - Uluslararasi firmalara beyaz etiketli olarak sunulabilecek intranet urunu
