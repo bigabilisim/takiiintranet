@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.95.0';
+    private const CURRENT_RELEASE = 'v0.95.1';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,16 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.95.1',
+                'title' => 'Izin mail kuyrugundaki hassas icerikler temizlendi',
+                'released_at' => '2026-07-17 14:00',
+                'status' => 'completed',
+                'changes' => [
+                    'Gecmis ve yeni izin e-posta kuyrugu kayitlarindan duz metin govdesi, portal adresi ve token iceren onay baglantilari kaldirildi.',
+                    'Canli veri yapisi hassas URL ve mail govdesi saklanmadigi dogrulanarak otomatik regresyon testine baglandi.',
+                ],
+            ],
             [
                 'version' => 'v0.95.0',
                 'title' => 'Uygulama guvenlik katmanlari guclendirildi',

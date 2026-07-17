@@ -2937,11 +2937,13 @@ class LeaveStore
     private function redactedMailEntry(array $entry): array
     {
         $sensitiveKeys = [
+            'body',
             'body_html',
             'approve_url',
             'reject_url',
             'signed_url',
             'not_signed_url',
+            'portal_url',
         ];
         $redacted = false;
 

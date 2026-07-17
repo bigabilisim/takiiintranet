@@ -9,7 +9,9 @@ use App\Core\StateStore;
 use App\Core\UserProfileStore;
 use App\Modules\Auth\PasswordResetMailer;
 use App\Modules\Auth\PasswordResetStore;
+use App\Modules\Leave\LeaveStore;
 use App\Modules\Procurement\ProcurementStore;
+use App\Modules\Shift\ShiftStore;
 use App\Modules\Templates\TemplateSanitizer;
 use App\Modules\Templates\TemplateStore;
 use App\Modules\Templates\TemplateTestMailer;
@@ -88,6 +90,29 @@ try {
     $redactedResetJson = json_encode($redactedResetOutbox, JSON_UNESCAPED_SLASHES) ?: '';
     securityAssert(!str_contains($redactedResetJson, '/password-reset/'), 'Historical password reset URL was not redacted.');
     securityAssert(!array_key_exists('text', $redactedResetOutbox['messages'][0] ?? []), 'Password reset body remained in the outbox.');
+
+    $leaveOutboxPath = $testRoot . '/storage/leave-mail-outbox.json';
+    $leaveOutboxGuard = $stateStore->beginWrite('leave_mail_outbox', $leaveOutboxPath, []);
+    $stateStore->write('leave_mail_outbox', $leaveOutboxPath, [
+        'version' => 1,
+        'messages' => [[
+            'id' => 'legacy-leave-mail',
+            'body' => 'Approve: https://example.test/leave/mail-approval/' . str_repeat('b', 64) . '/approve',
+            'body_html' => '<a href="https://example.test/leave/mail-approval/token/approve">Approve</a>',
+            'approve_url' => 'https://example.test/leave/mail-approval/token/approve',
+            'portal_url' => 'https://example.test/module/leave',
+            'status' => 'sent',
+        ]],
+    ]);
+    $leaveOutboxGuard->release();
+    $leaveProfiles = new UserProfileStore([], $stateStore);
+    $leaveAccess = new AccessControl($leaveProfiles->users(), require $projectRoot . '/config/modules.php', $stateStore);
+    new LeaveStore($leaveAccess, null, $stateStore, $leaveProfiles, new ShiftStore($leaveProfiles, $stateStore));
+    $redactedLeaveOutbox = $stateStore->read('leave_mail_outbox', $leaveOutboxPath, []);
+    $redactedLeaveJson = json_encode($redactedLeaveOutbox, JSON_UNESCAPED_SLASHES) ?: '';
+    securityAssert(!str_contains($redactedLeaveJson, '/leave/mail-approval/'), 'Historical leave approval URL was not redacted.');
+    securityAssert(!array_key_exists('body', $redactedLeaveOutbox['messages'][0] ?? []), 'Leave mail body remained in the outbox.');
+    securityAssert(!array_key_exists('portal_url', $redactedLeaveOutbox['messages'][0] ?? []), 'Leave portal URL remained in the outbox.');
 
     $sanitizer = new TemplateSanitizer();
     $dirtyHtml = '<div onclick="alert(1)"><script>alert(1)</script><img src="javascript:alert(2)" onerror="alert(3)"><a href="javascript:alert(4)">link</a><p style="background:url(https://evil.test/x)">safe</p></div>';
@@ -216,7 +241,7 @@ try {
     securityAssert(in_array('leave.policy.manage', $hrPermissions, true), 'HR manager lacks leave policy permission.');
     securityAssert(!in_array('leave.policy.manage', $assistantPermissions, true), 'Regional HR assistant received global leave policy permission.');
 
-    echo "Security regression passed: XSS, CSV, rate limits, reset tokens, and role boundaries verified.\n";
+    echo "Security regression passed: XSS, CSV, mail redaction, rate limits, reset tokens, and role boundaries verified.\n";
 } finally {
     putenv('APP_SESSION_SECRET');
     removeSecurityTree($testRoot);
