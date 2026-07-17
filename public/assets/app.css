@@ -4589,10 +4589,12 @@ th {
 }
 
 .template-report-preview {
+    display: block;
     width: min(100%, 920px);
+    height: 480px;
     min-height: 320px;
     margin: 0 auto;
-    padding: 20px;
+    border: 0;
     background: #ffffff;
 }
 

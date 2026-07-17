@@ -17,6 +17,7 @@ use App\Core\AccessControl;
 use App\Core\AuditLogStore;
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\RateLimiter;
 use App\Core\Request;
 use App\Core\ReleaseNoteStore;
 use App\Core\Response;
@@ -221,15 +222,16 @@ $translator = new Translator(
 
 $database = new Database($databaseConfig);
 $stateStore = new StateStore($stateConfig['driver'] === 'mariadb' ? $database : null, $stateConfig);
+$rateLimiter = new RateLimiter($stateStore);
 $userProfiles = new UserProfileStore($appConfig['demo_users'], $stateStore);
 $directoryUsers = $userProfiles->users();
 $accessControl = new AccessControl($directoryUsers, $modules, $stateStore);
 $auth = new Auth($userProfiles, $accessControl);
 $messageStore = new MessageStore($accessControl->usersByIdentity(), $stateStore);
 $pushStore = new PushNotificationStore($stateStore);
-$auditLog = new AuditLogStore();
-$releaseNotes = new ReleaseNoteStore();
-$passwordResetMailer = new PasswordResetMailer();
+$auditLog = new AuditLogStore($stateStore);
+$releaseNotes = new ReleaseNoteStore($stateStore);
+$passwordResetMailer = new PasswordResetMailer($stateStore);
 $passwordResets = new PasswordResetStore($userProfiles, $passwordResetMailer, $stateStore);
 $personnelCredentials = new PersonnelCredentialService($userProfiles, $passwordResets, $passwordResetMailer);
 $shiftStore = new ShiftStore($userProfiles, $stateStore);
@@ -259,7 +261,7 @@ $adminController = new AdminController(
     $translator,
     $identityMigration
 );
-$authController = new AuthController($view, $auth, $passwordResets);
+$authController = new AuthController($view, $auth, $passwordResets, $rateLimiter);
 $dashboardController = new DashboardController($view, $auth, $leaveStore, new WeatherStore());
 $leaveController = new LeaveController($view, $auth, $leaveStore, $pushStore, $translator, $accessControl, $auditLog);
 $messagesController = new MessagesController($view, $auth, $messageStore, $accessControl, $translator, $pushStore);
@@ -273,9 +275,15 @@ $personnelController = new PersonnelController(
     $identityMigration,
     $personnelCredentials
 );
-$procurementController = new ProcurementController($view, $auth, new ProcurementStore());
+$procurementController = new ProcurementController($view, $auth, new ProcurementStore($stateStore));
 $shiftController = new ShiftController($view, $auth, $shiftStore, $auditLog);
-$templatesController = new TemplatesController($view, $auth, new TemplateStore(), new TemplateTestMailer(), $translator);
+$templatesController = new TemplatesController(
+    $view,
+    $auth,
+    new TemplateStore($stateStore),
+    new TemplateTestMailer($stateStore),
+    $translator
+);
 $moduleController = new ModuleController($view, $auth, $modules);
 $pushController = new PushController($auth, $pushStore, $translator);
 
@@ -311,8 +319,10 @@ $router->post('/leave/requests/{id}/requester-cancel', [$leaveController, 'cance
 $router->post('/leave/requests/{id}/request-cancellation', [$leaveController, 'requestCancellation']);
 $router->post('/leave/requests/{id}/decision', [$leaveController, 'decision']);
 $router->post('/leave/requests/{id}/cancel', [$leaveController, 'cancel']);
-$router->get('/leave/mail-approval/{token}/{decision}', [$leaveController, 'mailDecision']);
-$router->get('/leave/book-signature/{token}/{decision}', [$leaveController, 'bookSignatureDecision']);
+$router->get('/leave/mail-approval/{token}/{decision}', [$leaveController, 'showMailDecision']);
+$router->post('/leave/mail-approval/{token}/{decision}', [$leaveController, 'mailDecision']);
+$router->get('/leave/book-signature/{token}/{decision}', [$leaveController, 'showBookSignatureDecision']);
+$router->post('/leave/book-signature/{token}/{decision}', [$leaveController, 'bookSignatureDecision']);
 $router->get('/module/messages', [$messagesController, 'index']);
 $router->get('/messages/unread-count', [$messagesController, 'unreadCount']);
 $router->post('/messages/send', [$messagesController, 'send']);

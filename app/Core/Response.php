@@ -29,7 +29,22 @@ class Response
     {
         http_response_code($this->status);
 
-        foreach ($this->headers as $name => $value) {
+        $headers = array_merge([
+            'Content-Security-Policy' => "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
+            'Referrer-Policy' => 'no-referrer',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'Permissions-Policy' => 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+            'Cross-Origin-Opener-Policy' => 'same-origin',
+            'Cross-Origin-Resource-Policy' => 'same-origin',
+        ], $this->headers);
+
+        if ((!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+            || str_starts_with(strtolower((string) getenv('APP_URL')), 'https://')) {
+            $headers['Strict-Transport-Security'] ??= 'max-age=31536000; includeSubDomains';
+        }
+
+        foreach ($headers as $name => $value) {
             header($name . ': ' . $value);
         }
 

@@ -13,7 +13,9 @@ final class StateStore
 {
     private const TABLE = 'app_state_documents';
     private const LOCK_ORDER = [
+        'rate_limits' => 5,
         'password_resets' => 10,
+        'password_reset_mail_outbox' => 15,
         'user_profiles' => 20,
         'access_control' => 30,
         'leave_requests' => 40,
@@ -21,6 +23,11 @@ final class StateStore
         'messages' => 60,
         'push_subscriptions' => 70,
         'shifts' => 80,
+        'procurement' => 90,
+        'audit_log' => 100,
+        'templates' => 110,
+        'template_test_mail_outbox' => 120,
+        'release_notes' => 130,
     ];
 
     private array $contexts = [];

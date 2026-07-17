@@ -4,7 +4,9 @@ namespace App\Core;
 
 class UserProfileStore
 {
-    private const VERSION = 5;
+    private const VERSION = 6;
+    private const MIN_PASSWORD_LENGTH = 12;
+    private const DUMMY_PASSWORD_HASH = '$2y$12$wFZkHqU.tf6ZnE/X/RGyUO7wSXHQRBxa6ImBEAs2rQHNHD5mh5CoG';
     private const STATE_KEY = 'user_profiles';
     private const NO_EMAIL_KEY_PREFIX = 'no-email-';
     private const CSV_COLUMNS = [
@@ -146,15 +148,25 @@ class UserProfileStore
 
     public function verifyCredentials(string $email, string $password): ?array
     {
+        if (strlen($password) > 4096) {
+            password_verify('', self::DUMMY_PASSWORD_HASH);
+
+            return null;
+        }
+
         $user = $this->find($email);
 
         if ($user === null) {
+            password_verify($password, self::DUMMY_PASSWORD_HASH);
+
             return null;
         }
 
         $profileKey = (string) ($user['profile_key'] ?? $email);
 
         if (!isset($this->baseUsers[$profileKey]) && !$this->loginIdentifierMatches($email, $user)) {
+            password_verify($password, self::DUMMY_PASSWORD_HASH);
+
             return null;
         }
 
@@ -164,7 +176,16 @@ class UserProfileStore
             ? password_verify($password, $passwordHash)
             : ($basePassword !== '' && hash_equals($basePassword, $password));
 
-        return $isValid ? $user : null;
+        if (!$isValid) {
+            return null;
+        }
+
+        if ($passwordHash !== '' && password_needs_rehash($passwordHash, PASSWORD_DEFAULT)) {
+            $this->setPasswordForProfileKey($profileKey, $password);
+            $user = $this->find($profileKey) ?? $user;
+        }
+
+        return $user;
     }
 
     public function profileForPasswordReset(string $email): ?array
@@ -196,7 +217,7 @@ class UserProfileStore
     {
         $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
 
-        if (strlen($password) < 6) {
+        if (strlen($password) < self::MIN_PASSWORD_LENGTH || strlen($password) > 4096) {
             return false;
         }
 
@@ -208,6 +229,7 @@ class UserProfileStore
 
         $profile = $users[$profileKey];
         $profile['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+        $profile['password_changed_at'] = date('Y-m-d H:i:s');
         $profile['updated_at'] = date('Y-m-d H:i');
 
         $data = $this->loadWritableData();
@@ -217,6 +239,28 @@ class UserProfileStore
         $this->saveData($data);
 
         return true;
+    }
+
+    public function credentialVersionForProfile(string $profileKey): string
+    {
+        $profile = $this->find($profileKey);
+
+        if ($profile === null) {
+            return '';
+        }
+
+        $passwordHash = (string) ($profile['password_hash'] ?? '');
+        $changedAt = (string) ($profile['password_changed_at'] ?? '');
+
+        if ($passwordHash !== '') {
+            return hash('sha256', 'stored|' . $passwordHash . '|' . $changedAt);
+        }
+
+        $actualProfileKey = (string) ($profile['profile_key'] ?? $profileKey);
+        $basePassword = (string) ($this->baseUsers[$actualProfileKey]['password'] ?? '');
+        $secret = (string) (getenv('APP_SESSION_SECRET') ?: 'mytakii-session-version');
+
+        return hash_hmac('sha256', 'base|' . $basePassword, $secret);
     }
 
     public function setShiftForProfiles(array $profileKeys, string $shiftKey): array
@@ -318,7 +362,7 @@ class UserProfileStore
         $password = (string) ($input['password'] ?? '');
         $passwordConfirmation = (string) ($input['password_confirmation'] ?? '');
 
-        if ($password !== '' && (strlen($password) < 6 || $password !== $passwordConfirmation)) {
+        if ($password !== '' && (strlen($password) < self::MIN_PASSWORD_LENGTH || strlen($password) > 4096 || $password !== $passwordConfirmation)) {
             return ['ok' => false, 'message' => 'admin.flash.password_invalid'];
         }
 
@@ -354,6 +398,7 @@ class UserProfileStore
             'workforce_roles' => $workforceRoles,
             'shift_key' => $this->cleanText((string) ($input['shift_key'] ?? ''), 80),
             'password_hash' => $password !== '' ? password_hash($password, PASSWORD_DEFAULT) : '',
+            'password_changed_at' => $password !== '' ? date('Y-m-d H:i:s') : '',
             'created_at' => date('Y-m-d H:i'),
             'updated_at' => date('Y-m-d H:i'),
         ];
@@ -461,11 +506,12 @@ class UserProfileStore
         $passwordConfirmation = (string) ($input['password_confirmation'] ?? '');
 
         if ($password !== '') {
-            if (strlen($password) < 6 || $password !== $passwordConfirmation) {
+            if (strlen($password) < self::MIN_PASSWORD_LENGTH || strlen($password) > 4096 || $password !== $passwordConfirmation) {
                 return ['ok' => false, 'message' => 'admin.flash.password_invalid'];
             }
 
             $profile['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+            $profile['password_changed_at'] = date('Y-m-d H:i:s');
         }
 
         $profile = array_merge($profile, [
@@ -582,7 +628,7 @@ class UserProfileStore
             $row = [];
 
             foreach (self::CSV_COLUMNS as $column) {
-                $row[] = $column === 'password' ? '' : $this->exportValue($profile[$column] ?? '');
+                $row[] = $column === 'password' ? '' : $this->csvExportValue($profile[$column] ?? '');
             }
 
             fputcsv($handle, $row, ',', '"', '');
@@ -779,12 +825,13 @@ class UserProfileStore
             $password = (string) ($record['password'] ?? '');
 
             if ($password !== '') {
-                if (strlen($password) < 6) {
+                if (strlen($password) < self::MIN_PASSWORD_LENGTH || strlen($password) > 4096) {
                     $skipped++;
                     continue;
                 }
 
                 $profile['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+                $profile['password_changed_at'] = date('Y-m-d H:i:s');
             }
 
             $data['profiles'][$profileKey] = $this->profileForStorage($profile);
@@ -934,6 +981,7 @@ class UserProfileStore
             'workforce_roles' => [],
             'shift_key' => '',
             'password_hash' => '',
+            'password_changed_at' => '',
             'created_at' => date('Y-m-d H:i'),
             'updated_at' => date('Y-m-d H:i'),
         ], $stored);
@@ -952,8 +1000,6 @@ class UserProfileStore
             $profile['location']
         );
         $profile['permissions'] = $baseUser['permissions'] ?? [];
-        $profile['password'] = (string) ($baseUser['password'] ?? '');
-
         if (($profile['name'] ?? '') === '') {
             $profile['name'] = trim((string) $profile['first_name'] . ' ' . (string) $profile['last_name']);
         }
@@ -1712,5 +1758,16 @@ class UserProfileStore
         }
 
         return (string) $value;
+    }
+
+    private function csvExportValue(mixed $value): string
+    {
+        $value = $this->exportValue($value);
+
+        if (preg_match('/\A[\x00-\x20]*[=+\-@]/', $value) === 1) {
+            return "'" . $value;
+        }
+
+        return $value;
     }
 }

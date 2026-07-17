@@ -4,7 +4,7 @@ namespace App\Core;
 
 class AccessControl
 {
-    private const VERSION = 16;
+    private const VERSION = 18;
     private const STATE_KEY = 'access_control';
     private const ADMIN_EMAIL = 'bilal@bigabilisim.com';
     private const HR_EMAIL = 'y.ekici@takii.com.tr';
@@ -20,6 +20,7 @@ class AccessControl
         'hr' => [
             'module.leave.access',
             'leave.request.manage.hr',
+            'leave.policy.manage',
             'leave.request.cancel',
             'module.personnel.access',
             'personnel.read',
@@ -602,6 +603,11 @@ class AccessControl
             'department_policies' => $policies,
         ];
 
+        foreach ($data['department_policies'] as $department => $policy) {
+            $data['department_policies'][$department] = $this->normalizePolicy($department, $policy);
+            $this->ensureDepartmentPolicyAssigneePermissions($data, $data['department_policies'][$department]);
+        }
+
         $this->saveData($data);
 
         return $data;
@@ -877,6 +883,7 @@ class AccessControl
             'leave.request.create' => 'admin.permission.leave_create',
             'leave.request.approve.department' => 'admin.permission.leave_approve_department',
             'leave.request.manage.hr' => 'admin.permission.leave_manage_hr',
+            'leave.policy.manage' => 'admin.permission.leave_policy_manage',
             'leave.request.cancel' => 'admin.permission.leave_cancel',
             'personnel.read' => 'admin.permission.personnel_read',
             'personnel.write' => 'admin.permission.personnel_write',
@@ -904,6 +911,7 @@ class AccessControl
             'leave.request.create' => 'module.leave.access',
             'leave.request.approve.department' => 'module.leave.access',
             'leave.request.manage.hr' => 'module.leave.access',
+            'leave.policy.manage' => 'module.leave.access',
             'leave.request.cancel' => 'module.leave.access',
             'personnel.read' => 'module.personnel.access',
             'personnel.write' => 'module.personnel.access',
@@ -956,10 +964,10 @@ class AccessControl
 
     private function migratePersonnelPermissions(string $email, array $user, array $currentPermissions): array
     {
-        $role = strtolower((string) ($user['role'] ?? ''));
+        $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
         $permissions = $currentPermissions;
 
-        if ($email === self::HR_EMAIL || str_contains($role, 'hr')) {
+        if ($email === self::HR_EMAIL || in_array('hr', $workforceRoles, true)) {
             return array_values(array_unique(array_merge($permissions, [
                 'module.personnel.access',
                 'personnel.read',
@@ -969,7 +977,7 @@ class AccessControl
             ])));
         }
 
-        if (str_contains($role, 'manager')) {
+        if (in_array('manager', $workforceRoles, true)) {
             return array_values(array_unique(array_merge($permissions, [
                 'module.personnel.access',
                 'personnel.read',
@@ -982,9 +990,9 @@ class AccessControl
 
     private function migratePersonnelExportPermission(string $email, array $user, array $currentPermissions): array
     {
-        $role = strtolower((string) ($user['role'] ?? ''));
+        $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
 
-        if ($email !== self::HR_EMAIL && !str_contains($role, 'hr')) {
+        if ($email !== self::HR_EMAIL && !in_array('hr', $workforceRoles, true)) {
             return $currentPermissions;
         }
 
@@ -1057,29 +1065,19 @@ class AccessControl
 
     private function isHrPersonnelOwner(string $email, array $user): bool
     {
-        $role = strtolower((string) ($user['role'] ?? ''));
-        $name = strtolower((string) ($user['name'] ?? ''));
         $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
 
         return $email === self::HR_EMAIL
-            || str_contains($role, 'hr')
-            || str_contains($name, 'yeşim dingil ekici')
             || in_array('hr', $workforceRoles, true);
     }
 
     private function isShiftModuleOwner(string $email, array $user): bool
     {
-        $role = strtolower((string) ($user['role'] ?? ''));
-        $name = strtolower((string) ($user['name'] ?? ''));
         $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
 
         return $email === self::HR_EMAIL
-            || str_contains($name, 'yeşim dingil ekici')
             || in_array('hr', $workforceRoles, true)
-            || in_array('shift_planner', $workforceRoles, true)
-            || str_contains($role, 'hr manager')
-            || str_contains($role, 'ik yoneticisi')
-            || str_contains($role, 'ik yöneticisi');
+            || in_array('shift_planner', $workforceRoles, true);
     }
 
     private function validUserEmail(string $email): string

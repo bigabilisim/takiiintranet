@@ -270,7 +270,25 @@ try {
     locationAssert(!in_array('bursa.hr.assistant@takii.com.tr', $antalyaSignatureRecipients, true), 'Bursa HR assistant received an Antalya signature reminder.');
     locationAssert(in_array('bursa.hr.assistant@takii.com.tr', $bursaSignatureRecipients, true), 'Bursa HR assistant is missing from Bursa signature reminders.');
     locationAssert(!in_array('antalya.hr.assistant@takii.com.tr', $bursaSignatureRecipients, true), 'Antalya HR assistant received a Bursa signature reminder.');
-    $crossLocationToken = (string) ($antalyaLeaveRequest['approval_tokens']['manager_1'] ?? '');
+    $crossLocationToken = bin2hex(random_bytes(32));
+    $leavePath = $testRoot . '/storage/leave-requests.json';
+    $leaveGuard = $stateStore->beginWrite('leave_requests', $leavePath, ['version' => 1, 'requests' => []]);
+    $leaveData = $stateStore->read('leave_requests', $leavePath, ['version' => 1, 'requests' => []]);
+
+    foreach ($leaveData['requests'] as &$mailRequest) {
+        if (($mailRequest['id'] ?? '') !== ($antalyaLeaveRequest['id'] ?? '')) {
+            continue;
+        }
+
+        // Legacy raw-token fixture verifies transparent hashing without exposing a real stored token.
+        $mailRequest['approval_tokens']['manager_1'] = $crossLocationToken;
+        $mailRequest['approval_token_expires_at']['manager_1'] = '2030-01-11 12:00';
+    }
+    unset($mailRequest);
+
+    $stateStore->write('leave_requests', $leavePath, $leaveData);
+    $leaveGuard->release();
+    $leave = new LeaveStore($access, new LeaveApprovalMailer(), $stateStore, $profiles, $shifts);
     $crossLocationDecision = $leave->advanceByToken($crossLocationToken, 'approve');
     locationAssert(empty($crossLocationDecision['ok']) && ($crossLocationDecision['message'] ?? '') === 'leave.flash.not_allowed', 'Cross-location mail token approved the leave request.');
 
@@ -291,7 +309,6 @@ try {
     locationAssert(in_array('Bursa One', $bursaAssistantCalendar, true), 'Bursa HR assistant cannot see Bursa calendar.');
     locationAssert(!in_array('Antalya One', $bursaAssistantCalendar, true), 'Bursa HR assistant can see Antalya calendar.');
 
-    $leavePath = $testRoot . '/storage/leave-requests.json';
     $leaveGuard = $stateStore->beginWrite('leave_requests', $leavePath, ['version' => 1, 'requests' => []]);
     $leaveData = $stateStore->read('leave_requests', $leavePath, ['version' => 1, 'requests' => []]);
     $regionalHrRequestIds = [];

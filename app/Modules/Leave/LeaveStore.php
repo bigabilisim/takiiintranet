@@ -72,6 +72,8 @@ class LeaveStore
         if ($storedRequests !== $normalizedRequests) {
             $this->save($normalizedRequests);
         }
+
+        $this->redactStoredMailOutbox();
     }
 
     public function all(): array
@@ -416,9 +418,10 @@ class LeaveStore
                 'acted_by' => null,
                 'source' => null,
             ];
-            $request['approval_tokens'][self::CANCELLATION_STAGE] = bin2hex(random_bytes(16));
+            $rawToken = $this->newOpaqueToken();
+            $request['approval_tokens'][self::CANCELLATION_STAGE] = $this->hashOpaqueToken($rawToken);
             $request['approval_token_expires_at'][self::CANCELLATION_STAGE] = $this->tokenExpiresAt();
-            $request = $this->queueApprovalMail($request, self::CANCELLATION_STAGE);
+            $request = $this->queueApprovalMail($request, self::CANCELLATION_STAGE, $rawToken);
 
             $requests[$index] = $request;
             $this->save($requests);
@@ -477,12 +480,51 @@ class LeaveStore
         return ['ok' => false, 'message' => 'leave.flash.not_found'];
     }
 
-    public function advanceByToken(string $token, string $decision): array
+    public function previewTokenDecision(string $token, string $decision): array
+    {
+        if (!in_array($decision, ['approve', 'reject'], true) || !$this->validOpaqueToken($token)) {
+            return ['ok' => false, 'message' => 'leave.flash.invalid_decision', 'request' => null];
+        }
+
+        foreach ($this->all() as $request) {
+            $stage = $this->currentStage($request);
+
+            if ($stage === null || !$this->opaqueTokenMatches((string) ($request['approval_tokens'][$stage] ?? ''), $token)) {
+                continue;
+            }
+
+            if ($this->tokenExpired($request, $stage)) {
+                return ['ok' => false, 'message' => 'leave.flash.token_expired', 'request' => $this->tokenResultRequest($request)];
+            }
+
+            if (!$this->assigneeCanViewRequest($request, $stage)) {
+                return ['ok' => false, 'message' => 'leave.flash.not_allowed', 'request' => null];
+            }
+
+            return [
+                'ok' => true,
+                'message' => 'leave.mail.confirm_prompt',
+                'request' => $this->tokenResultRequest($request),
+                'stage' => $stage,
+                'decision' => $decision,
+            ];
+        }
+
+        return ['ok' => false, 'message' => 'leave.flash.token_expired', 'request' => null];
+    }
+
+    public function advanceByToken(string $token, string $decision, string $decisionNote = ''): array
     {
         $writeGuard = $this->writeGuard();
 
-        if (!in_array($decision, ['approve', 'reject'], true)) {
+        if (!in_array($decision, ['approve', 'reject'], true) || !$this->validOpaqueToken($token)) {
             return ['ok' => false, 'message' => 'leave.flash.invalid_decision', 'request' => null];
+        }
+
+        $decisionNote = $this->cleanDecisionNote($decisionNote);
+
+        if ($decision === 'reject' && $decisionNote === '') {
+            return ['ok' => false, 'message' => 'leave.flash.reject_reason_required', 'request' => null];
         }
 
         $requests = $this->all();
@@ -490,7 +532,7 @@ class LeaveStore
         foreach ($requests as $index => $request) {
             $stage = $this->currentStage($request);
 
-            if ($stage === null || ($request['approval_tokens'][$stage] ?? '') !== $token) {
+            if ($stage === null || !$this->opaqueTokenMatches((string) ($request['approval_tokens'][$stage] ?? ''), $token)) {
                 continue;
             }
 
@@ -503,7 +545,7 @@ class LeaveStore
             }
 
             $isCancellationDecision = $stage === self::CANCELLATION_STAGE;
-            $requests[$index] = $this->applyDecision($request, $stage, $decision, 'Mail approval', 'email', '');
+            $requests[$index] = $this->applyDecision($request, $stage, $decision, 'Mail approval', 'email', $decisionNote);
             $this->save($requests);
 
             return [
@@ -511,8 +553,44 @@ class LeaveStore
                 'message' => $isCancellationDecision
                     ? ($decision === 'approve' ? 'leave.flash.cancellation_approved' : 'leave.flash.cancellation_rejected')
                     : ($decision === 'approve' ? 'leave.flash.mail_approved' : 'leave.flash.mail_rejected'),
-                'request' => $requests[$index],
+                'request' => $this->tokenResultRequest($requests[$index]),
                 'notifications' => $this->notificationsForCurrentStage($requests[$index]),
+            ];
+        }
+
+        return ['ok' => false, 'message' => 'leave.flash.token_expired', 'request' => null];
+    }
+
+    public function previewLeaveBookSignatureToken(string $token, string $decision): array
+    {
+        $status = match ($decision) {
+            'signed' => 'signed',
+            'not-signed', 'not_signed' => 'not_signed',
+            default => null,
+        };
+
+        if ($status === null || !$this->validOpaqueToken($token)) {
+            return ['ok' => false, 'message' => 'leave.flash.signature_invalid_decision', 'request' => null];
+        }
+
+        foreach ($this->all() as $request) {
+            $signature = $this->normalizeLeaveBookSignatureState($request);
+
+            if (!$this->opaqueTokenMatches((string) ($signature['followup_token'] ?? ''), $token)) {
+                continue;
+            }
+
+            $expiresAt = $this->dateTimeOrNull((string) ($signature['followup_token_expires_at'] ?? ''));
+
+            if ($expiresAt !== null && $expiresAt < new DateTimeImmutable('now')) {
+                return ['ok' => false, 'message' => 'leave.flash.token_expired', 'request' => $this->tokenResultRequest($request)];
+            }
+
+            return [
+                'ok' => true,
+                'message' => 'leave.mail.signature_confirm_prompt',
+                'request' => $this->tokenResultRequest($request),
+                'decision' => $decision,
             ];
         }
 
@@ -528,7 +606,7 @@ class LeaveStore
             default => null,
         };
 
-        if ($token === '' || $status === null) {
+        if (!$this->validOpaqueToken($token) || $status === null) {
             return ['ok' => false, 'message' => 'leave.flash.signature_invalid_decision', 'request' => null];
         }
 
@@ -537,7 +615,7 @@ class LeaveStore
         foreach ($requests as $index => $request) {
             $signature = $this->normalizeLeaveBookSignatureState($request);
 
-            if ((string) ($signature['followup_token'] ?? '') !== $token) {
+            if (!$this->opaqueTokenMatches((string) ($signature['followup_token'] ?? ''), $token)) {
                 continue;
             }
 
@@ -551,6 +629,8 @@ class LeaveStore
             $signature['acted_at'] = date('Y-m-d H:i');
             $signature['acted_by'] = 'Mail follow-up';
             $signature['source'] = 'email';
+            $signature['followup_token'] = null;
+            $signature['followup_token_expires_at'] = null;
             $request['leave_book_signature'] = $signature;
             $requests[$index] = $request;
             $this->save($requests);
@@ -558,7 +638,7 @@ class LeaveStore
             return [
                 'ok' => true,
                 'message' => $status === 'signed' ? 'leave.flash.signature_signed' : 'leave.flash.signature_not_signed',
-                'request' => $requests[$index],
+                'request' => $this->tokenResultRequest($requests[$index]),
             ];
         }
 
@@ -711,8 +791,6 @@ class LeaveStore
         $request['total_days'] = (float) ($request['total_days'] ?? 0);
         $request['total_days_label'] = $this->formatDays($request['total_days']);
         $request['can_act'] = $stage !== null && $this->canActOnStage($stage, $auth, $request);
-        $request['mail_approve_url'] = $stage ? '/leave/mail-approval/' . $request['approval_tokens'][$stage] . '/approve' : null;
-        $request['mail_reject_url'] = $stage ? '/leave/mail-approval/' . $request['approval_tokens'][$stage] . '/reject' : null;
         $request['mail_token_expires_at'] = $stage ? ($request['approval_token_expires_at'][$stage] ?? null) : null;
         $request['history'] = $this->historyForRequest($request);
 
@@ -899,9 +977,10 @@ class LeaveStore
             }
 
             if ($needsNotification) {
-                $syncedRequest['approval_tokens'][$newStage] = bin2hex(random_bytes(16));
+                $rawToken = $this->newOpaqueToken();
+                $syncedRequest['approval_tokens'][$newStage] = $this->hashOpaqueToken($rawToken);
                 $syncedRequest['approval_token_expires_at'][$newStage] = $this->tokenExpiresAt();
-                $syncedRequest = $this->queueApprovalMail($syncedRequest, $newStage);
+                $syncedRequest = $this->queueApprovalMail($syncedRequest, $newStage, $rawToken);
                 $notifications = array_merge($notifications, $this->notificationsForCurrentStage($syncedRequest));
             }
 
@@ -1139,6 +1218,7 @@ class LeaveStore
         $request['approvals'][$stage]['source'] = $source;
         $request['approvals'][$stage]['acted_at'] = date('Y-m-d H:i');
         $request['approvals'][$stage]['reason'] = $decision === 'reject' ? $this->cleanDecisionNote($decisionNote) : '';
+        unset($request['approval_tokens'][$stage], $request['approval_token_expires_at'][$stage]);
 
         if ($decision === 'reject') {
             $request['status'] = 'rejected';
@@ -1807,10 +1887,11 @@ class LeaveStore
             return $request;
         }
 
-        $request['approval_tokens'][$stage] = bin2hex(random_bytes(16));
+        $rawToken = $this->newOpaqueToken();
+        $request['approval_tokens'][$stage] = $this->hashOpaqueToken($rawToken);
         $request['approval_token_expires_at'][$stage] = $this->tokenExpiresAt();
 
-        return $queueMail ? $this->queueApprovalMail($request, $stage) : $request;
+        return $queueMail ? $this->queueApprovalMail($request, $stage, $rawToken) : $request;
     }
 
     private function tokenExpired(array $request, string $stage): bool
@@ -1829,7 +1910,54 @@ class LeaveStore
         return (new DateTimeImmutable('now'))->modify('+' . self::TOKEN_TTL_HOURS . ' hours')->format('Y-m-d H:i');
     }
 
-    private function queueApprovalMail(array $request, string $stage): array
+    private function newOpaqueToken(): string
+    {
+        return bin2hex(random_bytes(32));
+    }
+
+    private function hashOpaqueToken(string $token): string
+    {
+        return 'sha256:' . hash('sha256', $token);
+    }
+
+    private function validOpaqueToken(string $token): bool
+    {
+        return preg_match('/\A[a-f0-9]{32,128}\z/', $token) === 1;
+    }
+
+    private function opaqueTokenMatches(string $storedToken, string $providedToken): bool
+    {
+        if (!$this->validOpaqueToken($providedToken) || $storedToken === '') {
+            return false;
+        }
+
+        if (str_starts_with($storedToken, 'sha256:')) {
+            return hash_equals($storedToken, $this->hashOpaqueToken($providedToken));
+        }
+
+        return hash_equals($storedToken, $providedToken);
+    }
+
+    private function tokenResultRequest(array $request): array
+    {
+        unset(
+            $request['approval_tokens'],
+            $request['approval_token_expires_at'],
+            $request['mail_notifications'],
+            $request['approval_policy']
+        );
+
+        if (is_array($request['leave_book_signature'] ?? null)) {
+            unset(
+                $request['leave_book_signature']['followup_token'],
+                $request['leave_book_signature']['followup_token_expires_at']
+            );
+        }
+
+        return $request;
+    }
+
+    private function queueApprovalMail(array $request, string $stage, string $rawToken): array
     {
         $recipient = $this->assigneeEmailForStage($request, $stage);
 
@@ -1838,9 +1966,8 @@ class LeaveStore
         }
 
         $isCancellationStage = $stage === self::CANCELLATION_STAGE;
-        $token = (string) ($request['approval_tokens'][$stage] ?? '');
-        $approvePath = '/leave/mail-approval/' . $token . '/approve';
-        $rejectPath = '/leave/mail-approval/' . $token . '/reject';
+        $approvePath = '/leave/mail-approval/' . $rawToken . '/approve';
+        $rejectPath = '/leave/mail-approval/' . $rawToken . '/reject';
         $entry = [
             'id' => 'MAIL-' . bin2hex(random_bytes(6)),
             'type' => $isCancellationStage ? 'leave_cancellation_approval' : 'leave_approval',
@@ -2007,19 +2134,15 @@ class LeaveStore
     {
         $signature = $this->normalizeLeaveBookSignatureState($request);
 
-        if ((string) ($signature['followup_token'] ?? '') === '') {
-            $signature['followup_token'] = bin2hex(random_bytes(16));
-        }
-
-        if ((string) ($signature['followup_token_expires_at'] ?? '') === '') {
-            $signature['followup_token_expires_at'] = $now
-                ->modify('+' . $this->signatureTokenTtlDays() . ' days')
-                ->format('Y-m-d H:i');
-        }
+        $rawToken = $this->newOpaqueToken();
+        $signature['followup_token'] = $this->hashOpaqueToken($rawToken);
+        $signature['followup_token_expires_at'] = $now
+            ->modify('+' . $this->signatureTokenTtlDays() . ' days')
+            ->format('Y-m-d H:i');
 
         $createdAt = date('Y-m-d H:i');
-        $signedUrl = $this->absoluteUrl('/leave/book-signature/' . $signature['followup_token'] . '/signed');
-        $notSignedUrl = $this->absoluteUrl('/leave/book-signature/' . $signature['followup_token'] . '/not-signed');
+        $signedUrl = $this->absoluteUrl('/leave/book-signature/' . $rawToken . '/signed');
+        $notSignedUrl = $this->absoluteUrl('/leave/book-signature/' . $rawToken . '/not-signed');
         $entries = [];
 
         foreach ($recipients as $recipient) {
@@ -2084,7 +2207,7 @@ class LeaveStore
             $entry['error'] = (string) $mailResult['error'];
         }
 
-        $this->appendMailOutbox($entry);
+        $this->appendMailOutbox($this->redactedMailEntry($entry));
 
         return $entry;
     }
@@ -2370,6 +2493,14 @@ class LeaveStore
                 'hr' => null,
                 self::CANCELLATION_STAGE => null,
             ], is_array($request['approval_tokens'] ?? null) ? $request['approval_tokens'] : []);
+
+            foreach ($request['approval_tokens'] as $tokenStage => $storedToken) {
+                $storedToken = trim((string) $storedToken);
+
+                if ($storedToken !== '' && !str_starts_with($storedToken, 'sha256:')) {
+                    $request['approval_tokens'][$tokenStage] = $this->hashOpaqueToken($storedToken);
+                }
+            }
             $request['approval_token_expires_at'] = array_merge([
                 'manager_1' => null,
                 'manager_2' => null,
@@ -2389,10 +2520,6 @@ class LeaveStore
 
             if ($stage !== null && empty($request['approval_token_expires_at'][$stage])) {
                 $request['approval_token_expires_at'][$stage] = $this->tokenExpiresAt();
-            }
-
-            if ($stage !== null && empty($request['approval_tokens'][$stage])) {
-                $request['approval_tokens'][$stage] = bin2hex(random_bytes(16));
             }
 
             if ($this->shouldTrackLeaveBookSignature($request)) {
@@ -2447,6 +2574,12 @@ class LeaveStore
         $status = (string) ($signature['status'] ?? 'waiting');
         $status = in_array($status, ['waiting', 'signed', 'not_signed'], true) ? $status : 'waiting';
 
+        $followupToken = trim((string) ($signature['followup_token'] ?? ''));
+
+        if ($followupToken !== '' && !str_starts_with($followupToken, 'sha256:')) {
+            $followupToken = $this->hashOpaqueToken($followupToken);
+        }
+
         return array_merge([
             'status' => $status,
             'required_at' => $requiredAt,
@@ -2468,6 +2601,7 @@ class LeaveStore
             'notification_due_at' => $notificationDueAt,
             'due_at' => $dueAt,
             'followup_due_at' => $followupDueAt,
+            'followup_token' => $followupToken !== '' ? $followupToken : null,
         ]);
     }
 
@@ -2797,6 +2931,56 @@ class LeaveStore
             : ['version' => self::STORAGE_VERSION, 'messages' => []];
         $outbox['messages'][] = $entry;
 
+        $this->stateStore->write(self::MAIL_OUTBOX_STATE_KEY, $this->mailOutboxPath(), $outbox);
+    }
+
+    private function redactedMailEntry(array $entry): array
+    {
+        $sensitiveKeys = [
+            'body_html',
+            'approve_url',
+            'reject_url',
+            'signed_url',
+            'not_signed_url',
+        ];
+        $redacted = false;
+
+        foreach ($sensitiveKeys as $key) {
+            if (!array_key_exists($key, $entry)) {
+                continue;
+            }
+
+            unset($entry[$key]);
+            $redacted = true;
+        }
+
+        if ($redacted) {
+            $entry['sensitive_content_redacted'] = true;
+        }
+
+        return $entry;
+    }
+
+    private function redactStoredMailOutbox(): void
+    {
+        $writeGuard = $this->stateStore->beginWrite(self::MAIL_OUTBOX_STATE_KEY, $this->mailOutboxPath());
+        $outbox = $this->stateStore->read(
+            self::MAIL_OUTBOX_STATE_KEY,
+            $this->mailOutboxPath(),
+            ['version' => self::STORAGE_VERSION, 'messages' => []]
+        );
+
+        if (!is_array($outbox) || !is_array($outbox['messages'] ?? null)) {
+            return;
+        }
+
+        $messages = array_map(fn (array $entry): array => $this->redactedMailEntry($entry), $outbox['messages']);
+
+        if ($messages === $outbox['messages']) {
+            return;
+        }
+
+        $outbox['messages'] = $messages;
         $this->stateStore->write(self::MAIL_OUTBOX_STATE_KEY, $this->mailOutboxPath(), $outbox);
     }
 

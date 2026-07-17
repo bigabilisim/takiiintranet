@@ -18,6 +18,76 @@ use App\Modules\Shift\ShiftStore;
 
 class PersonnelController
 {
+    private const MANAGER_EDIT_FIELDS = [
+        'first_name',
+        'last_name',
+        'role',
+        'phone',
+        'education_level',
+        'school',
+        'faculty',
+        'graduation_year',
+    ];
+
+    private const HR_ASSISTANT_EDIT_FIELDS = [
+        'first_name',
+        'last_name',
+        'role',
+        'department',
+        'pdks_id',
+        'started_on',
+        'employment_type',
+        'phone',
+        'personal_phone',
+        'birth_date',
+        'leave_opening_total_days',
+        'leave_opening_used_days',
+        'leave_opening_remaining_days',
+        'leave_opening_snapshot_date',
+        'leave_opening_source',
+        'national_id',
+        'address',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'education_level',
+        'school',
+        'faculty',
+        'graduation_year',
+        'hr_notes',
+        'shift_key',
+    ];
+
+    private const HR_EDIT_FIELDS = [
+        'new_email',
+        'username',
+        'first_name',
+        'last_name',
+        'role',
+        'department',
+        'location',
+        'pdks_id',
+        'started_on',
+        'employment_type',
+        'phone',
+        'personal_phone',
+        'birth_date',
+        'leave_opening_total_days',
+        'leave_opening_used_days',
+        'leave_opening_remaining_days',
+        'leave_opening_snapshot_date',
+        'leave_opening_source',
+        'national_id',
+        'address',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'education_level',
+        'school',
+        'faculty',
+        'graduation_year',
+        'hr_notes',
+        'shift_key',
+    ];
+
     public function __construct(
         private readonly View $view,
         private readonly Auth $auth,
@@ -41,6 +111,13 @@ class PersonnelController
         }
 
         $personnel = $this->sortedProfiles();
+        $editableProfileFields = [];
+
+        foreach ($personnel as $profile) {
+            $profileKey = (string) ($profile['profile_key'] ?? ($profile['email'] ?? ''));
+            $editableProfileFields[$profileKey] = $this->editableFieldsForProfile($profile);
+        }
+
         $temporaryCredential = Session::pullFlash('personnel_credential', []);
         $headers = is_array($temporaryCredential) && (string) ($temporaryCredential['password'] ?? '') !== ''
             ? ['Cache-Control' => 'no-store, no-cache, must-revalidate', 'Pragma' => 'no-cache']
@@ -52,12 +129,15 @@ class PersonnelController
             'departments' => $this->visibleDepartmentNames(),
             'departmentOptions' => $this->visibleDepartmentOptions(),
             'locationOptions' => LocationScope::visibleOptions($this->auth->user() ?? []),
-            'canWritePersonnel' => $this->auth->can('personnel.write'),
+            'canWritePersonnel' => array_filter($editableProfileFields) !== [],
+            'canCreatePersonnel' => $this->canCreatePersonnel(),
+            'canManageWorkforceRoles' => $this->canManageWorkforceRoles(),
             'canDeletePersonnel' => $this->auth->can('personnel.delete'),
             'canExportPersonnel' => $this->canExport(),
             'canManageCredentials' => $this->canManageCredentials(),
             'temporaryCredential' => $temporaryCredential,
             'deletableEmails' => $this->deletableEmails(),
+            'editableProfileFields' => $editableProfileFields,
             'personnelGroupCounts' => $this->personnelGroupCounts($personnel),
             'shiftOptions' => $this->shiftStore->enabledTemplates(),
             'shiftTemplates' => $this->shiftStore->templates(),
@@ -118,23 +198,27 @@ class PersonnelController
 
     public function create(Request $request): Response
     {
-        if (!$this->canMutate('personnel.write', $request)) {
-            return Response::redirect('/module/personnel');
-        }
-
-        if (!$this->canUseDepartment((string) $request->input('department', ''))) {
+        if (!$this->canMutate('personnel.write', $request) || !$this->canCreatePersonnel()) {
             Session::flash('error', 'personnel.flash.not_allowed');
 
             return Response::redirect('/module/personnel');
         }
 
-        if (!$this->canUseLocation((string) $request->input('location', ''))) {
+        $input = $this->authorizedCreateInput($request->all());
+
+        if (!$this->canUseDepartment((string) ($input['department'] ?? ''))) {
             Session::flash('error', 'personnel.flash.not_allowed');
 
             return Response::redirect('/module/personnel');
         }
 
-        $result = $this->userProfiles->createProfile($request->all());
+        if (!$this->canUseLocation((string) ($input['location'] ?? ''))) {
+            Session::flash('error', 'personnel.flash.not_allowed');
+
+            return Response::redirect('/module/personnel');
+        }
+
+        $result = $this->userProfiles->createProfile($input);
 
         if ($result['ok']) {
             $profileKey = (string) ($result['profile_key'] ?? '');
@@ -161,25 +245,27 @@ class PersonnelController
         $profileKey = (string) $request->input('profile_key', $request->input('email'));
         $before = $this->userProfiles->find($profileKey);
 
-        if ($before !== null && !$this->canViewProfile($before)) {
+        if ($before === null || !$this->canEditProfile($before)) {
             Session::flash('error', 'personnel.flash.not_allowed');
 
             return Response::redirect('/module/personnel');
         }
 
-        if (!$this->canUseDepartment((string) $request->input('department', (string) ($before['department'] ?? '')))) {
+        $input = $this->authorizedUpdateInput($before, $request->all());
+
+        if (!$this->canUseDepartment((string) ($input['department'] ?? ($before['department'] ?? '')))) {
             Session::flash('error', 'personnel.flash.not_allowed');
 
             return Response::redirect('/module/personnel');
         }
 
-        if (!$this->canUseLocation((string) $request->input('location', (string) ($before['location'] ?? '')))) {
+        if (!$this->canUseLocation((string) ($input['location'] ?? ($before['location'] ?? '')))) {
             Session::flash('error', 'personnel.flash.not_allowed');
 
             return Response::redirect('/module/personnel');
         }
 
-        $result = $this->identityMigration->updateProfile($profileKey, $request->all());
+        $result = $this->identityMigration->updateProfile($profileKey, $input);
 
         if ($result['ok']) {
             $updatedProfileKey = (string) ($result['profile_key'] ?? $profileKey);
@@ -303,11 +389,7 @@ class PersonnelController
 
         return in_array('*', $permissions, true)
             || in_array('admin.company.manage', $permissions, true)
-            || in_array('leave.request.manage.hr', $permissions, true)
-            || in_array('hr', $workforceRoles, true)
-            || in_array('hr_assistant', $workforceRoles, true)
-            || in_array('hr_assistant_antalya', $workforceRoles, true)
-            || in_array('hr_assistant_bursa', $workforceRoles, true);
+            || in_array('hr', $workforceRoles, true);
     }
 
     private function canMutate(string $permission, Request $request): bool
@@ -409,7 +491,147 @@ class PersonnelController
             }
         }
 
-        return $this->personnelGroupFromDepartment($viewerDepartment) === $this->personnelGroupFromDepartment($profileDepartment);
+        return false;
+    }
+
+    private function canCreatePersonnel(): bool
+    {
+        if (!$this->auth->can('personnel.write')) {
+            return false;
+        }
+
+        return $this->isCompanyAdministrator() || $this->hasAnyWorkforceRole([
+            'hr',
+            'hr_assistant',
+            'hr_assistant_antalya',
+            'hr_assistant_bursa',
+        ]);
+    }
+
+    private function canManageWorkforceRoles(): bool
+    {
+        return $this->isCompanyAdministrator();
+    }
+
+    private function canEditProfile(array $profile): bool
+    {
+        return $this->auth->can('personnel.write')
+            && $this->canViewProfile($profile)
+            && $this->editableFieldsForProfile($profile) !== [];
+    }
+
+    private function editableFieldsForProfile(array $profile): array
+    {
+        if (!$this->auth->can('personnel.write') || !$this->canViewProfile($profile)) {
+            return [];
+        }
+
+        if ($this->isCompanyAdministrator()) {
+            return array_merge(self::HR_EDIT_FIELDS, ['workforce_roles']);
+        }
+
+        if ($this->hasAnyWorkforceRole(['hr'])) {
+            return self::HR_EDIT_FIELDS;
+        }
+
+        if ($this->hasAnyWorkforceRole(['hr_assistant', 'hr_assistant_antalya', 'hr_assistant_bursa'])) {
+            return self::HR_ASSISTANT_EDIT_FIELDS;
+        }
+
+        return self::MANAGER_EDIT_FIELDS;
+    }
+
+    private function authorizedCreateInput(array $submitted): array
+    {
+        $fields = self::HR_EDIT_FIELDS;
+
+        if (!$this->isCompanyAdministrator()) {
+            $fields = array_values(array_diff($fields, ['location']));
+
+            if ($this->hasAnyWorkforceRole(['hr'])) {
+                $fields[] = 'location';
+            }
+        }
+
+        $input = $this->onlyFields($submitted, $fields);
+
+        if (!$this->hasAnyWorkforceRole(['hr']) && !$this->isCompanyAdministrator()) {
+            $input['location'] = LocationScope::locationForViewer($this->auth->user() ?? []);
+        }
+
+        $input['workforce_roles'] = $this->canManageWorkforceRoles()
+            ? (is_array($submitted['workforce_roles'] ?? null) ? $submitted['workforce_roles'] : [])
+            : [];
+
+        return $input;
+    }
+
+    private function authorizedUpdateInput(array $profile, array $submitted): array
+    {
+        $input = [
+            'new_email' => (string) ($profile['email'] ?? ''),
+            'username' => (string) ($profile['username'] ?? ''),
+            'first_name' => (string) ($profile['first_name'] ?? ''),
+            'last_name' => (string) ($profile['last_name'] ?? ''),
+            'role' => (string) ($profile['role'] ?? ''),
+            'department' => (string) ($profile['department'] ?? ''),
+            'location' => (string) ($profile['location'] ?? ''),
+            'pdks_id' => (string) ($profile['pdks_id'] ?? ''),
+            'started_on' => (string) ($profile['started_on'] ?? ''),
+            'employment_type' => (string) ($profile['employment_type'] ?? ''),
+            'phone' => (string) ($profile['phone'] ?? ''),
+            'personal_phone' => (string) ($profile['personal_phone'] ?? ''),
+            'birth_date' => (string) ($profile['birth_date'] ?? ''),
+            'leave_opening_total_days' => (string) ($profile['leave_opening_total_days'] ?? ''),
+            'leave_opening_used_days' => (string) ($profile['leave_opening_used_days'] ?? ''),
+            'leave_opening_remaining_days' => (string) ($profile['leave_opening_remaining_days'] ?? ''),
+            'leave_opening_snapshot_date' => (string) ($profile['leave_opening_snapshot_date'] ?? ''),
+            'leave_opening_source' => (string) ($profile['leave_opening_source'] ?? ''),
+            'national_id' => (string) ($profile['national_id'] ?? ''),
+            'address' => (string) ($profile['address'] ?? ''),
+            'emergency_contact_name' => (string) ($profile['emergency_contact_name'] ?? ''),
+            'emergency_contact_phone' => (string) ($profile['emergency_contact_phone'] ?? ''),
+            'education_level' => (string) ($profile['education_level'] ?? ''),
+            'school' => (string) ($profile['school'] ?? ''),
+            'faculty' => (string) ($profile['faculty'] ?? ''),
+            'graduation_year' => (string) ($profile['graduation_year'] ?? ''),
+            'hr_notes' => (string) ($profile['hr_notes'] ?? ''),
+            'shift_key' => (string) ($profile['shift_key'] ?? ''),
+            'workforce_roles' => is_array($profile['workforce_roles'] ?? null) ? $profile['workforce_roles'] : [],
+        ];
+
+        foreach ($this->onlyFields($submitted, $this->editableFieldsForProfile($profile)) as $field => $value) {
+            $input[$field] = $value;
+        }
+
+        if ($this->canManageWorkforceRoles()) {
+            $input['workforce_roles'] = is_array($submitted['workforce_roles'] ?? null)
+                ? $submitted['workforce_roles']
+                : [];
+        }
+
+        return $input;
+    }
+
+    private function onlyFields(array $input, array $fields): array
+    {
+        return array_intersect_key($input, array_fill_keys($fields, true));
+    }
+
+    private function isCompanyAdministrator(): bool
+    {
+        $permissions = $this->auth->user()['permissions'] ?? [];
+        $permissions = is_array($permissions) ? $permissions : [];
+
+        return in_array('*', $permissions, true) || in_array('admin.company.manage', $permissions, true);
+    }
+
+    private function hasAnyWorkforceRole(array $roles): bool
+    {
+        $assigned = $this->auth->user()['workforce_roles'] ?? [];
+        $assigned = is_array($assigned) ? $assigned : [];
+
+        return array_intersect($roles, $assigned) !== [];
     }
 
     private function visibleDepartmentNames(): array

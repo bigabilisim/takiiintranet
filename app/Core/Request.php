@@ -47,6 +47,21 @@ class Request
         return $_SERVER[$key] ?? $default;
     }
 
+    public function clientIp(): string
+    {
+        $remoteAddress = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+
+        if (filter_var(getenv('TRUST_PROXY') ?: 'false', FILTER_VALIDATE_BOOLEAN)) {
+            $forwarded = trim(explode(',', (string) $this->header('X-Forwarded-For', ''))[0] ?? '');
+
+            if (filter_var($forwarded, FILTER_VALIDATE_IP)) {
+                return $forwarded;
+            }
+        }
+
+        return filter_var($remoteAddress, FILTER_VALIDATE_IP) ? $remoteAddress : 'unknown';
+    }
+
     private static function bodyInput(): array
     {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';

@@ -2,9 +2,21 @@
 
 namespace App\Modules\Templates;
 
+use App\Core\StateStore;
+
 class TemplateTestMailer
 {
+    private const STATE_KEY = 'template_test_mail_outbox';
     private const VERSION = 1;
+    private readonly TemplateSanitizer $sanitizer;
+
+    public function __construct(
+        private readonly StateStore $stateStore,
+        ?TemplateSanitizer $sanitizer = null,
+    )
+    {
+        $this->sanitizer = $sanitizer ?? new TemplateSanitizer();
+    }
 
     public function lastRecipientForUser(string $email): string
     {
@@ -43,8 +55,8 @@ class TemplateTestMailer
         $templateName = trim((string) ($input['template_name'] ?? ''));
         $templateType = trim((string) ($input['type'] ?? 'mail'));
         $subject = $this->cleanHeader((string) ($input['subject'] ?? ''));
-        $html = trim((string) ($input['html'] ?? ''));
-        $css = trim((string) ($input['css'] ?? ''));
+        $html = $this->sanitizer->sanitizeHtml((string) ($input['html'] ?? ''));
+        $css = $this->sanitizer->sanitizeCss((string) ($input['css'] ?? ''));
 
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
             return ['ok' => false, 'message' => 'templates.flash.test_mail_invalid_recipient'];
@@ -118,33 +130,25 @@ class TemplateTestMailer
     private function appendOutbox(array $entry): void
     {
         $path = $this->outboxPath();
-        $directory = dirname($path);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $path, $this->emptyOutbox());
         $decoded = $this->loadOutbox();
         $outbox = is_array($decoded) && is_array($decoded['messages'] ?? null)
             ? $decoded
-            : ['version' => self::VERSION, 'messages' => []];
+            : $this->emptyOutbox();
         $outbox['version'] = self::VERSION;
         $outbox['messages'][] = $entry;
 
-        file_put_contents($path, json_encode($outbox, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        $this->stateStore->write(self::STATE_KEY, $path, $outbox);
     }
 
     private function loadOutbox(): array
     {
-        $path = $this->outboxPath();
+        return $this->stateStore->read(self::STATE_KEY, $this->outboxPath(), $this->emptyOutbox());
+    }
 
-        if (!is_file($path)) {
-            return [];
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-
-        return is_array($decoded) ? $decoded : [];
+    private function emptyOutbox(): array
+    {
+        return ['version' => self::VERSION, 'messages' => []];
     }
 
     private function wrapHtml(string $html, string $css): string

@@ -23,11 +23,11 @@
                 <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
                 <label>
                     <span><?= htmlspecialchars($t('auth.new_password'), ENT_QUOTES, 'UTF-8') ?></span>
-                    <input type="password" name="password" minlength="6" autocomplete="new-password" required>
+                    <input type="password" name="password" minlength="12" maxlength="4096" autocomplete="new-password" required>
                 </label>
                 <label>
                     <span><?= htmlspecialchars($t('auth.new_password_confirmation'), ENT_QUOTES, 'UTF-8') ?></span>
-                    <input type="password" name="password_confirmation" minlength="6" autocomplete="new-password" required>
+                    <input type="password" name="password_confirmation" minlength="12" maxlength="4096" autocomplete="new-password" required>
                 </label>
                 <button class="button primary" type="submit"><?= htmlspecialchars($t('auth.reset_submit'), ENT_QUOTES, 'UTF-8') ?></button>
                 <a class="auth-link" href="/login"><?= htmlspecialchars($t('auth.back_to_login'), ENT_QUOTES, 'UTF-8') ?></a>

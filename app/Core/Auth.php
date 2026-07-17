@@ -4,6 +4,9 @@ namespace App\Core;
 
 class Auth
 {
+    private const DEFAULT_IDLE_TTL_SECONDS = 1800;
+    private const DEFAULT_ABSOLUTE_TTL_SECONDS = 43200;
+
     public function __construct(
         private readonly UserProfileStore $userProfiles,
         private readonly AccessControl $accessControl,
@@ -19,6 +22,10 @@ class Auth
         }
 
         $profileKey = (string) ($user['profile_key'] ?? $email);
+        $now = time();
+
+        Session::regenerate(true);
+        Csrf::rotate();
 
         Session::put('user', [
             'email' => $profileKey,
@@ -39,13 +46,16 @@ class Auth
             'shift_key' => $user['shift_key'] ?? '',
             'permissions' => $this->accessControl->permissionsFor($profileKey),
         ]);
+        Session::put('auth_started_at', $now);
+        Session::put('auth_last_activity_at', $now);
+        Session::put('auth_credential_version', $this->userProfiles->credentialVersionForProfile($profileKey));
 
         return true;
     }
 
     public function logout(): void
     {
-        Session::forget('user');
+        Session::destroy();
     }
 
     public function user(): ?array
@@ -58,7 +68,27 @@ class Auth
 
         if (isset($user['email'])) {
             $email = (string) $user['email'];
-            $sourceUser = $this->userProfiles->find($email) ?? [];
+            $sourceUser = $this->userProfiles->find($email);
+
+            if ($sourceUser === null || !$this->validSessionLifetime()) {
+                $this->logout();
+
+                return null;
+            }
+
+            $credentialVersion = $this->userProfiles->credentialVersionForProfile($email);
+            $sessionCredentialVersion = (string) Session::get('auth_credential_version', '');
+
+            if ($sessionCredentialVersion !== '' && !hash_equals($sessionCredentialVersion, $credentialVersion)) {
+                $this->logout();
+
+                return null;
+            }
+
+            if ($sessionCredentialVersion === '') {
+                Session::put('auth_credential_version', $credentialVersion);
+            }
+
             $user['personnel_id'] = $sourceUser['personnel_id'] ?? $user['personnel_id'] ?? '';
             $user['username'] = $sourceUser['username'] ?? $user['username'] ?? '';
             $user['name'] = $sourceUser['name'] ?? $user['name'] ?? '';
@@ -77,6 +107,7 @@ class Auth
             $user['leave_opening_source'] = $sourceUser['leave_opening_source'] ?? $user['leave_opening_source'] ?? '';
             $user['shift_key'] = $sourceUser['shift_key'] ?? $user['shift_key'] ?? '';
             $user['permissions'] = $this->accessControl->permissionsFor($email);
+            Session::put('auth_last_activity_at', time());
             Session::put('user', $user);
         }
 
@@ -99,5 +130,24 @@ class Auth
         $permissions = $user['permissions'] ?? [];
 
         return in_array('*', $permissions, true) || in_array($permission, $permissions, true);
+    }
+
+    private function validSessionLifetime(): bool
+    {
+        $now = time();
+        $startedAt = (int) Session::get('auth_started_at', 0);
+        $lastActivityAt = (int) Session::get('auth_last_activity_at', 0);
+
+        if ($startedAt <= 0 || $lastActivityAt <= 0) {
+            Session::put('auth_started_at', $now);
+            Session::put('auth_last_activity_at', $now);
+
+            return true;
+        }
+
+        $idleTtl = max(300, (int) (getenv('SESSION_IDLE_TTL_SECONDS') ?: self::DEFAULT_IDLE_TTL_SECONDS));
+        $absoluteTtl = max($idleTtl, (int) (getenv('SESSION_ABSOLUTE_TTL_SECONDS') ?: self::DEFAULT_ABSOLUTE_TTL_SECONDS));
+
+        return ($now - $lastActivityAt) <= $idleTtl && ($now - $startedAt) <= $absoluteTtl;
     }
 }

@@ -77,7 +77,7 @@ try {
         'lock_directory' => $testRoot . '/locks',
     ]);
     $profiles = new UserProfileStore([], $stateStore);
-    $mailer = new PersonnelCredentialTestMailer();
+    $mailer = new PersonnelCredentialTestMailer($stateStore);
     $resets = new PasswordResetStore($profiles, $mailer, $stateStore);
     $credentials = new PersonnelCredentialService($profiles, $resets, $mailer);
 
@@ -87,8 +87,8 @@ try {
         'last_name' => 'Dingil Ekici',
         'role' => 'HR Specialist',
         'department' => 'İnsan Kaynakları',
-        'password' => 'Initial-123',
-        'password_confirmation' => 'Initial-123',
+        'password' => 'Initial-1234',
+        'password_confirmation' => 'Initial-1234',
     ]);
     credentialAssert(($yesim['ok'] ?? false) === true, 'Email profile could not be created.');
     credentialAssert(($yesim['username'] ?? '') === 'yesimdingilekici', 'Turkish username was not generated as isimsoyisim.');

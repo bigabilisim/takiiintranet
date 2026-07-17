@@ -20,6 +20,8 @@ use App\Modules\Notifications\PushNotificationStore;
 
 class AdminController
 {
+    private const MAX_PERSONNEL_IMPORT_BYTES = 5 * 1024 * 1024;
+
     public function __construct(
         private readonly View $view,
         private readonly Auth $auth,
@@ -212,7 +214,28 @@ class AdminController
             return Response::redirect('/admin/access');
         }
 
-        $result = $this->userProfiles->importProfilesCsv((string) ($file['tmp_name'] ?? ''));
+        $temporaryPath = (string) ($file['tmp_name'] ?? '');
+        $originalName = (string) ($file['name'] ?? '');
+        $size = (int) ($file['size'] ?? 0);
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $mime = $temporaryPath !== '' && is_file($temporaryPath)
+            ? (new \finfo(FILEINFO_MIME_TYPE))->file($temporaryPath)
+            : false;
+        $allowedMimes = ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'];
+
+        if ($temporaryPath === ''
+            || !is_uploaded_file($temporaryPath)
+            || $extension !== 'csv'
+            || $size < 1
+            || $size > self::MAX_PERSONNEL_IMPORT_BYTES
+            || !is_string($mime)
+            || !in_array(strtolower($mime), $allowedMimes, true)) {
+            Session::flash('error', 'admin.flash.personnel_file_invalid');
+
+            return Response::redirect('/admin/access');
+        }
+
+        $result = $this->userProfiles->importProfilesCsv($temporaryPath);
         Session::flash($result['ok'] ? 'success' : 'error', $result['message']);
 
         return Response::redirect('/admin/access');

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\RateLimiter;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
@@ -16,6 +17,7 @@ class AuthController
         private readonly View $view,
         private readonly Auth $auth,
         private readonly PasswordResetStore $passwordResets,
+        private readonly RateLimiter $rateLimiter,
     ) {
     }
 
@@ -45,10 +47,14 @@ class AuthController
             return Response::redirect('/forgot-password');
         }
 
-        $this->passwordResets->request(
-            trim((string) $request->input('email')),
-            $this->baseUrl()
-        );
+        $email = strtolower(trim((string) $request->input('email')));
+        $ip = $request->clientIp();
+        $allowed = $this->rateLimiter->attempt('password-reset-ip', $ip, 5, 3600)
+            && $this->rateLimiter->attempt('password-reset-identity', $email, 3, 3600);
+
+        if ($allowed) {
+            $this->passwordResets->request($email, $this->baseUrl());
+        }
         Session::flash('success', 'auth.password_reset.requested');
 
         return Response::redirect('/forgot-password');
@@ -76,6 +82,15 @@ class AuthController
         }
 
         $token = trim((string) $request->input('token'));
+        $ip = $request->clientIp();
+
+        if (!$this->rateLimiter->attempt('password-reset-submit-ip', $ip, 10, 3600)
+            || !$this->rateLimiter->attempt('password-reset-submit-token', $token, 5, 3600)) {
+            Session::flash('error', 'security.too_many_attempts');
+
+            return Response::redirect('/forgot-password');
+        }
+
         $result = $this->passwordResets->reset(
             $token,
             (string) $request->input('password'),
@@ -98,12 +113,24 @@ class AuthController
 
         $email = trim((string) $request->input('email'));
         $password = (string) $request->input('password');
+        $ip = $request->clientIp();
+        $identityKey = strtolower($email);
+        $ipAllowed = $this->rateLimiter->attempt('login-ip', $ip, 25, 900);
+        $identityAllowed = $this->rateLimiter->attempt('login-identity-ip', $identityKey . '|' . $ip, 5, 900);
+
+        if (!$ipAllowed || !$identityAllowed) {
+            Session::flash('error', 'security.too_many_attempts');
+
+            return Response::redirect('/login');
+        }
 
         if (!$this->auth->attempt($email, $password)) {
             Session::flash('error', 'auth.failed');
 
             return Response::redirect('/login');
         }
+
+        $this->rateLimiter->clear('login-identity-ip', $identityKey . '|' . $ip);
 
         return Response::redirect('/');
     }

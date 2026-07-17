@@ -17,7 +17,7 @@
     <link rel="apple-touch-icon" href="<?= htmlspecialchars($asset('apple-touch-icon.png'), ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars($asset('app.css'), ENT_QUOTES, 'UTF-8') ?>">
     <?php if (!empty($grapesjsAssets)): ?>
-        <link rel="stylesheet" href="https://unpkg.com/grapesjs/dist/css/grapes.min.css">
+        <link rel="stylesheet" href="/vendor/grapesjs/0.23.2/grapes.min.css">
     <?php endif; ?>
 </head>
 <body>
@@ -52,6 +52,8 @@
                             <span class="nav-code">LB</span>
                             <?= htmlspecialchars($t('nav.leave_book_signatures'), ENT_QUOTES, 'UTF-8') ?>
                         </a>
+                    <?php endif; ?>
+                    <?php if ($auth->can('leave.policy.manage')): ?>
                         <a class="nav-item" href="/leave/policies">
                             <span class="nav-code">LA</span>
                             <?= htmlspecialchars($t('nav.leave_policies'), ENT_QUOTES, 'UTF-8') ?>
@@ -183,10 +185,10 @@
         </main>
     </div>
     <?php if (!empty($grapesjsAssets)): ?>
-        <script src="https://unpkg.com/grapesjs" defer></script>
+        <script src="/vendor/grapesjs/0.23.2/grapes.min.js" defer></script>
         <?php if (!empty($reportExporterAssets)): ?>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js" defer></script>
+            <script src="/vendor/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+            <script src="/vendor/jspdf/4.2.1/jspdf.umd.min.js" defer></script>
         <?php endif; ?>
         <script src="<?= htmlspecialchars($asset('templates-editor.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script>
     <?php endif; ?>

@@ -25,5 +25,12 @@ class Csrf
     {
         return is_string($token) && hash_equals(self::token(), $token);
     }
-}
 
+    public static function rotate(): string
+    {
+        $token = bin2hex(random_bytes(32));
+        Session::put('_csrf_token', $token);
+
+        return $token;
+    }
+}

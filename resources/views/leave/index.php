@@ -235,7 +235,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                         </div>
                         <form class="decision-row" method="post" action="/leave/requests/<?= htmlspecialchars($cancelRequest['id'], ENT_QUOTES, 'UTF-8') ?>/cancel">
                             <?= $csrf() ?>
-                            <button class="button compact reject" type="submit" onclick="return confirm('<?= htmlspecialchars($t('leave.cancel_confirm'), ENT_QUOTES, 'UTF-8') ?>')">
+                            <button class="button compact reject" type="submit" data-confirm-message="<?= htmlspecialchars($t('leave.cancel_confirm'), ENT_QUOTES, 'UTF-8') ?>">
                                 <?= htmlspecialchars($t('leave.cancel'), ENT_QUOTES, 'UTF-8') ?>
                             </button>
                         </form>
@@ -554,7 +554,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                                     </form>
                                     <form class="requester-card-actions leave-request-cancel-direct" method="post" action="/leave/requests/<?= htmlspecialchars($requestId, ENT_QUOTES, 'UTF-8') ?>/requester-cancel">
                                         <?= $csrf() ?>
-                                        <button class="button compact reject" type="submit" onclick="return confirm('<?= htmlspecialchars($t('leave.cancel_my_request_confirm'), ENT_QUOTES, 'UTF-8') ?>')"><?= htmlspecialchars($t('leave.cancel_my_request'), ENT_QUOTES, 'UTF-8') ?></button>
+                                        <button class="button compact reject" type="submit" data-confirm-message="<?= htmlspecialchars($t('leave.cancel_my_request_confirm'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t('leave.cancel_my_request'), ENT_QUOTES, 'UTF-8') ?></button>
                                     </form>
                                 </div>
                             </details>
@@ -697,7 +697,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                         </dl>
                         <form class="leave-cancellation-action" method="post" action="/leave/requests/<?= htmlspecialchars((string) ($cancellableRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>/request-cancellation">
                             <?= $csrf() ?>
-                            <button class="button compact reject" type="submit" onclick="return confirm('<?= htmlspecialchars($t('leave.request_cancellation_confirm'), ENT_QUOTES, 'UTF-8') ?>')"><?= htmlspecialchars($t('leave.request_cancellation'), ENT_QUOTES, 'UTF-8') ?></button>
+                            <button class="button compact reject" type="submit" data-confirm-message="<?= htmlspecialchars($t('leave.request_cancellation_confirm'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($t('leave.request_cancellation'), ENT_QUOTES, 'UTF-8') ?></button>
                         </form>
                     </article>
                 <?php endforeach; ?>

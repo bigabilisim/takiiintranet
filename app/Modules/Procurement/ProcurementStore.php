@@ -2,20 +2,20 @@
 
 namespace App\Modules\Procurement;
 
-use App\Core\Session;
+use App\Core\StateStore;
 
 class ProcurementStore
 {
-    private const SESSION_KEY = 'procurement_requests';
+    private const STATE_KEY = 'procurement';
+    private const VERSION = 1;
+
+    public function __construct(private readonly StateStore $stateStore)
+    {
+    }
 
     public function all(): array
     {
-        $requests = Session::get(self::SESSION_KEY);
-
-        if (!is_array($requests)) {
-            $requests = $this->seed();
-            $this->save($requests);
-        }
+        $requests = $this->data()['requests'];
 
         usort($requests, fn (array $a, array $b): int => strcmp($b['created_at'], $a['created_at']));
 
@@ -24,6 +24,7 @@ class ProcurementStore
 
     public function create(array $user, array $input): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath(), $this->emptyData());
         $title = trim((string) ($input['title'] ?? ''));
         $vendor = trim((string) ($input['vendor'] ?? ''));
         $category = trim((string) ($input['category'] ?? ''));
@@ -84,13 +85,31 @@ class ProcurementStore
         return 'PR-2026-' . (1001 + count($requests));
     }
 
-    private function seed(): array
+    private function data(): array
     {
-        return [];
+        $data = $this->stateStore->read(self::STATE_KEY, $this->dataPath(), $this->emptyData());
+
+        return [
+            'version' => self::VERSION,
+            'requests' => is_array($data['requests'] ?? null) ? $data['requests'] : [],
+        ];
     }
 
     private function save(array $requests): void
     {
-        Session::put(self::SESSION_KEY, array_values($requests));
+        $this->stateStore->write(self::STATE_KEY, $this->dataPath(), [
+            'version' => self::VERSION,
+            'requests' => array_values($requests),
+        ]);
+    }
+
+    private function emptyData(): array
+    {
+        return ['version' => self::VERSION, 'requests' => []];
+    }
+
+    private function dataPath(): string
+    {
+        return (defined('APP_ROOT') ? APP_ROOT : dirname(__DIR__, 3)) . '/storage/procurement.json';
     }
 }

@@ -2,9 +2,17 @@
 
 namespace App\Modules\Auth;
 
+use App\Core\StateStore;
+
 class PasswordResetMailer
 {
-    private const VERSION = 1;
+    private const VERSION = 2;
+    private const STATE_KEY = 'password_reset_mail_outbox';
+
+    public function __construct(private readonly StateStore $stateStore)
+    {
+        $this->redactHistoricalOutbox();
+    }
 
     public function send(array $profile, string $resetUrl, string $expiresAt): array
     {
@@ -20,6 +28,14 @@ class PasswordResetMailer
         $transport = in_array($transport, ['native', 'smtp', 'sendmail', 'outbox'], true) ? $transport : 'native';
         $entry = $this->entry($profile, $toEmail, $subject, $text, $transport);
 
+        if ($transport === 'outbox') {
+            $entry['status'] = 'not_sent';
+            $entry['error'] = 'insecure_outbox_payload_disabled';
+            $this->appendOutbox($entry);
+
+            return ['ok' => false, 'status' => 'not_sent', 'transport' => 'outbox', 'error' => 'mail_transport_outbox'];
+        }
+
         if ($transport === 'sendmail') {
             $sendmailResult = $this->sendSendmail($toEmail, $subject, $text);
 
@@ -32,13 +48,12 @@ class PasswordResetMailer
                 return ['ok' => true, 'status' => 'sent', 'transport' => 'sendmail'];
             }
 
-            $entry['status'] = 'queued';
-            $entry['transport'] = 'outbox';
+            $entry['status'] = 'failed';
             $entry['sendmail_status'] = 'failed';
             $entry['sendmail_error'] = $this->safeError((string) ($sendmailResult['error'] ?? 'sendmail_failed'));
             $this->appendOutbox($entry);
 
-            return ['ok' => true, 'status' => 'queued', 'transport' => 'outbox'];
+            return ['ok' => false, 'status' => 'failed', 'transport' => 'sendmail'];
         }
 
         if ($transport === 'smtp') {
@@ -53,13 +68,12 @@ class PasswordResetMailer
                 return ['ok' => true, 'status' => 'sent', 'transport' => 'smtp'];
             }
 
-            $entry['status'] = 'queued';
-            $entry['transport'] = 'outbox';
+            $entry['status'] = 'failed';
             $entry['smtp_status'] = 'failed';
             $entry['smtp_error'] = $this->safeError((string) ($smtpResult['error'] ?? 'smtp_failed'));
             $this->appendOutbox($entry);
 
-            return ['ok' => true, 'status' => 'queued', 'transport' => 'outbox'];
+            return ['ok' => false, 'status' => 'failed', 'transport' => 'smtp'];
         }
 
         if ($transport === 'native') {
@@ -75,18 +89,15 @@ class PasswordResetMailer
                 return ['ok' => true, 'status' => 'sent', 'transport' => $entry['transport']];
             }
 
-            $entry['status'] = 'queued';
-            $entry['transport'] = 'outbox';
+            $entry['status'] = 'failed';
             $entry['native_status'] = 'failed';
             $entry['native_error'] = $this->safeError((string) ($nativeResult['error'] ?? 'mail_failed'));
             $this->appendOutbox($entry);
 
-            return ['ok' => true, 'status' => 'queued', 'transport' => 'outbox'];
+            return ['ok' => false, 'status' => 'failed', 'transport' => 'native'];
         }
 
-        $this->appendOutbox($entry);
-
-        return ['ok' => true, 'status' => 'queued', 'transport' => 'outbox'];
+        return ['ok' => false, 'status' => 'failed', 'transport' => $transport];
     }
 
     public function sendTemporaryPassword(array $profile, string $username, string $temporaryPassword): array
@@ -510,33 +521,54 @@ class PasswordResetMailer
     private function appendOutbox(array $entry): void
     {
         $path = $this->outboxPath();
-        $directory = dirname($path);
-
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $path, $this->emptyOutbox());
         $decoded = $this->loadOutbox();
         $outbox = is_array($decoded) && is_array($decoded['messages'] ?? null)
             ? $decoded
-            : ['version' => self::VERSION, 'messages' => []];
+            : $this->emptyOutbox();
         $outbox['version'] = self::VERSION;
-        $outbox['messages'][] = $entry;
+        $outbox['messages'][] = $this->redactedOutboxEntry($entry);
 
-        file_put_contents($path, json_encode($outbox, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        $this->stateStore->write(self::STATE_KEY, $path, $outbox);
     }
 
     private function loadOutbox(): array
     {
-        $path = $this->outboxPath();
+        return $this->stateStore->read(self::STATE_KEY, $this->outboxPath(), $this->emptyOutbox());
+    }
 
-        if (!is_file($path)) {
-            return [];
+    private function redactHistoricalOutbox(): void
+    {
+        $path = $this->outboxPath();
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $path, $this->emptyOutbox());
+        $outbox = $this->loadOutbox();
+        $messages = array_map(
+            fn (array $entry): array => $this->redactedOutboxEntry($entry),
+            is_array($outbox['messages'] ?? null) ? $outbox['messages'] : []
+        );
+
+        if (($outbox['version'] ?? null) === self::VERSION && $messages === ($outbox['messages'] ?? [])) {
+            return;
         }
 
-        $decoded = json_decode((string) file_get_contents($path), true);
+        $this->stateStore->write(self::STATE_KEY, $path, [
+            'version' => self::VERSION,
+            'messages' => $messages,
+        ]);
+    }
 
-        return is_array($decoded) ? $decoded : [];
+    private function redactedOutboxEntry(array $entry): array
+    {
+        unset($entry['text'], $entry['reset_url'], $entry['body'], $entry['body_html']);
+        $entry['content_stored'] = false;
+        $entry['reset_url_stored'] = false;
+
+        return $entry;
+    }
+
+    private function emptyOutbox(): array
+    {
+        return ['version' => self::VERSION, 'messages' => []];
     }
 
     private function outboxPath(): string

@@ -108,7 +108,7 @@ $mailStatusLabel = function (string $status) use ($t): string {
                     <form class="decision-row signature-action-row" method="post" action="/leave/book-signatures/<?= htmlspecialchars((string) ($signatureRequest['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>/signed">
                         <?= $csrf() ?>
                         <small><?= htmlspecialchars($t('leave.signature_queue.action_hint'), ENT_QUOTES, 'UTF-8') ?></small>
-                        <button class="button compact approve" type="submit" onclick="return confirm('<?= htmlspecialchars($t('leave.signature_queue.mark_signed_confirm'), ENT_QUOTES, 'UTF-8') ?>')">
+                        <button class="button compact approve" type="submit" data-confirm-message="<?= htmlspecialchars($t('leave.signature_queue.mark_signed_confirm'), ENT_QUOTES, 'UTF-8') ?>">
                             <?= htmlspecialchars($t('leave.signature_queue.mark_signed'), ENT_QUOTES, 'UTF-8') ?>
                         </button>
                     </form>

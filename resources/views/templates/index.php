@@ -170,14 +170,17 @@ $templateEditorI18n = [
                 </label>
                 <div class="template-report-status" data-template-report-status></div>
                 <div class="template-report-preview-shell">
-                    <div class="template-report-preview" data-template-report-preview-surface></div>
+                    <iframe
+                        class="template-report-preview"
+                        data-template-report-preview-surface
+                        sandbox="allow-same-origin"
+                        referrerpolicy="no-referrer"
+                        title="<?= htmlspecialchars($t('templates.report_export.preview'), ENT_QUOTES, 'UTF-8') ?>"
+                    ></iframe>
                 </div>
             </section>
 
             <div class="template-builder-shell">
-                <script>
-                    window.MYTAKII_TEMPLATE_I18N = <?= json_encode($templateEditorI18n, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-                </script>
                 <div class="template-builder-toolbar">
                     <div>
                         <strong><?= htmlspecialchars($template['name'], ENT_QUOTES, 'UTF-8') ?></strong>
@@ -190,6 +193,7 @@ $templateEditorI18n = [
                     data-template-builder
                     data-can-edit="<?= $canManageTemplates ? '1' : '0' ?>"
                     data-empty-text="<?= htmlspecialchars($t('templates.editor_unavailable'), ENT_QUOTES, 'UTF-8') ?>"
+                    data-template-i18n="<?= htmlspecialchars((string) json_encode($templateEditorI18n, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8') ?>"
                 ></div>
             </div>
         <?php endif; ?>

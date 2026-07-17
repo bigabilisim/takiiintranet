@@ -154,7 +154,7 @@ $departmentChoices = array_values(array_filter(
                                     type="submit"
                                     formaction="/leave/policies/departments/delete"
                                     formnovalidate
-                                    onclick="return confirm('<?= htmlspecialchars($t('leave_policy.delete_sub_department_confirm'), ENT_QUOTES, 'UTF-8') ?>')"
+                                    data-confirm-message="<?= htmlspecialchars($t('leave_policy.delete_sub_department_confirm'), ENT_QUOTES, 'UTF-8') ?>"
                                 ><?= htmlspecialchars($t('admin.delete'), ENT_QUOTES, 'UTF-8') ?></button>
                                 <button class="button compact" type="submit"><?= htmlspecialchars($t('admin.save'), ENT_QUOTES, 'UTF-8') ?></button>
                             </div>

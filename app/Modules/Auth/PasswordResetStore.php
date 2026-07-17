@@ -12,6 +12,7 @@ class PasswordResetStore
     private const VERSION = 1;
     private const STATE_KEY = 'password_resets';
     private const TOKEN_TTL_HOURS = 2;
+    private const MIN_PASSWORD_LENGTH = 12;
 
     public function __construct(
         private readonly UserProfileStore $userProfiles,
@@ -33,6 +34,18 @@ class PasswordResetStore
         $resetUrl = rtrim($baseUrl, '/') . '/password-reset/' . $token;
         $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath(), $this->emptyData());
         $data = $this->loadData();
+
+        foreach ($data['requests'] as $index => $existingRequest) {
+            if ((string) ($existingRequest['profile_key'] ?? '') !== (string) ($profile['profile_key'] ?? '')
+                || (string) ($existingRequest['used_at'] ?? '') !== '') {
+                continue;
+            }
+
+            $data['requests'][$index]['used_at'] = date('Y-m-d H:i');
+            $data['requests'][$index]['invalidated_at'] = date('Y-m-d H:i');
+            $data['requests'][$index]['invalidated_reason'] = 'superseded_by_new_request';
+        }
+
         $record = [
             'id' => 'PWR-' . date('YmdHis') . '-' . substr(bin2hex(random_bytes(3)), 0, 6),
             'email' => (string) ($profile['email'] ?? ''),
@@ -56,19 +69,26 @@ class PasswordResetStore
 
             $data['requests'][$index]['mail_status'] = (string) ($mailResult['status'] ?? 'unknown');
             $data['requests'][$index]['mail_transport'] = (string) ($mailResult['transport'] ?? '');
+
+            if (empty($mailResult['ok'])) {
+                $data['requests'][$index]['used_at'] = date('Y-m-d H:i');
+                $data['requests'][$index]['invalidated_at'] = date('Y-m-d H:i');
+                $data['requests'][$index]['invalidated_reason'] = 'mail_delivery_failed';
+            }
+
             break;
         }
 
         $this->saveData($data);
 
-        return ['ok' => true, 'message' => 'auth.password_reset.requested', 'sent' => true];
+        return ['ok' => true, 'message' => 'auth.password_reset.requested', 'sent' => !empty($mailResult['ok'])];
     }
 
     public function validateToken(string $token): ?array
     {
         $token = trim($token);
 
-        if ($token === '') {
+        if (preg_match('/\A[a-f0-9]{64}\z/', $token) !== 1) {
             return null;
         }
 
@@ -97,7 +117,7 @@ class PasswordResetStore
 
     public function reset(string $token, string $password, string $passwordConfirmation): array
     {
-        if ($password === '' || strlen($password) < 6 || $password !== $passwordConfirmation) {
+        if ($password === '' || strlen($password) < self::MIN_PASSWORD_LENGTH || strlen($password) > 4096 || $password !== $passwordConfirmation) {
             return ['ok' => false, 'message' => 'auth.password_reset.password_invalid'];
         }
 
@@ -116,10 +136,16 @@ class PasswordResetStore
         $hash = hash('sha256', trim($token));
 
         foreach ($data['requests'] as $index => $request) {
-            if (hash_equals((string) ($request['token_hash'] ?? ''), $hash)) {
-                $data['requests'][$index]['used_at'] = date('Y-m-d H:i');
-                break;
+            if ((string) ($request['profile_key'] ?? '') !== (string) ($record['profile_key'] ?? '')
+                || (string) ($request['used_at'] ?? '') !== '') {
+                continue;
             }
+
+            $data['requests'][$index]['used_at'] = date('Y-m-d H:i');
+            $data['requests'][$index]['invalidated_at'] = date('Y-m-d H:i');
+            $data['requests'][$index]['invalidated_reason'] = hash_equals((string) ($request['token_hash'] ?? ''), $hash)
+                ? 'password_reset_completed'
+                : 'password_changed';
         }
 
         $this->saveData($data);

@@ -34,6 +34,14 @@ $documentKeys = [
 define('APP_ROOT', $testRoot);
 require $projectRoot . '/vendor/autoload.php';
 
+final class IdentityResetMailer extends PasswordResetMailer
+{
+    public function send(array $profile, string $resetUrl, string $expiresAt): array
+    {
+        return ['ok' => true, 'status' => 'sent', 'transport' => 'test'];
+    }
+}
+
 function identityAssert(bool $condition, string $message): void
 {
     if (!$condition) {
@@ -190,7 +198,7 @@ try {
     $push = new PushNotificationStore($stateStore);
     $shifts = new ShiftStore($profiles, $stateStore);
     $leave = new LeaveStore($access, new LeaveApprovalMailer(), $stateStore, $profiles, $shifts);
-    $passwordResets = new PasswordResetStore($profiles, new PasswordResetMailer(), $stateStore);
+    $passwordResets = new PasswordResetStore($profiles, new IdentityResetMailer($stateStore), $stateStore);
     $identityMigration = new UserIdentityMigrationService(
         $stateStore,
         $profiles,

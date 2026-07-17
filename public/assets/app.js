@@ -1,4 +1,17 @@
 (function () {
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-confirm-message]');
+
+    if (!trigger || window.confirm(trigger.dataset.confirmMessage || '')) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+})();
+
+(function () {
   const messagesNav = document.querySelector('[data-module-nav="messages"][data-badge-template]');
 
   if (!messagesNav) {

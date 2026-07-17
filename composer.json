@@ -5,7 +5,7 @@
   "license": "proprietary",
   "require": {
     "php": "^8.3",
-    "minishlink/web-push": "^9.0"
+    "minishlink/web-push": "^10.1.0"
   },
   "autoload": {
     "psr-4": {
@@ -25,6 +25,7 @@
     "test:leave-schedule:mariadb": "TEST_STATE_DRIVER=mariadb php tests/leave-schedule-integrity.php",
     "test:location": "php tests/location-visibility.php",
     "test:blue-collar-leave": "php tests/blue-collar-leave-access.php",
-    "test:personnel-credentials": "php tests/personnel-credentials.php"
+    "test:personnel-credentials": "php tests/personnel-credentials.php",
+    "test:security": "php tests/security-regression.php"
   }
 }

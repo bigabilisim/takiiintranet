@@ -2,9 +2,21 @@
 
 namespace App\Modules\Templates;
 
+use App\Core\StateStore;
+
 class TemplateStore
 {
-    private const VERSION = 1;
+    private const STATE_KEY = 'templates';
+    private const VERSION = 2;
+    private readonly TemplateSanitizer $sanitizer;
+
+    public function __construct(
+        private readonly StateStore $stateStore,
+        ?TemplateSanitizer $sanitizer = null,
+    )
+    {
+        $this->sanitizer = $sanitizer ?? new TemplateSanitizer();
+    }
 
     public function templates(): array
     {
@@ -34,13 +46,13 @@ class TemplateStore
 
     public function save(array $actor, array $input): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath(), $this->emptyData());
         $id = trim((string) ($input['template_id'] ?? ''));
         $name = trim((string) ($input['name'] ?? ''));
         $type = trim((string) ($input['type'] ?? 'mail'));
         $description = trim((string) ($input['description'] ?? ''));
-        $html = trim((string) ($input['html'] ?? ''));
-        $css = trim((string) ($input['css'] ?? ''));
-        $projectData = trim((string) ($input['project_data'] ?? ''));
+        $html = $this->sanitizer->sanitizeHtml((string) ($input['html'] ?? ''));
+        $css = $this->sanitizer->sanitizeCss((string) ($input['css'] ?? ''));
 
         if ($name === '' || !in_array($type, ['mail', 'report'], true)) {
             return ['ok' => false, 'message' => 'templates.flash.invalid', 'id' => $id];
@@ -65,7 +77,7 @@ class TemplateStore
                 'description' => substr($description, 0, 240),
                 'html' => $html,
                 'css' => $css,
-                'project_data' => $this->validProjectData($projectData),
+                'project_data' => null,
                 'updated_at' => date('Y-m-d H:i'),
                 'updated_by' => (string) ($actor['name'] ?? $actor['email'] ?? ''),
             ]);
@@ -81,7 +93,7 @@ class TemplateStore
                 'description' => substr($description, 0, 240),
                 'html' => $html,
                 'css' => $css,
-                'project_data' => $this->validProjectData($projectData),
+                'project_data' => null,
                 'created_at' => date('Y-m-d H:i'),
                 'updated_at' => date('Y-m-d H:i'),
                 'updated_by' => (string) ($actor['name'] ?? $actor['email'] ?? ''),
@@ -95,10 +107,41 @@ class TemplateStore
 
     private function data(): array
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath(), $this->emptyData());
         $data = $this->loadData();
 
-        if (($data['version'] ?? null) !== self::VERSION || !isset($data['templates']) || !is_array($data['templates'])) {
+        if (!isset($data['templates']) || !is_array($data['templates'])) {
             return $this->seedData();
+        }
+
+        $changed = ($data['version'] ?? null) !== self::VERSION;
+        $data['version'] = self::VERSION;
+
+        foreach ($data['templates'] as $index => $template) {
+            if (!is_array($template)) {
+                unset($data['templates'][$index]);
+                $changed = true;
+
+                continue;
+            }
+
+            $html = $this->sanitizer->sanitizeHtml((string) ($template['html'] ?? ''));
+            $css = $this->sanitizer->sanitizeCss((string) ($template['css'] ?? ''));
+
+            if ($html !== (string) ($template['html'] ?? '')
+                || $css !== (string) ($template['css'] ?? '')
+                || ($template['project_data'] ?? null) !== null) {
+                $data['templates'][$index]['html'] = $html;
+                $data['templates'][$index]['css'] = $css;
+                $data['templates'][$index]['project_data'] = null;
+                $changed = true;
+            }
+        }
+
+        $data['templates'] = array_values($data['templates']);
+
+        if ($changed) {
+            $this->saveData($data);
         }
 
         return $data;
@@ -143,27 +186,17 @@ class TemplateStore
 
     private function loadData(): array
     {
-        $path = $this->dataPath();
-
-        if (!is_file($path)) {
-            return [];
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-
-        return is_array($decoded) ? $decoded : [];
+        return $this->stateStore->read(self::STATE_KEY, $this->dataPath(), $this->emptyData());
     }
 
     private function saveData(array $data): void
     {
-        $path = $this->dataPath();
-        $directory = dirname($path);
+        $this->stateStore->write(self::STATE_KEY, $this->dataPath(), $data);
+    }
 
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    private function emptyData(): array
+    {
+        return ['version' => 0, 'templates' => null];
     }
 
     private function dataPath(): string
@@ -176,17 +209,6 @@ class TemplateStore
         $prefix = $type === 'report' ? 'TPL-REPORT-' : 'TPL-MAIL-';
 
         return $prefix . (1001 + count($templates));
-    }
-
-    private function validProjectData(string $projectData): ?array
-    {
-        if ($projectData === '') {
-            return null;
-        }
-
-        $decoded = json_decode($projectData, true);
-
-        return is_array($decoded) ? $decoded : null;
     }
 
     private function defaultMailHtml(): string

@@ -244,25 +244,91 @@ class LeaveController
         return Response::redirect('/module/leave');
     }
 
-    public function mailDecision(Request $request, string $token, string $decision): Response
+    public function showMailDecision(Request $request, string $token, string $decision): Response
     {
-        $result = $this->leaveStore->advanceByToken($token, $decision);
-        $this->sendLeaveApprovalPushes($result['notifications'] ?? []);
+        $result = $this->leaveStore->previewTokenDecision($token, $decision);
 
-        return new Response($this->view->render('leave/mail-result', [
+        if (empty($result['ok'])) {
+            return $this->mailTokenResultResponse($result, 'leave.mail_approval', 410);
+        }
+
+        return new Response($this->view->render('leave/mail-confirm', [
             'title' => 'leave.mail_approval',
             'result' => $result,
-        ]));
+            'kind' => 'approval',
+            'decision' => $decision,
+            'action' => '/leave/mail-approval/' . rawurlencode($token) . '/' . rawurlencode($decision),
+        ]), 200, $this->mailTokenHeaders());
+    }
+
+    public function mailDecision(Request $request, string $token, string $decision): Response
+    {
+        if (!Csrf::validate($request->input('_token'))) {
+            return $this->mailTokenResultResponse([
+                'ok' => false,
+                'message' => 'security.invalid_session',
+                'request' => null,
+            ], 'leave.mail_approval', 419);
+        }
+
+        $result = $this->leaveStore->advanceByToken(
+            $token,
+            $decision,
+            (string) $request->input('decision_note', '')
+        );
+        $this->sendLeaveApprovalPushes($result['notifications'] ?? []);
+
+        return $this->mailTokenResultResponse($result, 'leave.mail_approval', !empty($result['ok']) ? 200 : 422);
+    }
+
+    public function showBookSignatureDecision(Request $request, string $token, string $decision): Response
+    {
+        $result = $this->leaveStore->previewLeaveBookSignatureToken($token, $decision);
+
+        if (empty($result['ok'])) {
+            return $this->mailTokenResultResponse($result, 'leave.mail_signature', 410);
+        }
+
+        return new Response($this->view->render('leave/mail-confirm', [
+            'title' => 'leave.mail_signature',
+            'result' => $result,
+            'kind' => 'signature',
+            'decision' => $decision,
+            'action' => '/leave/book-signature/' . rawurlencode($token) . '/' . rawurlencode($decision),
+        ]), 200, $this->mailTokenHeaders());
     }
 
     public function bookSignatureDecision(Request $request, string $token, string $decision): Response
     {
+        if (!Csrf::validate($request->input('_token'))) {
+            return $this->mailTokenResultResponse([
+                'ok' => false,
+                'message' => 'security.invalid_session',
+                'request' => null,
+            ], 'leave.mail_signature', 419);
+        }
+
         $result = $this->leaveStore->markLeaveBookSignatureByToken($token, $decision);
 
+        return $this->mailTokenResultResponse($result, 'leave.mail_signature', !empty($result['ok']) ? 200 : 422);
+    }
+
+    private function mailTokenResultResponse(array $result, string $title, int $status): Response
+    {
         return new Response($this->view->render('leave/mail-result', [
-            'title' => 'leave.mail_signature',
+            'title' => $title,
             'result' => $result,
-        ]));
+        ]), $status, $this->mailTokenHeaders());
+    }
+
+    private function mailTokenHeaders(): array
+    {
+        return [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Referrer-Policy' => 'no-referrer',
+            'X-Robots-Tag' => 'noindex, nofollow, noarchive',
+        ];
     }
 
     public function bookSignatures(Request $request): Response
@@ -496,7 +562,7 @@ class LeaveController
 
     private function canManagePolicies(): bool
     {
-        return $this->auth->check() && $this->auth->can('leave.request.manage.hr');
+        return $this->auth->check() && $this->auth->can('leave.policy.manage');
     }
 
     private function canManageBookSignatures(): bool

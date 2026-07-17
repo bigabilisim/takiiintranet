@@ -4,11 +4,17 @@ namespace App\Core;
 
 class AuditLogStore
 {
+    private const STATE_KEY = 'audit_log';
     private const VERSION = 1;
     private const MAX_ENTRIES = 500;
 
+    public function __construct(private readonly StateStore $stateStore)
+    {
+    }
+
     public function record(array $actor, string $action, string $entityType, string $entityId, array $details = []): void
     {
+        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath(), $this->emptyData());
         $data = $this->data();
         array_unshift($data['entries'], [
             'id' => 'AUD-' . date('Ymd-His') . '-' . substr(bin2hex(random_bytes(4)), 0, 8),
@@ -32,16 +38,10 @@ class AuditLogStore
 
     private function data(): array
     {
-        $path = $this->dataPath();
-
-        if (!is_file($path)) {
-            return ['version' => self::VERSION, 'entries' => []];
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
+        $decoded = $this->stateStore->read(self::STATE_KEY, $this->dataPath(), $this->emptyData());
 
         if (!is_array($decoded) || ($decoded['version'] ?? null) !== self::VERSION || !is_array($decoded['entries'] ?? null)) {
-            return ['version' => self::VERSION, 'entries' => []];
+            return $this->emptyData();
         }
 
         return $decoded;
@@ -49,14 +49,12 @@ class AuditLogStore
 
     private function saveData(array $data): void
     {
-        $path = $this->dataPath();
-        $directory = dirname($path);
+        $this->stateStore->write(self::STATE_KEY, $this->dataPath(), $data);
+    }
 
-        if (!is_dir($directory)) {
-            mkdir($directory, 0775, true);
-        }
-
-        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    private function emptyData(): array
+    {
+        return ['version' => self::VERSION, 'entries' => []];
     }
 
     private function dataPath(): string

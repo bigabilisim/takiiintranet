@@ -243,11 +243,11 @@ $locationOptions = is_array($locationOptions ?? null) ? $locationOptions : [];
                     <div class="profile-grid">
                         <label>
                             <span><?= htmlspecialchars($t('admin.profile.password'), ENT_QUOTES, 'UTF-8') ?></span>
-                            <input type="password" name="password" minlength="6" autocomplete="new-password">
+                            <input type="password" name="password" minlength="12" maxlength="4096" autocomplete="new-password">
                         </label>
                         <label>
                             <span><?= htmlspecialchars($t('admin.profile.password_confirmation'), ENT_QUOTES, 'UTF-8') ?></span>
-                            <input type="password" name="password_confirmation" minlength="6" autocomplete="new-password">
+                            <input type="password" name="password_confirmation" minlength="12" maxlength="4096" autocomplete="new-password">
                         </label>
                     </div>
                     <strong class="profile-section-title"><?= htmlspecialchars($t('admin.profile_permissions'), ENT_QUOTES, 'UTF-8') ?></strong>
@@ -355,7 +355,7 @@ $locationOptions = is_array($locationOptions ?? null) ? $locationOptions : [];
                             type="submit"
                             formaction="/admin/access/departments/delete"
                             formnovalidate
-                            onclick="return confirm('<?= htmlspecialchars($t('admin.delete_department_confirm'), ENT_QUOTES, 'UTF-8') ?>')"
+                            data-confirm-message="<?= htmlspecialchars($t('admin.delete_department_confirm'), ENT_QUOTES, 'UTF-8') ?>"
                         ><?= htmlspecialchars($t('admin.delete'), ENT_QUOTES, 'UTF-8') ?></button>
                         <button class="button compact" type="submit"><?= htmlspecialchars($t('admin.save'), ENT_QUOTES, 'UTF-8') ?></button>
                     </div>

@@ -11,7 +11,13 @@
   const projectField = form.querySelector('[data-template-project]');
   const canEdit = builder.dataset.canEdit === '1';
   const testForms = document.querySelectorAll('[data-template-test-form]');
-  const i18n = window.MYTAKII_TEMPLATE_I18N || {};
+  let i18n = {};
+
+  try {
+    i18n = JSON.parse(builder.dataset.templateI18n || '{}');
+  } catch (error) {
+    i18n = {};
+  }
 
   const text = (key, fallback) => (typeof i18n[key] === 'string' && i18n[key] !== '' ? i18n[key] : fallback);
   const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
@@ -32,6 +38,7 @@
     container: '#template-builder',
     height: '720px',
     width: 'auto',
+    telemetry: false,
     storageManager: false,
     fromElement: false,
     components: htmlField ? htmlField.value : '',
@@ -180,11 +187,12 @@
     });
   }
 
-  function currentReportHtml(data) {
+  function currentReportDocument(data) {
     const html = replacePlaceholders(editor.getHtml(), data);
-    const css = editor.getCss();
+    const css = String(editor.getCss() || '').replace(/<\/?(?:style|script)/gi, '');
+    const policy = "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'";
 
-    return `<style>${css}</style>${html}`;
+    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${policy}"><style>html,body{margin:0;background:#fff}${css}</style></head><body>${html}</body></html>`;
   }
 
   function renderReportPreview() {
@@ -194,13 +202,36 @@
 
     try {
       const data = parseReportData();
-      reportPreviewSurface.innerHTML = currentReportHtml(data);
+      reportPreviewSurface.srcdoc = currentReportDocument(data);
       setReportStatus(text('report.export_ready', 'Report preview is ready.'));
       return true;
     } catch (error) {
       setReportStatus(text('report.export_invalid_json', 'Check the sample data JSON format.'));
       return false;
     }
+  }
+
+  function waitForReportFrame() {
+    return new Promise((resolve, reject) => {
+      if (!reportPreviewSurface) {
+        reject(new Error('preview_unavailable'));
+        return;
+      }
+
+      const documentReady = reportPreviewSurface.contentDocument
+        && reportPreviewSurface.contentDocument.readyState === 'complete';
+
+      if (documentReady) {
+        resolve(reportPreviewSurface.contentDocument.body);
+        return;
+      }
+
+      const timeout = window.setTimeout(() => reject(new Error('preview_timeout')), 5000);
+      reportPreviewSurface.addEventListener('load', () => {
+        window.clearTimeout(timeout);
+        resolve(reportPreviewSurface.contentDocument.body);
+      }, { once: true });
+    });
   }
 
   function scheduleReportPreview() {
@@ -257,7 +288,8 @@
     setReportStatus(text('report.export_working', 'Preparing PDF...'));
 
     try {
-      const canvas = await window.html2canvas(reportPreviewSurface, {
+      const previewBody = await waitForReportFrame();
+      const canvas = await window.html2canvas(previewBody, {
         backgroundColor: '#ffffff',
         scale: Math.min(2, window.devicePixelRatio || 1.5),
         useCORS: true
