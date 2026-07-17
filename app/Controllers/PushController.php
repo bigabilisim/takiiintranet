@@ -60,7 +60,7 @@ class PushController
             'title' => $this->translator->get('push.test.title'),
             'body' => $this->translator->get('push.test.body'),
             'url' => '/',
-            'tag' => 'kanso-test-push',
+            'tag' => 'mytakii-test-push',
         ]);
 
         return Response::json($this->translateResult($result));

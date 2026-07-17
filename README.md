@@ -1,4 +1,6 @@
-# Kanso Intranet Platform
+# MyTakii Intranet Platform
+
+> Insanlar. Surecler. Tek merkez.
 
 PHP ve MariaDB altyapisi uzerinde gelistirilen, cok dilli ve moduler kurumsal
 intranet platformu. Sistem; izin, duyuru, mesajlasma, satin alma, butce,

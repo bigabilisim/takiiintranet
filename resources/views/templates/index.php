@@ -176,7 +176,7 @@ $templateEditorI18n = [
 
             <div class="template-builder-shell">
                 <script>
-                    window.KANSO_TEMPLATE_I18N = <?= json_encode($templateEditorI18n, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+                    window.MYTAKII_TEMPLATE_I18N = <?= json_encode($templateEditorI18n, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
                 </script>
                 <div class="template-builder-toolbar">
                     <div>

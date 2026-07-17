@@ -6,7 +6,7 @@ $hrEmail = strtolower(trim((string) (getenv('APP_HR_EMAIL') ?: 'y.ekici@takii.co
 $hrPassword = (string) (getenv('APP_HR_PASSWORD') ?: '');
 
 return [
-    'name' => getenv('APP_NAME') ?: 'Kanso Intranet',
+    'name' => getenv('APP_NAME') ?: 'MyTakii Intranet',
     'locale' => getenv('APP_LOCALE') ?: 'tr-TR',
     'fallback_locale' => 'en-US',
     'available_locales' => [

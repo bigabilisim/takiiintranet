@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kanso-intranet-v41';
+const CACHE_NAME = 'mytakii-intranet-v44';
 const STATIC_ASSETS = [
   '/offline.html',
   '/assets/app.css',
@@ -6,6 +6,7 @@ const STATIC_ASSETS = [
   '/assets/pwa.js',
   '/assets/templates-editor.js',
   '/assets/icon.svg',
+  '/assets/icon-maskable.svg',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
   '/assets/icon-maskable-512.png',
@@ -62,10 +63,10 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('push', (event) => {
   const fallback = {
-    title: 'Kanso Intranet',
+    title: 'MyTakii Intranet',
     body: 'Yeni bir bildiriminiz var.',
     url: '/',
-    tag: 'kanso-notification'
+    tag: 'mytakii-notification'
   };
   let payload = fallback;
 

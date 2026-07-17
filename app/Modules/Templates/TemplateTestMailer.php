@@ -103,13 +103,13 @@ class TemplateTestMailer
             return false;
         }
 
-        $fromAddress = $this->cleanHeader((string) (getenv('MAIL_FROM_ADDRESS') ?: 'no-reply@kanso.local'));
-        $fromName = $this->cleanHeader((string) (getenv('MAIL_FROM_NAME') ?: 'Kanso Intranet'));
+        $fromAddress = $this->cleanHeader((string) (getenv('MAIL_FROM_ADDRESS') ?: 'no-reply@mytakii.local'));
+        $fromName = $this->cleanHeader((string) (getenv('MAIL_FROM_NAME') ?: 'MyTakii Intranet'));
         $headers = [
             'MIME-Version: 1.0',
             'Content-Type: text/html; charset=UTF-8',
             'From: ' . $fromName . ' <' . $fromAddress . '>',
-            'X-Kanso-Template-Test: true',
+            'X-MyTakii-Template-Test: true',
         ];
 
         return mail($toEmail, $subject, $html, implode("\r\n", $headers));
@@ -160,7 +160,7 @@ class TemplateTestMailer
     private function sampleTokens(string $templateType): array
     {
         $common = [
-            '{{company_name}}' => 'Kanso Intranet',
+            '{{company_name}}' => 'MyTakii Intranet',
             '{{current_date}}' => date('Y-m-d'),
             '{{generated_at}}' => date('Y-m-d H:i'),
         ];

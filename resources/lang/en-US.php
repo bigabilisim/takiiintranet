@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'app.subtitle' => 'Multi-language corporate intranet',
+    'app.subtitle' => 'People. Processes. One place.',
     'pwa.enable' => 'Enable notifications',
     'pwa.enabled' => 'Notifications on',
     'pwa.test' => 'Test push',
@@ -13,7 +13,7 @@ return [
     'pwa.status.error' => 'PWA could not start',
     'pwa.status.sending' => 'Sending notification',
     'pwa.status.sent' => 'Notification sent',
-    'push.test.title' => 'Kanso Intranet',
+    'push.test.title' => 'MyTakii Intranet',
     'push.test.body' => 'Web push notification is active. Panel alerts are ready.',
     'push.flash.invalid_subscription' => 'Push subscription is invalid.',
     'push.flash.subscribed' => 'Push subscription was saved.',

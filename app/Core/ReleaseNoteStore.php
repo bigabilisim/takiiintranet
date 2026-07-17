@@ -5,7 +5,7 @@ namespace App\Core;
 class ReleaseNoteStore
 {
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.91.0';
+    private const CURRENT_RELEASE = 'v0.94.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -67,8 +67,8 @@ class ReleaseNoteStore
 
         return [
             'subject' => $current !== null
-                ? 'Takii Intranet surum notu: ' . (string) ($current['version'] ?? '')
-                : 'Takii Intranet surum notu',
+                ? 'MyTakii Intranet surum notu: ' . (string) ($current['version'] ?? '')
+                : 'MyTakii Intranet surum notu',
             'body' => implode("\n", $lines),
             'recipients' => $this->mailRecipients(),
         ];
@@ -139,6 +139,41 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.94.0',
+                'title' => 'MyTakii marka slogani ve dijital kimligi tamamlandi',
+                'released_at' => '2026-07-17 12:20',
+                'status' => 'completed',
+                'changes' => [
+                    'MyTakii icin Insanlar. Surecler. Tek merkez. marka slogani belirlendi.',
+                    'Slogan Turkce, Ingilizce, Almanca ve Japonca arayuzlerde dogal karsiliklariyla tanimlandi.',
+                    'Giris ekrani, sol marka alani, sayfa meta aciklamasi, PWA manifesti ve cevrim disi ekran ayni marka mesajina baglandi.',
+                    'Servis calisani onbellegi yeni dijital kimlik metinleri icin yenilendi.',
+                ],
+            ],
+            [
+                'version' => 'v0.93.0',
+                'title' => 'MyTakii logosu kurumsal TAKII renklerine uyarlandi',
+                'released_at' => '2026-07-17 12:04',
+                'status' => 'completed',
+                'changes' => [
+                    'MyTakii monogrami TAKII referansindaki kirmizi, mavi, altin sarisi, siyah ve beyaz palete uyarlandi.',
+                    'PWA, favicon, maskelenebilir ikon ve yatay logo ayni kurumsal renk ailesinde yeniden uretildi.',
+                    'PWA tema rengi ve servis calisani onbellegi yeni logo varliklari icin guncellendi.',
+                ],
+            ],
+            [
+                'version' => 'v0.92.0',
+                'title' => 'MyTakii Intranet marka kimligi yenilendi',
+                'released_at' => '2026-07-17 11:58',
+                'status' => 'completed',
+                'changes' => [
+                    'Uygulamanin gorunen adi tum arayuzlerde MyTakii Intranet olarak birlestirildi.',
+                    'Geometrik M monogrami, yatay logo ve PWA icin maskelenebilir logo ailesi hazirlandi.',
+                    'Favicon, PWA ikonlari, cevrim disi ekran, bildirimler, sifre mailleri ve izin mailleri yeni markaya uyarlandi.',
+                    'Servis calisani onbellegi yenilenerek eski ikonlarin tarayicida kalmasi engellendi.',
+                ],
+            ],
             [
                 'version' => 'v0.91.0',
                 'title' => 'mytakii.com canli ortami yayina alindi',

@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'app.subtitle' => '多言語対応の企業イントラネット',
+    'app.subtitle' => '人と業務を、ひとつに。',
     'pwa.enable' => '通知を有効化',
     'pwa.enabled' => '通知有効',
     'pwa.test' => 'テスト通知',
@@ -13,7 +13,7 @@ return [
     'pwa.status.error' => 'PWAを開始できません',
     'pwa.status.sending' => '通知送信中',
     'pwa.status.sent' => '通知を送信しました',
-    'push.test.title' => 'Kanso Intranet',
+    'push.test.title' => 'MyTakii Intranet',
     'push.test.body' => 'Web Push通知が有効です。パネル通知を利用できます。',
     'push.flash.invalid_subscription' => 'Push購読が無効です。',
     'push.flash.subscribed' => 'Push購読を保存しました。',

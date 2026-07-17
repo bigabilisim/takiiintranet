@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 256" role="img" aria-labelledby="logo-title logo-description">
+  <title id="logo-title">MyTakii Intranet</title>
+  <desc id="logo-description">MyTakii Intranet. People. Processes. One place.</desc>
+  <g transform="translate(8 8) scale(.46875)">
+    <rect x="8" y="8" width="496" height="496" rx="104" fill="#ffffff"/>
+    <rect x="8" y="8" width="496" height="496" rx="104" fill="none" stroke="#050509" stroke-width="16"/>
+    <path d="M112 376V136h70l74 96 74-96h70v240h-72V248l-72 91-72-91v128z" fill="#050509"/>
+    <circle cx="256" cy="232" r="27" fill="#c53936"/>
+    <rect x="112" y="408" width="132" height="16" rx="8" fill="#3f77ac"/>
+    <rect x="268" y="408" width="132" height="16" rx="8" fill="#d9a958"/>
+  </g>
+  <text x="286" y="124" fill="#050509" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="76" font-weight="800">MyTakii</text>
+  <text x="290" y="178" fill="#3d3d42" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="32" font-weight="650">Intranet</text>
+  <rect x="290" y="198" width="56" height="8" rx="4" fill="#3f77ac"/>
+  <rect x="354" y="198" width="56" height="8" rx="4" fill="#c53936"/>
+  <rect x="418" y="198" width="56" height="8" rx="4" fill="#d9a958"/>
+</svg>

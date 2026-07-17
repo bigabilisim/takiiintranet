@@ -150,7 +150,7 @@ class TemplatesController
 
         return <<<HTML
 <section class="mail-shell">
-  <div class="mail-header">Kanso Intranet</div>
+  <div class="mail-header">MyTakii Intranet</div>
   <h1>{$title}</h1>
   <p>{$body}</p>
   <div class="mail-summary">

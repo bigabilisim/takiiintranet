@@ -11,7 +11,7 @@
   const projectField = form.querySelector('[data-template-project]');
   const canEdit = builder.dataset.canEdit === '1';
   const testForms = document.querySelectorAll('[data-template-test-form]');
-  const i18n = window.KANSO_TEMPLATE_I18N || {};
+  const i18n = window.MYTAKII_TEMPLATE_I18N || {};
 
   const text = (key, fallback) => (typeof i18n[key] === 'string' && i18n[key] !== '' ? i18n[key] : fallback);
   const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({

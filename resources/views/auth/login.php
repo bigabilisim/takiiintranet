@@ -3,6 +3,7 @@
         <div class="login-heading">
             <span class="eyebrow"><?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?></span>
             <h1><?= htmlspecialchars($t('auth.login'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <p><?= htmlspecialchars($t('app.subtitle'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
 
         <?php if ($flashError): ?>

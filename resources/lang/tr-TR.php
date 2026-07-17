@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'app.subtitle' => 'Çok dilli kurumsal intranet',
+    'app.subtitle' => 'İnsanlar. Süreçler. Tek merkez.',
     'pwa.enable' => 'Bildirimleri aç',
     'pwa.enabled' => 'Bildirimler açık',
     'pwa.test' => 'Test bildirimi',
@@ -13,7 +13,7 @@ return [
     'pwa.status.error' => 'PWA başlatılamadı',
     'pwa.status.sending' => 'Bildirim gönderiliyor',
     'pwa.status.sent' => 'Bildirim gönderildi',
-    'push.test.title' => 'Kanso Intranet',
+    'push.test.title' => 'MyTakii Intranet',
     'push.test.body' => 'Web push notification aktif. Panel bildirimleri hazır.',
     'push.flash.invalid_subscription' => 'Push aboneliği geçersiz.',
     'push.flash.subscribed' => 'Push aboneliği kaydedildi.',

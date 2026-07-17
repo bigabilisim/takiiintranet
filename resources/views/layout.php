@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#1f2428">
+    <meta name="description" content="<?= htmlspecialchars($t('app.subtitle'), ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="theme-color" content="#050509">
     <meta name="csrf-token" content="<?= htmlspecialchars(\App\Core\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,7 +24,7 @@
     <div class="app-shell <?= $user ? 'is-authenticated' : 'is-guest' ?>">
         <aside class="sidebar" aria-label="<?= htmlspecialchars($t('nav.primary'), ENT_QUOTES, 'UTF-8') ?>">
             <a class="brand" href="/">
-                <span class="brand-mark">K</span>
+                <img class="brand-logo" src="<?= htmlspecialchars($asset('icon.svg'), ENT_QUOTES, 'UTF-8') ?>" width="44" height="44" alt="">
                 <span>
                     <strong><?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?></strong>
                     <small><?= htmlspecialchars($t('app.subtitle'), ENT_QUOTES, 'UTF-8') ?></small>

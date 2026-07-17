@@ -345,9 +345,9 @@ class LeaveApprovalMailer
 
     private function fromName(): string
     {
-        $fromName = $this->cleanHeader((string) (getenv('MAIL_FROM_NAME') ?: 'Takii Intranet'));
+        $fromName = $this->cleanHeader((string) (getenv('MAIL_FROM_NAME') ?: 'MyTakii Intranet'));
 
-        return $fromName !== '' ? $fromName : 'Takii Intranet';
+        return $fromName !== '' ? $fromName : 'MyTakii Intranet';
     }
 
     private function formatAddress(string $address, string $name): string

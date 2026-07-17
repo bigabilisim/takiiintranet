@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">MyTakii Intranet</title>
+  <rect width="512" height="512" fill="#ffffff"/>
+  <path d="M128 352V152h61l67 84 67-84h61v200h-64V250l-64 79-64-79v102z" fill="#050509"/>
+  <circle cx="256" cy="236" r="24" fill="#c53936"/>
+  <rect x="128" y="382" width="116" height="14" rx="7" fill="#3f77ac"/>
+  <rect x="268" y="382" width="116" height="14" rx="7" fill="#d9a958"/>
+</svg>

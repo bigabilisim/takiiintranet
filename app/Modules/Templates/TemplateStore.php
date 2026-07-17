@@ -193,7 +193,7 @@ class TemplateStore
     {
         return <<<'HTML'
 <section class="mail-shell">
-  <div class="mail-header">Kanso Intranet</div>
+  <div class="mail-header">MyTakii Intranet</div>
   <h1>Your annual leave request is waiting for approval</h1>
   <p>Hello {{manager_name}}, the leave request created by {{employee_name}} is waiting for your approval.</p>
   <div class="mail-summary">

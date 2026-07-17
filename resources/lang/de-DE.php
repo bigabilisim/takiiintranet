@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'app.subtitle' => 'Mehrsprachiges Unternehmens-Intranet',
+    'app.subtitle' => 'Menschen. Prozesse. Ein Ort.',
     'pwa.enable' => 'Benachrichtigungen aktivieren',
     'pwa.enabled' => 'Benachrichtigungen aktiv',
     'pwa.test' => 'Push testen',
@@ -13,7 +13,7 @@ return [
     'pwa.status.error' => 'PWA konnte nicht starten',
     'pwa.status.sending' => 'Benachrichtigung wird gesendet',
     'pwa.status.sent' => 'Benachrichtigung gesendet',
-    'push.test.title' => 'Kanso Intranet',
+    'push.test.title' => 'MyTakii Intranet',
     'push.test.body' => 'Web Push ist aktiv. Panel-Benachrichtigungen sind bereit.',
     'push.flash.invalid_subscription' => 'Push-Abonnement ist ungültig.',
     'push.flash.subscribed' => 'Push-Abonnement wurde gespeichert.',

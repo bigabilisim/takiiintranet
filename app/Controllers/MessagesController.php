@@ -103,7 +103,7 @@ class MessagesController
         if ($result['ok'] && $toEmail !== '') {
             $sender = $this->auth->user() ?? [];
             $this->pushStore->sendToUser($toEmail, [
-                'title' => (string) ($sender['name'] ?? 'Kanso Intranet'),
+                'title' => (string) ($sender['name'] ?? 'MyTakii Intranet'),
                 'body' => substr((string) $request->input('subject', ''), 0, 140) ?: $this->translator->get('messages.push.fallback_subject'),
                 'url' => '/module/messages?thread=' . urlencode((string) ($sender['email'] ?? '')),
                 'tag' => 'message-' . hash('sha1', (string) ($sender['email'] ?? '') . '-' . $toEmail),

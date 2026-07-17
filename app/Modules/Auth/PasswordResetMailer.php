@@ -14,7 +14,7 @@ class PasswordResetMailer
             return ['ok' => false, 'status' => 'invalid_recipient', 'transport' => 'none'];
         }
 
-        $subject = 'Takii Intranet sifre sifirlama';
+        $subject = 'MyTakii Intranet sifre sifirlama';
         $text = $this->messageBody($profile, $resetUrl, $expiresAt);
         $transport = strtolower((string) (getenv('PASSWORD_RESET_MAIL_TRANSPORT') ?: getenv('MAIL_TRANSPORT') ?: 'native'));
         $transport = in_array($transport, ['native', 'smtp', 'sendmail', 'outbox'], true) ? $transport : 'native';
@@ -97,7 +97,7 @@ class PasswordResetMailer
             return ['ok' => false, 'status' => 'invalid_recipient', 'transport' => 'none'];
         }
 
-        $subject = 'Takii Intranet yeni giris sifreniz';
+        $subject = 'MyTakii Intranet yeni giris sifreniz';
         $text = $this->temporaryPasswordBody($profile, $username, $temporaryPassword);
         $transport = strtolower((string) (getenv('PASSWORD_RESET_MAIL_TRANSPORT') ?: getenv('MAIL_TRANSPORT') ?: 'native'));
         $transport = in_array($transport, ['native', 'smtp', 'sendmail', 'outbox'], true) ? $transport : 'native';
@@ -136,7 +136,7 @@ class PasswordResetMailer
         return implode("\n", [
             'Merhaba ' . $name . ',',
             '',
-            'Takii Intranet hesabi icin sifre sifirlama talebi aldik.',
+            'MyTakii Intranet hesabi icin sifre sifirlama talebi aldik.',
             'Yeni sifrenizi belirlemek icin asagidaki baglantiyi acin:',
             '',
             $resetUrl,
@@ -144,7 +144,7 @@ class PasswordResetMailer
             'Bu baglanti ' . $expiresAt . ' tarihine kadar gecerlidir.',
             'Bu talebi siz olusturmadiysaniz bu e-postayi dikkate almayin.',
             '',
-            'Takii Intranet',
+            'MyTakii Intranet',
         ]);
     }
 
@@ -157,14 +157,14 @@ class PasswordResetMailer
         return implode("\n", [
             'Merhaba ' . $name . ',',
             '',
-            'Takii Intranet hesabiniz icin yeni bir sifre olusturuldu.',
+            'MyTakii Intranet hesabiniz icin yeni bir sifre olusturuldu.',
             'Kullanici adi: ' . $username,
             'Gecici sifre: ' . $temporaryPassword,
             '',
             'Giris adresi: ' . $loginUrl,
             'Bu bilgileri ucuncu kisilerle paylasmayin.',
             '',
-            'Takii Intranet',
+            'MyTakii Intranet',
         ]);
     }
 
@@ -479,9 +479,9 @@ class PasswordResetMailer
 
     private function fromName(): string
     {
-        $fromName = $this->cleanHeader((string) (getenv('MAIL_FROM_NAME') ?: 'Takii Intranet'));
+        $fromName = $this->cleanHeader((string) (getenv('MAIL_FROM_NAME') ?: 'MyTakii Intranet'));
 
-        return $fromName !== '' ? $fromName : 'Takii Intranet';
+        return $fromName !== '' ? $fromName : 'MyTakii Intranet';
     }
 
     private function formatAddress(string $address, string $name): string
