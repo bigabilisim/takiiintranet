@@ -1,7 +1,18 @@
 {
     "version": 1,
-    "current_version": "v0.97.1",
+    "current_version": "v0.97.2",
     "entries": [
+        {
+            "version": "v0.97.2",
+            "title": "Çerçevesiz TAKII logosu ve MyTakii marka adı birlikte kullanıldı",
+            "released_at": "2026-07-18 12:12",
+            "status": "completed",
+            "changes": [
+                "TAKII logosunun dışındaki siyah çerçeve kaldırıldı; özgün renkler, sembol ve TAKII yazısı korundu.",
+                "MyTakii ve Intranet marka adı ile üç kurumsal renk çizgisi sol menüye ve çevrim dışı PWA ekranına geri eklendi.",
+                "Favicon ve PWA ikonları çerçevesiz logodan yeniden üretildi; Service Worker önbelleği v50 olarak yenilendi."
+            ]
+        },
         {
             "version": "v0.97.1",
             "title": "TAKII kurumsal logosu uygulama ve PWA yüzeylerine eklendi",

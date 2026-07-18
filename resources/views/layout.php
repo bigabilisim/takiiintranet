@@ -23,14 +23,23 @@
 <body>
     <div class="app-shell <?= $user ? 'is-authenticated' : 'is-guest' ?>">
         <aside class="sidebar" aria-label="<?= htmlspecialchars($t('nav.primary'), ENT_QUOTES, 'UTF-8') ?>">
-            <a class="brand" href="/">
+            <a class="brand" href="/" aria-label="MyTakii Intranet">
                 <img
                     class="brand-logo"
-                    src="<?= htmlspecialchars($asset('takii-logo.jpg'), ENT_QUOTES, 'UTF-8') ?>"
-                    width="132"
-                    height="132"
-                    alt="<?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?>"
+                    src="<?= htmlspecialchars($asset('takii-logo-borderless.png'), ENT_QUOTES, 'UTF-8') ?>"
+                    width="84"
+                    height="84"
+                    alt=""
                 >
+                <span class="brand-copy">
+                    <strong class="brand-name">MyTakii</strong>
+                    <span class="brand-product">Intranet</span>
+                    <span class="brand-stripes" aria-hidden="true">
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                    </span>
+                </span>
             </a>
 
             <?php if ($user): ?>

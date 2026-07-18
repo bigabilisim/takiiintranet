@@ -13,7 +13,7 @@ function brandingAssert(bool $condition, string $message): void
 
 try {
     $assets = [
-        'takii-logo.jpg' => [600, 600, IMAGETYPE_JPEG],
+        'takii-logo-borderless.png' => [600, 600, IMAGETYPE_PNG],
         'favicon-64.png' => [64, 64, IMAGETYPE_PNG],
         'apple-touch-icon.png' => [180, 180, IMAGETYPE_PNG],
         'icon-192.png' => [192, 192, IMAGETYPE_PNG],
@@ -29,6 +29,21 @@ try {
         brandingAssert($image[0] === $width && $image[1] === $height, $name . ' dimensions are incorrect.');
         brandingAssert($image[2] === $type, $name . ' format is incorrect.');
     }
+
+    $visibleLogo = imagecreatefrompng($projectRoot . '/public/assets/takii-logo-borderless.png');
+    brandingAssert($visibleLogo !== false, 'Borderless TAKII logo could not be opened.');
+
+    for ($coordinate = 0; $coordinate < 600; $coordinate++) {
+        foreach ([[40, $coordinate], [559, $coordinate], [$coordinate, 40], [$coordinate, 559]] as [$x, $y]) {
+            $rgb = imagecolorat($visibleLogo, $x, $y);
+            brandingAssert(
+                (($rgb >> 16) & 255) >= 245 && (($rgb >> 8) & 255) >= 245 && ($rgb & 255) >= 245,
+                'The visible TAKII logo still contains a dark outer frame.'
+            );
+        }
+    }
+
+    imagedestroy($visibleLogo);
 
     $manifest = json_decode(
         (string) file_get_contents($projectRoot . '/public/manifest.webmanifest'),
@@ -51,12 +66,14 @@ try {
     $offline = (string) file_get_contents($projectRoot . '/public/offline.html');
     $serviceWorker = (string) file_get_contents($projectRoot . '/public/service-worker.js');
 
-    brandingAssert(str_contains($layout, "asset('takii-logo.jpg')"), 'Application layout does not use the TAKII logo.');
+    brandingAssert(str_contains($layout, "asset('takii-logo-borderless.png')"), 'Application layout does not use the borderless TAKII logo.');
+    brandingAssert(str_contains($layout, 'class="brand-name">MyTakii</strong>'), 'Application layout does not show the MyTakii brand name.');
     brandingAssert(str_contains($layout, "asset('favicon-64.png')"), 'Application layout does not use the TAKII favicon.');
-    brandingAssert(str_contains($offline, '/assets/takii-logo.jpg'), 'Offline page does not use the TAKII logo.');
-    brandingAssert(str_contains($serviceWorker, "mytakii-intranet-v49"), 'Service Worker cache version was not updated.');
+    brandingAssert(str_contains($offline, '/assets/takii-logo-borderless.png'), 'Offline page does not use the borderless TAKII logo.');
+    brandingAssert(str_contains($offline, 'class="brand-name">MyTakii</strong>'), 'Offline page does not show the MyTakii brand name.');
+    brandingAssert(str_contains($serviceWorker, "mytakii-intranet-v50"), 'Service Worker cache version was not updated.');
 
-    foreach (['/assets/takii-logo.jpg', '/assets/favicon-64.png', '/assets/icon-192.png', '/assets/icon-512.png', '/assets/icon-maskable-512.png'] as $asset) {
+    foreach (['/assets/takii-logo-borderless.png', '/assets/favicon-64.png', '/assets/icon-192.png', '/assets/icon-512.png', '/assets/icon-maskable-512.png'] as $asset) {
         brandingAssert(str_contains($serviceWorker, "'" . $asset . "'"), 'Service Worker does not cache ' . $asset . '.');
     }
 

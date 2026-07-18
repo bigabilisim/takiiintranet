@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mytakii-intranet-v49';
+const CACHE_NAME = 'mytakii-intranet-v50';
 const STATIC_ASSETS = [
   '/offline.html',
   '/assets/app.css',
@@ -6,7 +6,7 @@ const STATIC_ASSETS = [
   '/assets/offline.js',
   '/assets/pwa.js',
   '/assets/templates-editor.js',
-  '/assets/takii-logo.jpg',
+  '/assets/takii-logo-borderless.png',
   '/assets/favicon-64.png',
   '/assets/icon-192.png',
   '/assets/icon-512.png',

@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.97.1';
+    private const CURRENT_RELEASE = 'v0.97.2';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.97.2',
+                'title' => 'Çerçevesiz TAKII logosu ve MyTakii marka adı birlikte kullanıldı',
+                'released_at' => '2026-07-18 12:12',
+                'status' => 'completed',
+                'changes' => [
+                    'TAKII logosunun dışındaki siyah çerçeve kaldırıldı; özgün renkler, sembol ve TAKII yazısı korundu.',
+                    'MyTakii ve Intranet marka adı ile üç kurumsal renk çizgisi sol menüye ve çevrim dışı PWA ekranına geri eklendi.',
+                    'Favicon ve PWA ikonları çerçevesiz logodan yeniden üretildi; Service Worker önbelleği v50 olarak yenilendi.',
+                ],
+            ],
             [
                 'version' => 'v0.97.1',
                 'title' => 'TAKII kurumsal logosu uygulama ve PWA yüzeylerine eklendi',

@@ -59,6 +59,7 @@ textarea {
 .brand {
     display: inline-flex;
     align-items: center;
+    gap: 10px;
     width: fit-content;
     max-width: 100%;
 }
@@ -75,10 +76,55 @@ textarea {
 
 .brand-logo {
     display: block;
-    width: 132px;
-    max-width: 100%;
+    flex: 0 0 auto;
+    width: 84px;
+    max-width: 84px;
     height: auto;
     aspect-ratio: 1;
+    object-fit: contain;
+}
+
+.brand-copy {
+    display: grid;
+    min-width: 0;
+    line-height: 1;
+}
+
+.brand-name {
+    color: #050509;
+    font-size: 26px;
+    font-weight: 650;
+}
+
+.brand-product {
+    margin-top: 5px;
+    color: #3d3d42;
+    font-size: 14px;
+}
+
+.brand-stripes {
+    display: grid;
+    grid-template-columns: repeat(3, 24px);
+    gap: 5px;
+    margin-top: 9px;
+}
+
+.brand-stripes i {
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+}
+
+.brand-stripes i:nth-child(1) {
+    background: #3f77ac;
+}
+
+.brand-stripes i:nth-child(2) {
+    background: #c53936;
+}
+
+.brand-stripes i:nth-child(3) {
+    background: #d9a958;
 }
 
 .topbar p,
@@ -1653,9 +1699,36 @@ th {
     margin: 0;
 }
 
-.offline-page .brand-logo {
-    width: min(220px, 72vw);
-    height: auto;
+.offline-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    max-width: 100%;
+}
+
+.offline-brand .brand-logo {
+    width: min(148px, 38vw);
+    max-width: none;
+}
+
+.offline-brand .brand-name {
+    font-size: 38px;
+}
+
+.offline-brand .brand-product {
+    margin-top: 8px;
+    font-size: 20px;
+}
+
+.offline-brand .brand-stripes {
+    grid-template-columns: repeat(3, 32px);
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.offline-brand .brand-stripes i {
+    height: 5px;
 }
 
 .alert.success {
