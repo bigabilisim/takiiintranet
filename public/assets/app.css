@@ -73,12 +73,12 @@ textarea {
     font-weight: 800;
 }
 
-.brand-wordmark {
+.brand-logo {
     display: block;
-    width: 180px;
+    width: 132px;
     max-width: 100%;
     height: auto;
-    aspect-ratio: 12 / 7;
+    aspect-ratio: 1;
 }
 
 .topbar p,
@@ -1653,8 +1653,8 @@ th {
     margin: 0;
 }
 
-.offline-page .brand-wordmark {
-    width: min(220px, 80vw);
+.offline-page .brand-logo {
+    width: min(220px, 72vw);
     height: auto;
 }
 

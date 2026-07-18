@@ -13,7 +13,7 @@
     <?php $pageTitle = isset($title) ? $t((string) $title) : $appName; ?>
     <title><?= htmlspecialchars($pageTitle . ' | ' . $appName, ENT_QUOTES, 'UTF-8') ?></title>
     <link rel="manifest" href="/manifest.webmanifest">
-    <link rel="icon" href="<?= htmlspecialchars($asset('icon.svg'), ENT_QUOTES, 'UTF-8') ?>" type="image/svg+xml">
+    <link rel="icon" href="<?= htmlspecialchars($asset('favicon-64.png'), ENT_QUOTES, 'UTF-8') ?>" type="image/png">
     <link rel="apple-touch-icon" href="<?= htmlspecialchars($asset('apple-touch-icon.png'), ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars($asset('app.css'), ENT_QUOTES, 'UTF-8') ?>">
     <?php if (!empty($grapesjsAssets)): ?>
@@ -25,10 +25,10 @@
         <aside class="sidebar" aria-label="<?= htmlspecialchars($t('nav.primary'), ENT_QUOTES, 'UTF-8') ?>">
             <a class="brand" href="/">
                 <img
-                    class="brand-wordmark"
-                    src="<?= htmlspecialchars($asset('logo-horizontal.svg'), ENT_QUOTES, 'UTF-8') ?>"
-                    width="180"
-                    height="105"
+                    class="brand-logo"
+                    src="<?= htmlspecialchars($asset('takii-logo.jpg'), ENT_QUOTES, 'UTF-8') ?>"
+                    width="132"
+                    height="132"
                     alt="<?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?>"
                 >
             </a>

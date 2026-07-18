@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.97.0';
+    private const CURRENT_RELEASE = 'v0.97.1';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.97.1',
+                'title' => 'TAKII kurumsal logosu uygulama ve PWA yüzeylerine eklendi',
+                'released_at' => '2026-07-18 11:11',
+                'status' => 'completed',
+                'changes' => [
+                    'Paylaşılan TAKII logosu sol menü, giriş ekranı ve çevrim dışı PWA ekranındaki ana marka görseli olarak uygulandı.',
+                    'Aynı görselden favicon, Apple Touch, 192 ve 512 piksel PWA ikonları ile güvenli boşluklu maskable ikon üretildi.',
+                    'PWA manifestindeki eski ikon referansları kaldırıldı ve Service Worker önbelleği v49 olarak yenilendi.',
+                ],
+            ],
             [
                 'version' => 'v0.97.0',
                 'title' => 'Dört dilde arayüz ve bildirim metinleri kapsamlı olarak düzeltildi',

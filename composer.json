@@ -27,6 +27,7 @@
     "test:blue-collar-leave": "php tests/blue-collar-leave-access.php",
     "test:personnel-credentials": "php tests/personnel-credentials.php",
     "test:i18n": "php tests/i18n-regression.php",
+    "test:branding": "php tests/branding-regression.php",
     "test:security": "php tests/security-regression.php"
   }
 }

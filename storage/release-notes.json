@@ -1,7 +1,18 @@
 {
     "version": 1,
-    "current_version": "v0.97.0",
+    "current_version": "v0.97.1",
     "entries": [
+        {
+            "version": "v0.97.1",
+            "title": "TAKII kurumsal logosu uygulama ve PWA yüzeylerine eklendi",
+            "released_at": "2026-07-18 11:11",
+            "status": "completed",
+            "changes": [
+                "Paylaşılan TAKII logosu sol menü, giriş ekranı ve çevrim dışı PWA ekranındaki ana marka görseli olarak uygulandı.",
+                "Aynı görselden favicon, Apple Touch, 192 ve 512 piksel PWA ikonları ile güvenli boşluklu maskable ikon üretildi.",
+                "PWA manifestindeki eski ikon referansları kaldırıldı ve Service Worker önbelleği v49 olarak yenilendi."
+            ]
+        },
         {
             "version": "v0.97.0",
             "title": "Dört dilde arayüz ve bildirim metinleri kapsamlı olarak düzeltildi",
