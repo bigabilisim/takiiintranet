@@ -7,7 +7,7 @@ use App\Core\StateStore;
 class TemplateStore
 {
     private const STATE_KEY = 'templates';
-    private const VERSION = 2;
+    private const VERSION = 3;
     private readonly TemplateSanitizer $sanitizer;
 
     public function __construct(
@@ -125,6 +125,8 @@ class TemplateStore
                 continue;
             }
 
+            $template = $this->migrateDefaultCopy($template);
+            $data['templates'][$index] = $template;
             $html = $this->sanitizer->sanitizeHtml((string) ($template['html'] ?? ''));
             $css = $this->sanitizer->sanitizeCss((string) ($template['css'] ?? ''));
 
@@ -155,7 +157,7 @@ class TemplateStore
                 [
                     'id' => 'TPL-MAIL-1001',
                     'type' => 'mail',
-                    'name' => 'Annual leave approval mail',
+                    'name' => 'Annual leave approval email',
                     'description' => 'Base template for leave approval emails sent to managers.',
                     'html' => $this->defaultMailHtml(),
                     'css' => $this->defaultMailCss(),
@@ -223,7 +225,7 @@ class TemplateStore
     <span>{{leave_days}} days</span>
   </div>
   <a class="mail-button" href="{{approval_link}}">Review and approve request</a>
-  <p class="mail-note">This link is valid for 96 hours.</p>
+  <p class="mail-note">This approval action is valid for 96 hours.</p>
 </section>
 HTML;
     }
@@ -248,7 +250,7 @@ CSS;
   <header>
     <span>HR Report</span>
     <h1>Monthly leave summary</h1>
-    <p>{{report_month}} period</p>
+    <p>Reporting period: {{report_month}}</p>
   </header>
   <div class="report-metrics">
     <div><span>Total requests</span><strong>{{total_requests}}</strong></div>
@@ -280,5 +282,30 @@ HTML;
 .report-shell table { width: 100%; border-collapse: collapse; background: #ffffff; }
 .report-shell th, .report-shell td { padding: 14px; border-bottom: 1px solid #d7ddd8; text-align: left; }
 CSS;
+    }
+
+    private function migrateDefaultCopy(array $template): array
+    {
+        if (($template['id'] ?? '') === 'TPL-MAIL-1001') {
+            if (($template['name'] ?? '') === 'Annual leave approval mail') {
+                $template['name'] = 'Annual leave approval email';
+            }
+
+            $template['html'] = str_replace(
+                'This link is valid for 96 hours.',
+                'This approval action is valid for 96 hours.',
+                (string) ($template['html'] ?? '')
+            );
+        }
+
+        if (($template['id'] ?? '') === 'TPL-REPORT-1001') {
+            $template['html'] = str_replace(
+                '{{report_month}} period',
+                'Reporting period: {{report_month}}',
+                (string) ($template['html'] ?? '')
+            );
+        }
+
+        return $template;
     }
 }

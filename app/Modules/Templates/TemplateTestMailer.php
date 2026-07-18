@@ -2,6 +2,7 @@
 
 namespace App\Modules\Templates;
 
+use App\Core\LocalizedDateFormatter;
 use App\Core\StateStore;
 
 class TemplateTestMailer
@@ -13,6 +14,7 @@ class TemplateTestMailer
     public function __construct(
         private readonly StateStore $stateStore,
         ?TemplateSanitizer $sanitizer = null,
+        private readonly ?LocalizedDateFormatter $localizedDates = null,
     )
     {
         $this->sanitizer = $sanitizer ?? new TemplateSanitizer();
@@ -171,20 +173,20 @@ class TemplateTestMailer
 
         if ($templateType === 'report') {
             return array_merge($common, [
-                '{{report_month}}' => date('F Y'),
+                '{{report_month}}' => $this->localizedDates?->format(date('Y-m-01'), 'month_year') ?? date('F Y'),
                 '{{total_requests}}' => '18',
                 '{{approved_requests}}' => '12',
                 '{{pending_requests}}' => '4',
-                '{{product_used}}' => '24 gun',
-                '{{product_pending}}' => '6 gun',
-                '{{people_used}}' => '11 gun',
-                '{{people_pending}}' => '2 gun',
+                '{{product_used}}' => '24 gün',
+                '{{product_pending}}' => '6 gün',
+                '{{people_used}}' => '11 gün',
+                '{{people_pending}}' => '2 gün',
             ]);
         }
 
         return array_merge($common, [
             '{{manager_name}}' => 'Bilal Bozduman',
-            '{{employee_name}}' => 'Erdi Oz',
+            '{{employee_name}}' => 'Erdi Öz',
             '{{requester_department}}' => 'Product',
             '{{leave_dates}}' => date('Y-m-d', strtotime('+14 days')) . ' - ' . date('Y-m-d', strtotime('+18 days')),
             '{{leave_days}}' => '5',
@@ -195,7 +197,7 @@ class TemplateTestMailer
 
     private function defaultSubject(string $templateName, string $templateType): string
     {
-        $prefix = $templateType === 'report' ? 'Test raporu' : 'Test maili';
+        $prefix = $templateType === 'report' ? 'Test raporu' : 'Test e-postası';
 
         return $templateName !== '' ? $prefix . ': ' . $templateName : $prefix;
     }

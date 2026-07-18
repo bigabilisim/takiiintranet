@@ -370,7 +370,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
     <header class="calendar-header">
         <div>
             <p class="eyebrow"><?= htmlspecialchars($t('leave.calendar'), ENT_QUOTES, 'UTF-8') ?></p>
-            <h2><?= htmlspecialchars($calendar['title'], ENT_QUOTES, 'UTF-8') ?></h2>
+            <h2><?= htmlspecialchars($calendarTitle($calendar), ENT_QUOTES, 'UTF-8') ?></h2>
         </div>
         <div class="calendar-controls">
             <a class="button ghost" href="<?= htmlspecialchars($calendarHref($calendar['view'], $previousDate), ENT_QUOTES, 'UTF-8') ?>">&lsaquo;</a>
@@ -384,7 +384,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
             <?php foreach ($calendar['days'] as $day): ?>
                 <div class="calendar-day <?= $day['is_outside_month'] ? 'is-muted' : '' ?>">
                     <header>
-                        <span><?= htmlspecialchars($day['weekday'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <span><?= htmlspecialchars($weekdayShort($day['date']), ENT_QUOTES, 'UTF-8') ?></span>
                         <strong><?= htmlspecialchars($day['day'], ENT_QUOTES, 'UTF-8') ?></strong>
                     </header>
                     <div class="calendar-events">

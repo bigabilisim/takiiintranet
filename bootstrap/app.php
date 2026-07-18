@@ -17,6 +17,7 @@ use App\Core\AccessControl;
 use App\Core\AuditLogStore;
 use App\Core\Auth;
 use App\Core\Database;
+use App\Core\LocalizedDateFormatter;
 use App\Core\RateLimiter;
 use App\Core\Request;
 use App\Core\ReleaseNoteStore;
@@ -219,6 +220,7 @@ $translator = new Translator(
     $locale,
     $appConfig['fallback_locale']
 );
+$localizedDates = new LocalizedDateFormatter($translator);
 
 $database = new Database($databaseConfig);
 $stateStore = new StateStore($stateConfig['driver'] === 'mariadb' ? $database : null, $stateConfig);
@@ -235,7 +237,7 @@ $passwordResetMailer = new PasswordResetMailer($stateStore);
 $passwordResets = new PasswordResetStore($userProfiles, $passwordResetMailer, $stateStore);
 $personnelCredentials = new PersonnelCredentialService($userProfiles, $passwordResets, $passwordResetMailer);
 $shiftStore = new ShiftStore($userProfiles, $stateStore);
-$leaveStore = new LeaveStore($accessControl, new LeaveApprovalMailer(), $stateStore, $userProfiles, $shiftStore);
+$leaveStore = new LeaveStore($accessControl, new LeaveApprovalMailer(), $stateStore, $userProfiles, $shiftStore, $localizedDates);
 $identityMigration = new UserIdentityMigrationService(
     $stateStore,
     $userProfiles,
@@ -281,7 +283,7 @@ $templatesController = new TemplatesController(
     $view,
     $auth,
     new TemplateStore($stateStore),
-    new TemplateTestMailer($stateStore),
+    new TemplateTestMailer($stateStore, null, $localizedDates),
     $translator
 );
 $moduleController = new ModuleController($view, $auth, $modules);

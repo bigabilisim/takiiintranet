@@ -26,6 +26,7 @@
     "test:location": "php tests/location-visibility.php",
     "test:blue-collar-leave": "php tests/blue-collar-leave-access.php",
     "test:personnel-credentials": "php tests/personnel-credentials.php",
+    "test:i18n": "php tests/i18n-regression.php",
     "test:security": "php tests/security-regression.php"
   }
 }

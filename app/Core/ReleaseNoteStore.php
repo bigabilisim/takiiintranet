@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.96.1';
+    private const CURRENT_RELEASE = 'v0.97.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -40,10 +40,10 @@ class ReleaseNoteStore
         if ($current !== null) {
             $lines[] = 'Merhabalar,';
             $lines[] = '';
-            $lines[] = 'Yeni intranet surumu tamamlandi: ' . (string) ($current['version'] ?? '') . ' - ' . (string) ($current['title'] ?? '');
+            $lines[] = 'Yeni intranet sürümü tamamlandı: ' . (string) ($current['version'] ?? '') . ' - ' . (string) ($current['title'] ?? '');
             $lines[] = 'Tarih: ' . (string) ($current['released_at'] ?? '');
             $lines[] = '';
-            $lines[] = 'Bu surumde yapilanlar:';
+            $lines[] = 'Bu sürümde yapılanlar:';
 
             foreach ((array) ($current['changes'] ?? []) as $change) {
                 $lines[] = '- ' . (string) $change;
@@ -53,7 +53,7 @@ class ReleaseNoteStore
 
             if ($previous !== []) {
                 $lines[] = '';
-                $lines[] = 'Onceki 5 surum:';
+                $lines[] = 'Önceki 5 sürüm:';
 
                 foreach ($previous as $entry) {
                     $lines[] = '';
@@ -68,8 +68,8 @@ class ReleaseNoteStore
 
         return [
             'subject' => $current !== null
-                ? 'MyTakii Intranet surum notu: ' . (string) ($current['version'] ?? '')
-                : 'MyTakii Intranet surum notu',
+                ? 'MyTakii Intranet sürüm notu: ' . (string) ($current['version'] ?? '')
+                : 'MyTakii Intranet sürüm notu',
             'body' => implode("\n", $lines),
             'recipients' => $this->mailRecipients(),
         ];
@@ -141,6 +141,18 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.97.0',
+                'title' => 'Dört dilde arayüz ve bildirim metinleri kapsamlı olarak düzeltildi',
+                'released_at' => '2026-07-18 08:36',
+                'status' => 'completed',
+                'changes' => [
+                    'Türkçe, İngilizce, Almanca ve Japonca arayüz metinlerindeki yazım, dil bilgisi, noktalama ve terim tutarsızlıkları giderildi.',
+                    'Şifre sıfırlama, geçici şifre, izin onayı, başvuru alındı ve defter imzası e-postaları daha açık ve doğru metinlerle yenilendi.',
+                    'Çevrim dışı PWA ekranı tarayıcı diline göre dört dilde çalışacak hale getirildi; çeviri anahtarı ve yer tutucu eşitliği regresyon testine bağlandı.',
+                    'Takvim başlıkları, hafta günleri, hava durumu tarihleri ve rapor örnek ayları seçili dile göre yerelleştirildi.',
+                ],
+            ],
             [
                 'version' => 'v0.96.1',
                 'title' => 'MyTakii marka slogani gorunen yuzeylerden kaldirildi',

@@ -40,6 +40,15 @@ class View
         }
 
         $t = fn (string $key, array $replace = []): string => $this->translator->get($key, $replace);
+        $localizedDates = new LocalizedDateFormatter($this->translator);
+        $formatDate = fn (mixed $date, string $pattern = 'day_month_year'): string => $localizedDates->format((string) $date, $pattern);
+        $calendarTitle = fn (array $calendar): string => $localizedDates->calendarTitle(
+            (string) ($calendar['view'] ?? 'month'),
+            (string) ($calendar['focus'] ?? date('Y-m-d')),
+            (string) ($calendar['days'][0]['date'] ?? $calendar['focus'] ?? date('Y-m-d')),
+            (string) ($calendar['days'][array_key_last($calendar['days'] ?? [])]['date'] ?? $calendar['focus'] ?? date('Y-m-d')),
+        );
+        $weekdayShort = fn (mixed $date): string => $localizedDates->weekdayShort((string) $date);
         $csrf = fn (): string => Csrf::field();
         $asset = function (string $path): string {
             $relativePath = ltrim($path, '/');

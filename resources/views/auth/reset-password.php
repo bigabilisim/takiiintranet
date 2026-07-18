@@ -40,7 +40,7 @@
             <p><?= htmlspecialchars($t('auth.reset_validity'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <div>
-            <span>6+</span>
+            <span>12+</span>
             <p><?= htmlspecialchars($t('auth.reset_minimum'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <div>

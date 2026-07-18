@@ -22,7 +22,7 @@ class PasswordResetMailer
             return ['ok' => false, 'status' => 'invalid_recipient', 'transport' => 'none'];
         }
 
-        $subject = 'MyTakii Intranet sifre sifirlama';
+        $subject = 'MyTakii Intranet şifre sıfırlama';
         $text = $this->messageBody($profile, $resetUrl, $expiresAt);
         $transport = strtolower((string) (getenv('PASSWORD_RESET_MAIL_TRANSPORT') ?: getenv('MAIL_TRANSPORT') ?: 'native'));
         $transport = in_array($transport, ['native', 'smtp', 'sendmail', 'outbox'], true) ? $transport : 'native';
@@ -108,7 +108,7 @@ class PasswordResetMailer
             return ['ok' => false, 'status' => 'invalid_recipient', 'transport' => 'none'];
         }
 
-        $subject = 'MyTakii Intranet yeni giris sifreniz';
+        $subject = 'MyTakii Intranet yeni giriş şifreniz';
         $text = $this->temporaryPasswordBody($profile, $username, $temporaryPassword);
         $transport = strtolower((string) (getenv('PASSWORD_RESET_MAIL_TRANSPORT') ?: getenv('MAIL_TRANSPORT') ?: 'native'));
         $transport = in_array($transport, ['native', 'smtp', 'sendmail', 'outbox'], true) ? $transport : 'native';
@@ -142,18 +142,18 @@ class PasswordResetMailer
     private function messageBody(array $profile, string $resetUrl, string $expiresAt): string
     {
         $name = trim((string) ($profile['name'] ?? ''));
-        $name = $name !== '' ? $name : 'Kullanici';
+        $name = $name !== '' ? $name : 'Kullanıcı';
 
         return implode("\n", [
             'Merhaba ' . $name . ',',
             '',
-            'MyTakii Intranet hesabi icin sifre sifirlama talebi aldik.',
-            'Yeni sifrenizi belirlemek icin asagidaki baglantiyi acin:',
+            'MyTakii Intranet hesabınız için şifre sıfırlama talebi aldık.',
+            'Yeni şifrenizi belirlemek için aşağıdaki bağlantıyı açın:',
             '',
             $resetUrl,
             '',
-            'Bu baglanti ' . $expiresAt . ' tarihine kadar gecerlidir.',
-            'Bu talebi siz olusturmadiysaniz bu e-postayi dikkate almayin.',
+            'Bu bağlantı ' . $expiresAt . ' tarihine kadar geçerlidir.',
+            'Bu talebi siz oluşturmadıysanız bu e-postayı dikkate almayın.',
             '',
             'MyTakii Intranet',
         ]);
@@ -162,18 +162,18 @@ class PasswordResetMailer
     private function temporaryPasswordBody(array $profile, string $username, string $temporaryPassword): string
     {
         $name = trim((string) ($profile['name'] ?? ''));
-        $name = $name !== '' ? $name : 'Kullanici';
-        $loginUrl = rtrim((string) (getenv('APP_URL') ?: 'https://takii.bigabilisim.com'), '/') . '/login';
+        $name = $name !== '' ? $name : 'Kullanıcı';
+        $loginUrl = rtrim((string) (getenv('APP_URL') ?: 'https://mytakii.com'), '/') . '/login';
 
         return implode("\n", [
             'Merhaba ' . $name . ',',
             '',
-            'MyTakii Intranet hesabiniz icin yeni bir sifre olusturuldu.',
-            'Kullanici adi: ' . $username,
-            'Gecici sifre: ' . $temporaryPassword,
+            'MyTakii Intranet hesabınız için yeni bir şifre oluşturuldu.',
+            'Kullanıcı adı: ' . $username,
+            'Geçici şifre: ' . $temporaryPassword,
             '',
-            'Giris adresi: ' . $loginUrl,
-            'Bu bilgileri ucuncu kisilerle paylasmayin.',
+            'Giriş adresi: ' . $loginUrl,
+            'Bu bilgileri üçüncü kişilerle paylaşmayın.',
             '',
             'MyTakii Intranet',
         ]);
@@ -471,7 +471,7 @@ class PasswordResetMailer
     {
         $host = (string) parse_url((string) getenv('APP_URL'), PHP_URL_HOST);
 
-        return $host !== '' ? $host : 'takii.bigabilisim.com';
+        return $host !== '' ? $host : 'mytakii.com';
     }
 
     private function fromAddress(): string
@@ -485,7 +485,7 @@ class PasswordResetMailer
         $host = $this->smtpClientName();
         $fallback = 'no-reply@' . $host;
 
-        return filter_var($fallback, FILTER_VALIDATE_EMAIL) ? $fallback : 'no-reply@takii.bigabilisim.com';
+        return filter_var($fallback, FILTER_VALIDATE_EMAIL) ? $fallback : 'no-reply@mytakii.com';
     }
 
     private function fromName(): string

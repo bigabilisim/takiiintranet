@@ -282,6 +282,7 @@ php tests/state-store-concurrency.php
 php tests/core-store-smoke.php
 php tests/user-identity-migration.php
 php tests/leave-schedule-integrity.php
+php tests/i18n-regression.php
 DB_DATABASE=kanso_intranet php tests/state-store-mariadb-concurrency.php
 DB_DATABASE=kanso_intranet composer test:stores:mariadb
 DB_DATABASE=kanso_intranet composer test:identity:mariadb

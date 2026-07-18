@@ -92,7 +92,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                 <a href="/module/leave"><?= htmlspecialchars($t('dashboard.view_full_calendar'), ENT_QUOTES, 'UTF-8') ?></a>
             </div>
             <div class="compact-calendar-title">
-                <strong><?= htmlspecialchars($leaveCalendar['title'], ENT_QUOTES, 'UTF-8') ?></strong>
+                <strong><?= htmlspecialchars($calendarTitle($leaveCalendar), ENT_QUOTES, 'UTF-8') ?></strong>
                 <span><?= htmlspecialchars($t('dashboard.leave_status_hint'), ENT_QUOTES, 'UTF-8') ?></span>
             </div>
             <div class="compact-calendar-grid">
@@ -137,7 +137,7 @@ $calendarPopoverAttrs = function (array $event) use ($t, $formatDays, $formatDat
                     <div class="weather-days">
                         <?php foreach ($forecast['days'] as $day): ?>
                             <div class="weather-day">
-                                <span><?= htmlspecialchars($day['label'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span><?= htmlspecialchars($formatDate($day['date'], 'day_month'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <strong><?= htmlspecialchars((string) $day['max'], ENT_QUOTES, 'UTF-8') ?>° / <?= htmlspecialchars((string) $day['min'], ENT_QUOTES, 'UTF-8') ?>°</strong>
                                 <small><?= htmlspecialchars($t($day['condition_key']), ENT_QUOTES, 'UTF-8') ?></small>
                                 <em><?= htmlspecialchars($t('weather.rain', ['chance' => $day['rain']]), ENT_QUOTES, 'UTF-8') ?></em>

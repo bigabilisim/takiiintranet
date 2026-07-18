@@ -1,7 +1,19 @@
 {
     "version": 1,
-    "current_version": "v0.96.1",
+    "current_version": "v0.97.0",
     "entries": [
+        {
+            "version": "v0.97.0",
+            "title": "Dört dilde arayüz ve bildirim metinleri kapsamlı olarak düzeltildi",
+            "released_at": "2026-07-18 08:36",
+            "status": "completed",
+            "changes": [
+                "Türkçe, İngilizce, Almanca ve Japonca arayüz metinlerindeki yazım, dil bilgisi, noktalama ve terim tutarsızlıkları giderildi.",
+                "Şifre sıfırlama, geçici şifre, izin onayı, başvuru alındı ve defter imzası e-postaları daha açık ve doğru metinlerle yenilendi.",
+                "Çevrim dışı PWA ekranı tarayıcı diline göre dört dilde çalışacak hale getirildi; çeviri anahtarı ve yer tutucu eşitliği regresyon testine bağlandı.",
+                "Takvim başlıkları, hafta günleri, hava durumu tarihleri ve rapor örnek ayları seçili dile göre yerelleştirildi."
+            ]
+        },
         {
             "version": "v0.96.1",
             "title": "MyTakii marka slogani gorunen yuzeylerden kaldirildi",

@@ -5,6 +5,7 @@ namespace App\Modules\Leave;
 use App\Core\AccessControl;
 use App\Core\Auth;
 use App\Core\IdentityReferenceRewriter;
+use App\Core\LocalizedDateFormatter;
 use App\Core\LocationScope;
 use App\Core\Session;
 use App\Core\StateStore;
@@ -64,6 +65,7 @@ class LeaveStore
         private readonly StateStore $stateStore,
         private readonly UserProfileStore $userProfiles,
         private readonly ShiftStore $shiftStore,
+        private readonly ?LocalizedDateFormatter $localizedDates = null,
     ) {
         $writeGuard = $this->stateStore->beginWrite(self::REQUESTS_STATE_KEY, $this->requestsPath());
         $storedRequests = $this->loadRequests();
@@ -1193,7 +1195,7 @@ class LeaveStore
             $days[] = [
                 'date' => $date,
                 'day' => $day->format('j'),
-                'weekday' => $day->format('D'),
+                'weekday' => $this->localizedDates?->weekdayShort($day) ?? $day->format('D'),
                 'is_outside_month' => $day->format('m') !== $focusDateTime->format('m'),
                 'events' => $this->eventsForDate($date, $user, $upcomingEntitlement, $auth),
             ];
@@ -1802,6 +1804,10 @@ class LeaveStore
 
     private function titleFor(string $view, DateTimeImmutable $focus, DateTimeImmutable $start, DateTimeImmutable $end): string
     {
+        if ($this->localizedDates !== null) {
+            return $this->localizedDates->calendarTitle($view, $focus, $start, $end);
+        }
+
         return match ($view) {
             'week' => $start->format('d M') . ' - ' . $end->format('d M Y'),
             'day' => $focus->format('d M Y'),
@@ -1974,18 +1980,18 @@ class LeaveStore
             'request_id' => $request['id'],
             'stage' => $stage,
             'to_email' => $recipient,
-            'subject' => ($isCancellationStage ? 'Izin iptal onayi: ' : 'Izin onayi: ') . $request['requester'] . ' / ' . $this->requestDateRange($request),
+            'subject' => ($isCancellationStage ? 'İzin iptal onayı: ' : 'İzin onayı: ') . $request['requester'] . ' / ' . $this->requestDateRange($request),
             'body' => implode("\n", [
-                $isCancellationStage ? 'Izin iptal talebi onayinizi bekliyor.' : 'Izin talebi onayinizi bekliyor.',
+                $isCancellationStage ? 'İzin iptal talebi onayınızı bekliyor.' : 'İzin talebi onayınızı bekliyor.',
                 'Talep: ' . $request['id'],
                 'Talep sahibi: ' . $request['requester'],
                 'Tarih: ' . $this->requestDateRange($request),
-                'Gun bolumu: ' . $this->dayPartMailLabel($request),
-                'Gun: ' . $this->requestTotalDaysLabel($request),
+                'Gün bölümü: ' . $this->dayPartMailLabel($request),
+                'Gün: ' . $this->requestTotalDaysLabel($request),
                 $isCancellationStage
-                    ? 'Iptal onayi veya red karari icin e-postadaki butonlari kullanin.'
-                    : 'Onay veya red karari icin e-postadaki butonlari kullanin.',
-                'Token gecerlilik: ' . self::TOKEN_TTL_HOURS . ' saat, son tarih ' . ($request['approval_token_expires_at'][$stage] ?? ''),
+                    ? 'İptal onayı veya ret kararı için e-postadaki düğmeleri kullanın.'
+                    : 'Onay veya ret kararı için e-postadaki düğmeleri kullanın.',
+                'Onay bağlantısının geçerliliği: ' . self::TOKEN_TTL_HOURS . ' saat; son tarih: ' . ($request['approval_token_expires_at'][$stage] ?? ''),
             ]),
             'body_html' => $this->approvalMailHtml($request, $stage, $this->absoluteUrl($approvePath), $this->absoluteUrl($rejectPath)),
             'approve_url' => $this->absoluteUrl($approvePath),
@@ -2022,15 +2028,15 @@ class LeaveStore
             'request_id' => $request['id'],
             'stage' => 'requester_receipt',
             'to_email' => $recipient,
-            'subject' => 'Izin talebiniz alindi: ' . $request['id'],
+            'subject' => 'İzin talebiniz alındı: ' . $request['id'],
             'body' => implode("\n", [
-                'Izin talebiniz basariyla alinmistir.',
-                'Talebiniz onay akisina alinmistir.',
+                'İzin talebiniz başarıyla alınmıştır.',
+                'Talebiniz onay akışına alınmıştır.',
                 'Talep: ' . $request['id'],
                 'Talep sahibi: ' . $request['requester'],
                 'Tarih: ' . $this->requestDateRange($request),
-                'Gun bolumu: ' . $this->dayPartMailLabel($request),
-                'Gun: ' . $this->requestTotalDaysLabel($request),
+                'Gün bölümü: ' . $this->dayPartMailLabel($request),
+                'Gün: ' . $this->requestTotalDaysLabel($request),
             ]),
             'body_html' => $this->requestReceiptMailHtml($request),
             'portal_url' => $this->absoluteUrl('/module/leave'),
@@ -2091,17 +2097,17 @@ class LeaveStore
             'request_id' => $request['id'],
             'stage' => 'leave_book_signature',
             'to_email' => $recipient,
-            'subject' => 'Yillik izin defteri imzasi: ' . $request['id'],
+            'subject' => 'Yıllık izin defteri imzası: ' . $request['id'],
             'body' => implode("\n", [
-                'Yillik izin talebiniz IK tarafindan onaylanmistir.',
-                'Bu bilgilendirme izin donusunuzun ilk mesai gunune gore gonderilmistir.',
-                'Yillik izin defterini imzalamak icin IK asistanina basvurmaniz gerekmektedir.',
-                'Yillik izin defterini en gec 2 gun icinde imzalamaniz gerekmektedir.',
+                'Yıllık izin talebiniz İK tarafından onaylanmıştır.',
+                'Bu bilgilendirme, izin dönüşünüzün ilk çalışma gününe göre gönderilmiştir.',
+                'Yıllık izin defterini imzalamak için İK asistanına başvurmanız gerekir.',
+                'Yıllık izin defterini en geç iki gün içinde imzalamanız gerekir.',
                 'Talep: ' . $request['id'],
                 'Talep sahibi: ' . $request['requester'],
                 'Tarih: ' . $this->requestDateRange($request),
-                'Gun bolumu: ' . $this->dayPartMailLabel($request),
-                'Gun: ' . $this->requestTotalDaysLabel($request),
+                'Gün bölümü: ' . $this->dayPartMailLabel($request),
+                'Gün: ' . $this->requestTotalDaysLabel($request),
             ]),
             'body_html' => $this->leaveBookSignatureMailHtml($request),
             'portal_url' => $this->absoluteUrl('/module/leave'),
@@ -2152,15 +2158,15 @@ class LeaveStore
                 'request_id' => $request['id'],
                 'stage' => 'leave_book_signature_followup',
                 'to_email' => $recipient,
-                'subject' => 'Yillik izin defteri imza kontrolu: ' . $request['requester'],
+                'subject' => 'Yıllık izin defteri imza kontrolü: ' . $request['requester'],
                 'body' => implode("\n", [
-                    'Bu calisan yillik izin defterini imzaladi mi?',
+                    'Bu çalışan yıllık izin defterini imzaladı mı?',
                     'Talep: ' . $request['id'],
                     'Talep sahibi: ' . $request['requester'],
                     'Tarih: ' . $this->requestDateRange($request),
-                    'Gun bolumu: ' . $this->dayPartMailLabel($request),
-                    'Gun: ' . $this->requestTotalDaysLabel($request),
-                    'Lutfen e-postadaki Imzalandi veya Imzalanmadi butonlarindan birini kullanin.',
+                    'Gün bölümü: ' . $this->dayPartMailLabel($request),
+                    'Gün: ' . $this->requestTotalDaysLabel($request),
+                    'Lütfen e-postadaki “İmzalandı” veya “İmzalanmadı” düğmelerinden birini kullanın.',
                 ]),
                 'body_html' => $this->leaveBookSignatureFollowupMailHtml($request, $signedUrl, $notSignedUrl),
                 'signed_url' => $signedUrl,
@@ -2217,11 +2223,11 @@ class LeaveStore
         $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
         $expiresAt = (string) ($request['approval_token_expires_at'][$stage] ?? '');
         $isCancellationStage = $stage === self::CANCELLATION_STAGE;
-        $heading = $isCancellationStage ? 'Izin iptal talebi onayinizi bekliyor' : 'Izin talebi onayinizi bekliyor';
+        $heading = $isCancellationStage ? 'İzin iptal talebi onayınızı bekliyor' : 'İzin talebi onayınızı bekliyor';
         $intro = $isCancellationStage
-            ? 'Personel bu izin talebinin iptalini istedi. Butonlar ' . self::TOKEN_TTL_HOURS . ' saat gecerlidir.'
-            : 'Asagidaki izin talebi icin karar verebilirsiniz. Butonlar ' . self::TOKEN_TTL_HOURS . ' saat gecerlidir.';
-        $approveLabel = $isCancellationStage ? 'Iptali onayla' : 'Onayla';
+            ? 'Personel bu izin talebinin iptalini istedi. Düğmeler ' . self::TOKEN_TTL_HOURS . ' saat geçerlidir.'
+            : 'Aşağıdaki izin talebi için karar verebilirsiniz. Düğmeler ' . self::TOKEN_TTL_HOURS . ' saat geçerlidir.';
+        $approveLabel = $isCancellationStage ? 'İptali onayla' : 'Onayla';
 
         return '<!doctype html><html><head><meta charset="utf-8"></head>'
             . '<body style="margin:0;background:#f5f7f4;font-family:Arial,Helvetica,sans-serif;color:#1f2428;">'
@@ -2238,15 +2244,15 @@ class LeaveStore
             . $this->approvalMailRow('Talep', $request['id'] ?? '')
             . $this->approvalMailRow('Talep sahibi', $request['requester'] ?? '')
             . $this->approvalMailRow('Tarih', $this->requestDateRange($request))
-            . $this->approvalMailRow('Gun bolumu', $this->dayPartMailLabel($request))
-            . $this->approvalMailRow('Gun', $this->requestTotalDaysLabel($request))
-            . $this->approvalMailRow('Gecerlilik', $expiresAt !== '' ? $expiresAt : self::TOKEN_TTL_HOURS . ' saat')
+            . $this->approvalMailRow('Gün bölümü', $this->dayPartMailLabel($request))
+            . $this->approvalMailRow('Gün', $this->requestTotalDaysLabel($request))
+            . $this->approvalMailRow('Geçerlilik', $expiresAt !== '' ? $expiresAt : self::TOKEN_TTL_HOURS . ' saat')
             . '</table>'
             . '<table role="presentation" cellspacing="0" cellpadding="0"><tr>'
             . '<td style="padding:0 10px 10px 0;"><a href="' . $escape($approveUrl) . '" style="display:inline-block;background:#24613b;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">' . $escape($approveLabel) . '</a></td>'
             . '<td style="padding:0 0 10px 0;"><a href="' . $escape($rejectUrl) . '" style="display:inline-block;background:#8a341f;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">Reddet</a></td>'
             . '</tr></table>'
-            . '<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#66716a;">HTML desteklemeyen e-posta uygulamalarinda MyTakii Intranet uzerinden panel onayi kullanabilirsiniz.</p>'
+            . '<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#66716a;">HTML desteklemeyen e-posta uygulamalarında MyTakii Intranet üzerinden panel onayını kullanabilirsiniz.</p>'
             . '</td></tr></table>'
             . '</td></tr></table></body></html>';
     }
@@ -2263,19 +2269,19 @@ class LeaveStore
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #dfe4dc;border-radius:8px;overflow:hidden;">'
             . '<tr><td style="padding:22px 24px;background:#24613b;color:#ffffff;">'
             . '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">MyTakii Intranet</div>'
-            . '<h1 style="margin:8px 0 0;font-size:22px;line-height:1.3;">Izin talebiniz basariyla alinmistir</h1>'
+            . '<h1 style="margin:8px 0 0;font-size:22px;line-height:1.3;">İzin talebiniz başarıyla alınmıştır</h1>'
             . '</td></tr>'
             . '<tr><td style="padding:22px 24px;">'
-            . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Talebiniz onay akisina alinmistir. Sureci izin merkezinden takip edebilirsiniz.</p>'
+            . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Talebiniz onay akışına alınmıştır. Süreci İzin Talebi ekranından takip edebilirsiniz.</p>'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 18px;">'
             . $this->approvalMailRow('Talep', $request['id'] ?? '')
             . $this->approvalMailRow('Talep sahibi', $request['requester'] ?? '')
             . $this->approvalMailRow('Tarih', $this->requestDateRange($request))
-            . $this->approvalMailRow('Gun bolumu', $this->dayPartMailLabel($request))
-            . $this->approvalMailRow('Gun', $this->requestTotalDaysLabel($request))
+            . $this->approvalMailRow('Gün bölümü', $this->dayPartMailLabel($request))
+            . $this->approvalMailRow('Gün', $this->requestTotalDaysLabel($request))
             . $this->approvalMailRow('Durum', 'Onay bekliyor')
             . '</table>'
-            . '<a href="' . $escape($portalUrl) . '" style="display:inline-block;background:#1f2428;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">Izin merkezini ac</a>'
+            . '<a href="' . $escape($portalUrl) . '" style="display:inline-block;background:#1f2428;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">İzin talebini aç</a>'
             . '</td></tr></table>'
             . '</td></tr></table></body></html>';
     }
@@ -2285,8 +2291,8 @@ class LeaveStore
         $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
         $hrContact = (string) ($request['approval_policy']['hr_email'] ?? '');
         $hrLine = $hrContact !== ''
-            ? 'IK asistani / IK birimi ile iletisime gecin: ' . $hrContact
-            : 'IK asistani / IK birimi ile iletisime gecin.';
+            ? 'İK asistanı veya İK birimiyle iletişime geçin: ' . $hrContact
+            : 'İK asistanı veya İK birimiyle iletişime geçin.';
 
         return '<!doctype html><html><head><meta charset="utf-8"></head>'
             . '<body style="margin:0;background:#f5f7f4;font-family:Arial,Helvetica,sans-serif;color:#1f2428;">'
@@ -2295,19 +2301,19 @@ class LeaveStore
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #dfe4dc;border-radius:8px;overflow:hidden;">'
             . '<tr><td style="padding:22px 24px;background:#1f2428;color:#ffffff;">'
             . '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">MyTakii Intranet</div>'
-            . '<h1 style="margin:8px 0 0;font-size:22px;line-height:1.3;">Yillik izin defteri imzasi gerekiyor</h1>'
+            . '<h1 style="margin:8px 0 0;font-size:22px;line-height:1.3;">Yıllık izin defteri imzası gerekiyor</h1>'
             . '</td></tr>'
             . '<tr><td style="padding:22px 24px;">'
-            . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Yillik izin talebiniz IK tarafindan onaylandi. Bu bilgilendirme izin donusunuzun ilk mesai gunune gore gonderilmistir. Izin surecinizin tamamlanmasi icin yillik izin defterini imzalamaniz gerekmektedir.</p>'
-            . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;font-weight:700;color:#8a341f;">Yillik izin defterini en gec 2 gun icinde imzalamaniz gerekmektedir.</p>'
+            . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Yıllık izin talebiniz İK tarafından onaylandı. Bu bilgilendirme, izin dönüşünüzün ilk çalışma gününe göre gönderildi. İzin sürecinizin tamamlanması için yıllık izin defterini imzalamanız gerekir.</p>'
+            . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;font-weight:700;color:#8a341f;">Yıllık izin defterini en geç iki gün içinde imzalamanız gerekir.</p>'
             . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;font-weight:700;color:#24613b;">' . $escape($hrLine) . '</p>'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 18px;">'
             . $this->approvalMailRow('Talep', $request['id'] ?? '')
             . $this->approvalMailRow('Talep sahibi', $request['requester'] ?? '')
             . $this->approvalMailRow('Tarih', $this->requestDateRange($request))
-            . $this->approvalMailRow('Gun bolumu', $this->dayPartMailLabel($request))
-            . $this->approvalMailRow('Gun', $this->requestTotalDaysLabel($request))
-            . $this->approvalMailRow('Durum', 'IK onaylandi / defter imzasi bekliyor')
+            . $this->approvalMailRow('Gün bölümü', $this->dayPartMailLabel($request))
+            . $this->approvalMailRow('Gün', $this->requestTotalDaysLabel($request))
+            . $this->approvalMailRow('Durum', 'İK onayladı / defter imzası bekleniyor')
             . '</table>'
             . '</td></tr></table>'
             . '</td></tr></table></body></html>';
@@ -2324,23 +2330,23 @@ class LeaveStore
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #dfe4dc;border-radius:8px;overflow:hidden;">'
             . '<tr><td style="padding:22px 24px;background:#1f2428;color:#ffffff;">'
             . '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">MyTakii Intranet</div>'
-            . '<h1 style="margin:8px 0 0;font-size:22px;line-height:1.3;">Yillik izin defteri imza kontrolu</h1>'
+            . '<h1 style="margin:8px 0 0;font-size:22px;line-height:1.3;">Yıllık izin defteri imza kontrolü</h1>'
             . '</td></tr>'
             . '<tr><td style="padding:22px 24px;">'
-            . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Bu calisan yillik izin defterini imzaladi mi? Lutfen asagidaki butonlardan biriyle durumu isaretleyin.</p>'
+            . '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Bu çalışan yıllık izin defterini imzaladı mı? Lütfen aşağıdaki düğmelerden biriyle durumu işaretleyin.</p>'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 18px;">'
             . $this->approvalMailRow('Talep', $request['id'] ?? '')
             . $this->approvalMailRow('Talep sahibi', $request['requester'] ?? '')
             . $this->approvalMailRow('Tarih', $this->requestDateRange($request))
-            . $this->approvalMailRow('Gun bolumu', $this->dayPartMailLabel($request))
-            . $this->approvalMailRow('Gun', $this->requestTotalDaysLabel($request))
-            . $this->approvalMailRow('Durum', 'Defter imzasi kontrol bekliyor')
+            . $this->approvalMailRow('Gün bölümü', $this->dayPartMailLabel($request))
+            . $this->approvalMailRow('Gün', $this->requestTotalDaysLabel($request))
+            . $this->approvalMailRow('Durum', 'Defter imzası kontrolü bekleniyor')
             . '</table>'
             . '<table role="presentation" cellspacing="0" cellpadding="0"><tr>'
-            . '<td style="padding:0 10px 10px 0;"><a href="' . $escape($signedUrl) . '" style="display:inline-block;background:#24613b;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">Imzalandi</a></td>'
-            . '<td style="padding:0 0 10px 0;"><a href="' . $escape($notSignedUrl) . '" style="display:inline-block;background:#8a341f;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">Imzalanmadi</a></td>'
+            . '<td style="padding:0 10px 10px 0;"><a href="' . $escape($signedUrl) . '" style="display:inline-block;background:#24613b;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">İmzalandı</a></td>'
+            . '<td style="padding:0 0 10px 0;"><a href="' . $escape($notSignedUrl) . '" style="display:inline-block;background:#8a341f;color:#ffffff;text-decoration:none;font-weight:700;border-radius:7px;padding:12px 18px;">İmzalanmadı</a></td>'
             . '</tr></table>'
-            . '<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#66716a;">Bu takip maili, calisana gonderilen imza bildiriminden 2 gun sonra otomatik olusur.</p>'
+            . '<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#66716a;">Bu takip e-postası, çalışana gönderilen imza bildiriminden iki gün sonra otomatik olarak oluşturulur.</p>'
             . '</td></tr></table>'
             . '</td></tr></table></body></html>';
     }
@@ -2857,9 +2863,9 @@ class LeaveStore
     private function dayPartMailLabel(array $request): string
     {
         return match ($this->cleanDayPart($request['day_part'] ?? self::DAY_PART_FULL)) {
-            self::DAY_PART_MORNING => 'Ogleden once',
-            self::DAY_PART_AFTERNOON => 'Ogleden sonra',
-            default => 'Tam gun',
+            self::DAY_PART_MORNING => 'Yarım gün: Öğleden önce',
+            self::DAY_PART_AFTERNOON => 'Yarım gün: Öğleden sonra',
+            default => 'Tam gün',
         };
     }
 
