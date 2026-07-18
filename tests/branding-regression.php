@@ -90,6 +90,7 @@ try {
     );
 
     $layout = (string) file_get_contents($projectRoot . '/resources/views/layout.php');
+    $login = (string) file_get_contents($projectRoot . '/resources/views/auth/login.php');
     $offline = (string) file_get_contents($projectRoot . '/public/offline.html');
     $serviceWorker = (string) file_get_contents($projectRoot . '/public/service-worker.js');
     $iconSvg = (string) file_get_contents($projectRoot . '/public/assets/icon.svg');
@@ -103,7 +104,10 @@ try {
     brandingAssert(str_contains($offline, '/assets/takii-logo-borderless.png'), 'Offline page does not use the borderless TAKII logo.');
     brandingAssert(str_contains($offline, '/assets/takii-icon-64.png'), 'Offline page does not use the current TAKII favicon.');
     brandingAssert(str_contains($offline, 'class="brand-name">MyTakii</strong>'), 'Offline page does not show the MyTakii brand name.');
-    brandingAssert(str_contains($serviceWorker, "mytakii-intranet-v51"), 'Service Worker cache version was not updated.');
+    brandingAssert(str_contains($serviceWorker, "mytakii-intranet-v52"), 'Service Worker cache version was not updated.');
+    brandingAssert(!str_contains($login, 'login-status'), 'Login status cards are still rendered.');
+    brandingAssert(!str_contains($login, 'auth.metric.'), 'Removed login metrics are still referenced.');
+    brandingAssert(str_contains($login, 'login-surface-compact'), 'Login page does not use its compact centered layout.');
 
     foreach ([$iconSvg, $maskableSvg, $horizontalSvg] as $svg) {
         brandingAssert(str_contains($svg, 'data:image/png;base64,'), 'A legacy SVG does not embed the borderless TAKII logo.');

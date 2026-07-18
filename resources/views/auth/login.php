@@ -1,4 +1,4 @@
-<section class="login-surface">
+<section class="login-surface login-surface-compact">
     <div class="login-panel">
         <div class="login-heading">
             <span class="eyebrow"><?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?></span>
@@ -22,19 +22,5 @@
             <button class="button primary" type="submit"><?= htmlspecialchars($t('auth.sign_in'), ENT_QUOTES, 'UTF-8') ?></button>
             <a class="button ghost auth-button-link" href="/forgot-password"><?= htmlspecialchars($t('auth.forgot_password'), ENT_QUOTES, 'UTF-8') ?></a>
         </form>
-    </div>
-    <div class="login-status">
-        <div>
-            <span>99.98%</span>
-            <p><?= htmlspecialchars($t('auth.metric.uptime'), ENT_QUOTES, 'UTF-8') ?></p>
-        </div>
-        <div>
-            <span><?= htmlspecialchars((string) count($availableLocales), ENT_QUOTES, 'UTF-8') ?></span>
-            <p><?= htmlspecialchars($t('auth.metric.locales'), ENT_QUOTES, 'UTF-8') ?></p>
-        </div>
-        <div>
-            <span>8</span>
-            <p><?= htmlspecialchars($t('auth.metric.flows'), ENT_QUOTES, 'UTF-8') ?></p>
-        </div>
     </div>
 </section>

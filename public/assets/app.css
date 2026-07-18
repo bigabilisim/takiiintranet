@@ -1541,6 +1541,12 @@ textarea {
     min-height: calc(100vh - 48px);
 }
 
+.login-surface-compact {
+    grid-template-columns: minmax(280px, 440px);
+    justify-content: center;
+    gap: 0;
+}
+
 .login-panel {
     padding: 28px;
 }

@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.97.3';
+    private const CURRENT_RELEASE = 'v0.97.4';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.97.4',
+                'title' => 'Giriş ekranındaki gösterge kutuları kaldırıldı',
+                'released_at' => '2026-07-18 13:12',
+                'status' => 'completed',
+                'changes' => [
+                    'Giriş formunun altındaki çalışma süresi, dil sayısı ve akışlar gösterge kutuları kaldırıldı.',
+                    'Giriş formu masaüstünde tek sütunlu ve ortalanmış düzene geçirildi; mobil tam genişlik davranışı korundu.',
+                    'Kullanılmayan dört dildeki gösterge metinleri ve responsive stiller temizlendi; Service Worker önbelleği v52 olarak yenilendi.',
+                ],
+            ],
             [
                 'version' => 'v0.97.3',
                 'title' => 'Tüm logo ve uygulama ikonları çerçevesiz TAKII kimliğinde birleştirildi',
