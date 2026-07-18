@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mytakii-intranet-v50';
+const CACHE_NAME = 'mytakii-intranet-v51';
 const STATIC_ASSETS = [
   '/offline.html',
   '/assets/app.css',
@@ -7,11 +7,11 @@ const STATIC_ASSETS = [
   '/assets/pwa.js',
   '/assets/templates-editor.js',
   '/assets/takii-logo-borderless.png',
-  '/assets/favicon-64.png',
-  '/assets/icon-192.png',
-  '/assets/icon-512.png',
-  '/assets/icon-maskable-512.png',
-  '/assets/apple-touch-icon.png',
+  '/assets/takii-icon-64.png',
+  '/assets/takii-icon-192.png',
+  '/assets/takii-icon-512.png',
+  '/assets/takii-icon-maskable-512.png',
+  '/assets/takii-apple-touch-icon.png',
   '/vendor/grapesjs/0.23.2/grapes.min.css',
   '/vendor/grapesjs/0.23.2/grapes.min.js',
   '/vendor/html2canvas/1.4.1/html2canvas.min.js',
@@ -90,8 +90,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title || fallback.title, {
       body: payload.body || fallback.body,
-      icon: '/assets/icon-192.png',
-      badge: '/assets/icon-192.png',
+      icon: '/assets/takii-icon-192.png',
+      badge: '/assets/takii-icon-192.png',
       tag: payload.tag || fallback.tag,
       renotify: true,
       data: {

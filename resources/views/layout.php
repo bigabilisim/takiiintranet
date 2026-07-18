@@ -13,8 +13,8 @@
     <?php $pageTitle = isset($title) ? $t((string) $title) : $appName; ?>
     <title><?= htmlspecialchars($pageTitle . ' | ' . $appName, ENT_QUOTES, 'UTF-8') ?></title>
     <link rel="manifest" href="/manifest.webmanifest">
-    <link rel="icon" href="<?= htmlspecialchars($asset('favicon-64.png'), ENT_QUOTES, 'UTF-8') ?>" type="image/png">
-    <link rel="apple-touch-icon" href="<?= htmlspecialchars($asset('apple-touch-icon.png'), ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="icon" href="<?= htmlspecialchars($asset('takii-icon-64.png'), ENT_QUOTES, 'UTF-8') ?>" type="image/png">
+    <link rel="apple-touch-icon" href="<?= htmlspecialchars($asset('takii-apple-touch-icon.png'), ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars($asset('app.css'), ENT_QUOTES, 'UTF-8') ?>">
     <?php if (!empty($grapesjsAssets)): ?>
         <link rel="stylesheet" href="/vendor/grapesjs/0.23.2/grapes.min.css">

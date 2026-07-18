@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.97.2';
+    private const CURRENT_RELEASE = 'v0.97.3';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.97.3',
+                'title' => 'Tüm logo ve uygulama ikonları çerçevesiz TAKII kimliğinde birleştirildi',
+                'released_at' => '2026-07-18 12:39',
+                'status' => 'completed',
+                'changes' => [
+                    'Paket içinde kalan siyah çerçeveli eski SVG ve JPEG logo dosyaları çerçevesiz TAKII logosuyla değiştirildi.',
+                    'Yatay logo, maskelenebilir ikon, favicon, Apple Touch ve bildirim ikonları aynı çerçevesiz marka kaynağına bağlandı.',
+                    'PWA ikonları yeni dosya adlarıyla yayınlandı ve Service Worker önbelleği v51 olarak yenilendi; eski ikon önbellekleri geçersiz kılındı.',
+                ],
+            ],
             [
                 'version' => 'v0.97.2',
                 'title' => 'Çerçevesiz TAKII logosu ve MyTakii marka adı birlikte kullanıldı',
