@@ -326,7 +326,7 @@ class LeaveApprovalMailer
     {
         $host = (string) parse_url((string) getenv('APP_URL'), PHP_URL_HOST);
 
-        return $host !== '' ? $host : 'takii.bigabilisim.com';
+        return $host !== '' ? $host : 'mytakii.com';
     }
 
     private function fromAddress(): string
@@ -340,7 +340,7 @@ class LeaveApprovalMailer
         $host = $this->smtpClientName();
         $fallback = 'no-reply@' . $host;
 
-        return filter_var($fallback, FILTER_VALIDATE_EMAIL) ? $fallback : 'no-reply@takii.bigabilisim.com';
+        return filter_var($fallback, FILTER_VALIDATE_EMAIL) ? $fallback : 'no-reply@mytakii.com';
     }
 
     private function fromName(): string

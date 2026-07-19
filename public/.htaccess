@@ -29,6 +29,10 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteCond %{HTTPS} !=on [OR]
+    RewriteCond %{HTTP_HOST} !^mytakii\.com(?::443)?$ [NC]
+    RewriteRule ^ https://mytakii.com%{REQUEST_URI} [R=308,L,NE]
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [L]

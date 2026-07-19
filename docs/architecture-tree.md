@@ -65,7 +65,9 @@ flowchart LR
 
 Her durum belgesi InnoDB transaction'ı içinde `SELECT ... FOR UPDATE` ile
 kilitlenir. `revision` ve SHA-256 `checksum` kayıp güncelleme ile bozuk veriyi
-tespit eder. Dosya sürücüsü yalnızca yerel test ve kontrollü geri dönüş içindir.
+tespit eder. MariaDB `payload` alanı belge anahtarına bağlı XChaCha20-Poly1305
+şifreli metindir. Dosya sürücüsü yalnızca yerel test ve kontrollü geri dönüş
+içindir.
 
 ## Bağımlılık Kuralları
 

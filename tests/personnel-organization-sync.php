@@ -16,7 +16,37 @@ function organizationAssert(bool $condition, string $message): void
     }
 }
 
-$plan = require APP_ROOT . '/resources/data/personnel-organization-2026-07-14.php';
+$plan = [
+    'assignments' => [
+        'manager.one@example.test' => [
+            'expected_name' => 'Manager One',
+            'department' => 'Operations / Field',
+            'location' => 'antalya',
+        ],
+        'employee.one@example.test' => [
+            'expected_name' => 'Employee One',
+            'department' => 'Operations / Field',
+            'location' => 'antalya',
+        ],
+        'no-email-worker-one' => [
+            'expected_name' => 'Worker One',
+            'department' => 'Production / Line One',
+            'location' => 'bursa',
+        ],
+    ],
+    'departments' => [
+        'Operations' => '',
+        'Operations / Field' => 'Operations',
+        'Production' => '',
+        'Production / Line One' => 'Production',
+    ],
+    'policies' => [
+        'Operations / Field' => 'manager.one@example.test',
+    ],
+    'manager_emails' => ['manager.one@example.test'],
+    'hr_email' => 'hr.approver@example.test',
+];
+
 $directory = sys_get_temp_dir() . '/takii-organization-' . bin2hex(random_bytes(5));
 mkdir($directory, 0775, true);
 $profilePath = $directory . '/user-profiles.json';
@@ -34,31 +64,18 @@ foreach ($plan['assignments'] as $profileKey => $assignment) {
     ];
 }
 
-foreach ($plan['manager_emails'] as $managerEmail) {
-    if (!isset($profiles[$managerEmail])) {
-        $profiles[$managerEmail] = [
-            'email' => $managerEmail,
-            'name' => $managerEmail,
-            'department' => 'Before',
-            'location' => 'antalya',
-            'workforce_roles' => [],
-            'password_hash' => 'preserve-' . $managerEmail,
-        ];
-    }
-}
-
-file_put_contents($profilePath, json_encode(['version' => 4, 'profiles' => $profiles], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+file_put_contents($profilePath, json_encode(['version' => 4, 'profiles' => $profiles], JSON_PRETTY_PRINT));
 file_put_contents($accessPath, json_encode([
     'version' => 15,
     'departments' => [],
     'user_permissions' => [],
     'department_policies' => [],
-], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+], JSON_PRETTY_PRINT));
 
 $store = new StateStore(null, ['driver' => 'file', 'lock_timeout' => 2]);
 $sync = new PersonnelOrganizationSync($store, $profilePath, $accessPath);
 $preview = $sync->synchronize($plan, false);
-organizationAssert($preview['assignments_requested'] === 73, 'The workbook plan must contain 73 personnel assignments.');
+organizationAssert($preview['assignments_requested'] === 3, 'The fixture must contain three personnel assignments.');
 organizationAssert($preview['unmatched'] === 0, 'The preview must not contain unmatched personnel.');
 $beforeCount = count($profiles);
 $result = $sync->synchronize($plan, true);
@@ -67,15 +84,13 @@ organizationAssert($result['profile_count_after'] === $beforeCount, 'The sync mu
 
 $storedProfiles = json_decode((string) file_get_contents($profilePath), true, 512, JSON_THROW_ON_ERROR)['profiles'];
 $storedAccess = json_decode((string) file_get_contents($accessPath), true, 512, JSON_THROW_ON_ERROR);
-organizationAssert($storedProfiles['a.kulali@takii.com.tr']['department'] === 'Araştırma - Lab / Özgecan', 'Aylin department assignment failed.');
-organizationAssert($storedProfiles['f.karan@takii.com.tr']['department'] === 'Operasyon / Erdi', 'Furkan department assignment failed.');
-organizationAssert($storedProfiles['no-email-saniye-surer']['department'] === 'RD BC / Yeşim', 'Saniye department assignment failed.');
-organizationAssert($storedProfiles['no-email-zubeyde-bagis']['department'] === 'RD Long Term', 'RD Long Term must be preserved.');
-organizationAssert($storedProfiles['a.kulali@takii.com.tr']['password_hash'] === 'preserve-a.kulali@takii.com.tr', 'Unrelated profile fields must be preserved.');
-organizationAssert(in_array('manager', $storedProfiles['d.kaya@takii.com.tr']['workforce_roles'], true), 'Managers must receive the manager workforce role.');
-organizationAssert($storedAccess['departments']['Operasyon / Erdi']['parent'] === 'Operasyon', 'Department hierarchy failed.');
-organizationAssert($storedAccess['department_policies']['Operasyon / Erdi']['manager_1_email'] === 'e.oz@takii.com.tr', 'Manager approval policy failed.');
-organizationAssert(in_array('personnel.read', $storedAccess['user_permissions']['e.oz@takii.com.tr'], true), 'Manager personnel visibility permission failed.');
+organizationAssert($storedProfiles['employee.one@example.test']['department'] === 'Operations / Field', 'Department assignment failed.');
+organizationAssert($storedProfiles['no-email-worker-one']['location'] === 'bursa', 'Location assignment failed.');
+organizationAssert($storedProfiles['employee.one@example.test']['password_hash'] === 'preserve-employee.one@example.test', 'Unrelated profile fields must be preserved.');
+organizationAssert(in_array('manager', $storedProfiles['manager.one@example.test']['workforce_roles'], true), 'Managers must receive the manager workforce role.');
+organizationAssert($storedAccess['departments']['Operations / Field']['parent'] === 'Operations', 'Department hierarchy failed.');
+organizationAssert($storedAccess['department_policies']['Operations / Field']['manager_1_email'] === 'manager.one@example.test', 'Manager approval policy failed.');
+organizationAssert(in_array('personnel.read', $storedAccess['user_permissions']['manager.one@example.test'], true), 'Manager personnel visibility permission failed.');
 
 $idempotent = $sync->synchronize($plan, false);
 organizationAssert($idempotent['assignments_changed'] === 0, 'A second run must be idempotent for assignments.');

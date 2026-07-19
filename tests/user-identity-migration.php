@@ -14,6 +14,7 @@ use App\Modules\Leave\LeaveApprovalMailer;
 use App\Modules\Leave\LeaveStore;
 use App\Modules\Messaging\MessageStore;
 use App\Modules\Notifications\PushNotificationStore;
+use App\Modules\Notifications\PushSubscriptionValidator;
 use App\Modules\Shift\ShiftStore;
 
 $projectRoot = dirname(__DIR__);
@@ -180,8 +181,8 @@ try {
     }
 
     $profiles = new UserProfileStore($appConfig['demo_users'], $stateStore);
-    $oldIdentity = 'identity.old@takii.com.tr';
-    $newIdentity = 'identity.new@takii.com.tr';
+    $oldIdentity = 'identity.old@example.test';
+    $newIdentity = 'identity.new@example.test';
     $department = 'Identity Test Department';
     $created = $profiles->createProfile(array_merge(
         identityUpdateInput($oldIdentity, $department),
@@ -195,7 +196,10 @@ try {
     $directory = $profiles->users();
     $access = new AccessControl($directory, $modules, $stateStore);
     $messages = new MessageStore($directory, $stateStore);
-    $push = new PushNotificationStore($stateStore);
+    $push = new PushNotificationStore(
+        $stateStore,
+        new PushSubscriptionValidator(static fn (string $host): array => ['142.250.74.42'])
+    );
     $shifts = new ShiftStore($profiles, $stateStore);
     $leave = new LeaveStore($access, new LeaveApprovalMailer(), $stateStore, $profiles, $shifts);
     $passwordResets = new PasswordResetStore($profiles, new IdentityResetMailer($stateStore), $stateStore);
@@ -221,22 +225,30 @@ try {
     identityAssert($access->setDepartmentPolicy($department, [
         'manager_approval_count' => 1,
         'manager_1_email' => $oldIdentity,
-        'hr_email' => 'y.ekici@takii.com.tr',
+        'hr_email' => 'hr@example.test',
     ]), 'Identity department policy could not be created.');
     $permissionsBefore = $access->permissionsFor($oldIdentity);
 
     $identityUser = $profiles->find($oldIdentity);
     identityAssert(is_array($identityUser), 'Identity fixture profile could not be loaded.');
-    identityAssert(!empty($messages->send($identityUser, [
-        'to_email' => 'y.ekici@takii.com.tr',
+    $identityMessageResult = $messages->send($identityUser, [
+        'to_email' => 'hr@example.test',
         'subject' => 'Identity migration message',
         'body' => 'Message ownership must follow the profile identity.',
-    ])['ok']), 'Identity fixture message could not be created.');
-    identityAssert(!empty($messages->togglePin($oldIdentity, 'y.ekici@takii.com.tr')['ok']), 'Source pin could not be created.');
-    identityAssert(!empty($messages->togglePin('y.ekici@takii.com.tr', $oldIdentity)['ok']), 'Counterpart pin could not be created.');
+    ]);
+    identityAssert(
+        !empty($identityMessageResult['ok']),
+        'Identity fixture message could not be created: ' . (string) ($identityMessageResult['message'] ?? 'unknown')
+    );
+    identityAssert(!empty($messages->togglePin($oldIdentity, 'hr@example.test')['ok']), 'Source pin could not be created.');
+    identityAssert(!empty($messages->togglePin('hr@example.test', $oldIdentity)['ok']), 'Counterpart pin could not be created.');
+    $base64Url = static fn (string $value): string => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     $subscription = [
-        'endpoint' => 'https://push.example.test/identity-' . bin2hex(random_bytes(4)),
-        'keys' => ['p256dh' => 'identity-public-key', 'auth' => 'identity-auth-token'],
+        'endpoint' => 'https://fcm.googleapis.com/fcm/send/identity-' . bin2hex(random_bytes(4)),
+        'keys' => [
+            'p256dh' => $base64Url("\x04" . str_repeat("\x03", 64)),
+            'auth' => $base64Url(str_repeat("\x04", 16)),
+        ],
     ];
     identityAssert(!empty($push->subscribe($oldIdentity, $subscription)['ok']), 'Identity push subscription could not be created.');
     identityAssert(!empty($leave->create($identityUser, [

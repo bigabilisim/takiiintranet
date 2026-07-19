@@ -13,8 +13,13 @@ class PushNotificationStore
     private const SUBSCRIPTIONS_STATE_KEY = 'push_subscriptions';
     private const VAPID_STATE_KEY = 'vapid_keys';
 
-    public function __construct(private readonly StateStore $stateStore)
-    {
+    private readonly PushSubscriptionValidator $subscriptionValidator;
+
+    public function __construct(
+        private readonly StateStore $stateStore,
+        ?PushSubscriptionValidator $subscriptionValidator = null,
+    ) {
+        $this->subscriptionValidator = $subscriptionValidator ?? new PushSubscriptionValidator();
     }
 
     public function publicKey(): string
@@ -24,14 +29,15 @@ class PushNotificationStore
 
     public function subscribe(string $email, array $subscription): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::SUBSCRIPTIONS_STATE_KEY, $this->subscriptionsPath());
+        $email = strtolower(trim($email));
 
-        if ($email === '' || empty($subscription['endpoint']) || empty($subscription['keys']['p256dh']) || empty($subscription['keys']['auth'])) {
+        if ($email === '' || !$this->subscriptionValidator->isValid($subscription)) {
             return ['ok' => false, 'message' => 'push.flash.invalid_subscription'];
         }
 
+        $writeGuard = $this->stateStore->beginWrite(self::SUBSCRIPTIONS_STATE_KEY, $this->subscriptionsPath());
         $data = $this->subscriptionsData();
-        $endpoint = (string) $subscription['endpoint'];
+        $endpoint = trim((string) $subscription['endpoint']);
         $data['subscriptions'][$this->endpointKey($endpoint)] = [
             'user_email' => $email,
             'endpoint' => $endpoint,
@@ -90,6 +96,12 @@ class PushNotificationStore
         foreach ($subscriptions as $subscriptionData) {
             $endpoint = (string) ($subscriptionData['endpoint'] ?? '');
             $subscriptionKey = $this->endpointKey($endpoint);
+
+            if (!$this->subscriptionValidator->isValid($subscriptionData)) {
+                $failed++;
+                $expiredSubscriptionKeys[] = $subscriptionKey;
+                continue;
+            }
 
             try {
                 $subscription = Subscription::create($subscriptionData);
@@ -195,7 +207,7 @@ class PushNotificationStore
 
         $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
 
-        return $host !== '' ? 'https://' . $host : 'mailto:webpush@takii.bigabilisim.com';
+        return $host !== '' ? 'https://' . $host : 'mailto:webpush@mytakii.com';
     }
 
     private function subscriptionsData(): array

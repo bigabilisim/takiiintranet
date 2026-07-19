@@ -580,6 +580,7 @@ return [
     'leave.flash.half_day_single_date' => 'For half-day leave, the start and end date must be the same.',
     'leave.flash.no_working_day' => 'There are no working days within the selected date range.',
     'leave.flash.insufficient_balance' => 'The requested days exceed the remaining annual leave balance.',
+    'leave.flash.approver_missing' => 'A leave request cannot be created until the department manager and HR approver are assigned. Check the leave permissions.',
     'leave.flash.invalid_decision' => 'The approval decision is invalid.',
     'leave.flash.reject_reason_required' => 'A rejection reason is required.',
     'leave.flash.not_allowed' => 'You do not have permission to act at this stage.',

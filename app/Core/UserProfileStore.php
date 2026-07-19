@@ -989,7 +989,9 @@ class UserProfileStore
             'faculty' => '',
             'graduation_year' => '',
             'hr_notes' => '',
-            'workforce_roles' => [],
+            'workforce_roles' => is_array($baseUser['workforce_roles'] ?? null)
+                ? $baseUser['workforce_roles']
+                : [],
             'shift_key' => '',
             'password_hash' => '',
             'password_changed_at' => '',

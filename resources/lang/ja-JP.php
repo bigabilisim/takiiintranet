@@ -580,6 +580,7 @@ return [
     'leave.flash.half_day_single_date' => '半日の休暇では開始日と終了日を同じ日にしてください。',
     'leave.flash.no_working_day' => '選択した期間に勤務日はありません。',
     'leave.flash.insufficient_balance' => '申請日数が年次休暇の残日数を超えています。',
+    'leave.flash.approver_missing' => '部門上長と人事承認者が設定されるまで休暇申請は作成できません。休暇権限を確認してください。',
     'leave.flash.invalid_decision' => '承認操作が無効です。',
     'leave.flash.reject_reason_required' => '却下には理由の入力が必要です。',
     'leave.flash.not_allowed' => 'この段階を処理する権限がありません。',

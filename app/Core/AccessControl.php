@@ -6,8 +6,6 @@ class AccessControl
 {
     private const VERSION = 18;
     private const STATE_KEY = 'access_control';
-    private const ADMIN_EMAIL = 'bilal@bigabilisim.com';
-    private const HR_EMAIL = 'y.ekici@takii.com.tr';
     private const DEPARTMENT_MANAGER_PERMISSIONS = [
         'module.leave.access',
         'leave.request.approve.department',
@@ -948,12 +946,13 @@ class AccessControl
 
     private function defaultPolicyFor(string $department): array
     {
+        $adminIdentity = $this->defaultAdminIdentity();
         $hrIdentity = $this->defaultHrIdentity();
 
         if ($department === 'Product') {
             return [
                 'manager_approval_count' => 1,
-                'manager_1_email' => self::ADMIN_EMAIL,
+                'manager_1_email' => $adminIdentity,
                 'manager_2_email' => '',
                 'hr_email' => $hrIdentity,
             ];
@@ -961,7 +960,7 @@ class AccessControl
 
         return [
             'manager_approval_count' => 1,
-            'manager_1_email' => self::ADMIN_EMAIL,
+            'manager_1_email' => $adminIdentity,
             'manager_2_email' => '',
             'hr_email' => $hrIdentity,
         ];
@@ -977,7 +976,22 @@ class AccessControl
             }
         }
 
-        return isset($this->demoUsers[self::HR_EMAIL]) ? self::HR_EMAIL : '';
+        $configuredHrIdentity = strtolower(trim((string) (getenv('APP_HR_EMAIL') ?: '')));
+
+        return isset($this->demoUsers[$configuredHrIdentity]) ? $configuredHrIdentity : '';
+    }
+
+    private function defaultAdminIdentity(): string
+    {
+        foreach ($this->demoUsers as $identity => $user) {
+            if (in_array('*', is_array($user['permissions'] ?? null) ? $user['permissions'] : [], true)) {
+                return (string) $identity;
+            }
+        }
+
+        $configuredAdminIdentity = strtolower(trim((string) (getenv('APP_ADMIN_EMAIL') ?: '')));
+
+        return isset($this->demoUsers[$configuredAdminIdentity]) ? $configuredAdminIdentity : '';
     }
 
     private function migratePersonnelPermissions(string $email, array $user, array $currentPermissions): array
@@ -985,7 +999,7 @@ class AccessControl
         $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
         $permissions = $currentPermissions;
 
-        if ($email === self::HR_EMAIL || in_array('hr', $workforceRoles, true)) {
+        if ($this->isHrIdentity($email) || in_array('hr', $workforceRoles, true)) {
             return array_values(array_unique(array_merge($permissions, [
                 'module.personnel.access',
                 'personnel.read',
@@ -1010,7 +1024,7 @@ class AccessControl
     {
         $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
 
-        if ($email !== self::HR_EMAIL && !in_array('hr', $workforceRoles, true)) {
+        if (!$this->isHrIdentity($email) && !in_array('hr', $workforceRoles, true)) {
             return $currentPermissions;
         }
 
@@ -1085,7 +1099,7 @@ class AccessControl
     {
         $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
 
-        return $email === self::HR_EMAIL
+        return $this->isHrIdentity($email)
             || in_array('hr', $workforceRoles, true);
     }
 
@@ -1093,9 +1107,16 @@ class AccessControl
     {
         $workforceRoles = is_array($user['workforce_roles'] ?? null) ? $user['workforce_roles'] : [];
 
-        return $email === self::HR_EMAIL
+        return $this->isHrIdentity($email)
             || in_array('hr', $workforceRoles, true)
             || in_array('shift_planner', $workforceRoles, true);
+    }
+
+    private function isHrIdentity(string $email): bool
+    {
+        $configuredHrIdentity = strtolower(trim((string) (getenv('APP_HR_EMAIL') ?: '')));
+
+        return $configuredHrIdentity !== '' && hash_equals($configuredHrIdentity, strtolower(trim($email)));
     }
 
     private function validUserEmail(string $email): string

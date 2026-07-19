@@ -11,6 +11,7 @@ use App\Modules\Leave\LeaveApprovalMailer;
 use App\Modules\Leave\LeaveStore;
 use App\Modules\Messaging\MessageStore;
 use App\Modules\Notifications\PushNotificationStore;
+use App\Modules\Notifications\PushSubscriptionValidator;
 use App\Modules\Shift\ShiftStore;
 
 $projectRoot = dirname(__DIR__);
@@ -89,12 +90,15 @@ try {
     $directory = $profiles->users();
     $access = new AccessControl($directory, $modules, $stateStore);
     $messages = new MessageStore($directory, $stateStore);
-    $push = new PushNotificationStore($stateStore);
+    $push = new PushNotificationStore(
+        $stateStore,
+        new PushSubscriptionValidator(static fn (string $host): array => ['142.250.74.42'])
+    );
     $shifts = new ShiftStore($profiles, $stateStore);
     $leave = new LeaveStore($access, new LeaveApprovalMailer(), $stateStore, $profiles, $shifts);
 
     $createdProfile = $profiles->createProfile([
-        'new_email' => 'state.test@takii.com.tr',
+        'new_email' => 'state.test@example.test',
         'first_name' => 'State',
         'last_name' => 'Test',
         'role' => 'Tester',
@@ -103,30 +107,30 @@ try {
         'password_confirmation' => 'state-test-123',
     ]);
     assertResult(($createdProfile['ok'] ?? false) === true, 'Personnel create failed.');
-    assertResult($profiles->find('state.test@takii.com.tr') !== null, 'Created personnel was not persisted.');
-    assertResult(($profiles->deleteProfile('state.test@takii.com.tr')['ok'] ?? false) === true, 'Personnel delete failed.');
+    assertResult($profiles->find('state.test@example.test') !== null, 'Created personnel was not persisted.');
+    assertResult(($profiles->deleteProfile('state.test@example.test')['ok'] ?? false) === true, 'Personnel delete failed.');
 
     assertResult(($access->createDepartment('State Test Root')['ok'] ?? false) === true, 'Department create failed.');
     assertResult(($access->createDepartment('State Test Child', 'State Test Root')['ok'] ?? false) === true, 'Child department create failed.');
     assertResult($access->setDepartmentPolicy('State Test Child', [
         'manager_approval_count' => 1,
-        'manager_1_email' => 'bilal@bigabilisim.com',
-        'hr_email' => 'y.ekici@takii.com.tr',
+        'manager_1_email' => 'admin@example.test',
+        'hr_email' => 'hr@example.test',
     ]), 'Department policy update failed.');
     assertResult(($access->deleteDepartment('State Test Child')['ok'] ?? false) === true, 'Child department delete failed.');
     assertResult(($access->deleteDepartment('State Test Root')['ok'] ?? false) === true, 'Department delete failed.');
 
-    $sender = $directory['bilal@bigabilisim.com'];
-    $sender['email'] = 'bilal@bigabilisim.com';
+    $sender = $directory['admin@example.test'];
+    $sender['email'] = 'admin@example.test';
     $subject = 'State smoke ' . bin2hex(random_bytes(4));
     assertResult(($messages->send($sender, [
-        'to_email' => 'y.ekici@takii.com.tr',
+        'to_email' => 'hr@example.test',
         'subject' => $subject,
         'body' => 'Transactional state smoke test.',
     ])['ok'] ?? false) === true, 'Message send failed.');
     $sentMessage = null;
 
-    foreach ($messages->sent('bilal@bigabilisim.com') as $message) {
+    foreach ($messages->sent('admin@example.test') as $message) {
         if (($message['subject'] ?? '') === $subject) {
             $sentMessage = $message;
             break;
@@ -135,19 +139,33 @@ try {
 
     assertResult(is_array($sentMessage), 'Sent message was not persisted.');
     $messageId = (string) $sentMessage['id'];
-    assertResult(($messages->markRead($messageId, 'y.ekici@takii.com.tr')['ok'] ?? false) === true, 'Message read update failed.');
+    assertResult(($messages->markRead($messageId, 'hr@example.test')['ok'] ?? false) === true, 'Message read update failed.');
     assertResult(($messages->delete($messageId, $sender)['ok'] ?? false) === true, 'Message delete failed.');
     assertResult(($messages->restore($messageId, $sender)['ok'] ?? false) === true, 'Message restore failed.');
 
+    $base64Url = static fn (string $value): string => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     $subscription = [
-        'endpoint' => 'https://push.example.test/' . bin2hex(random_bytes(8)),
-        'keys' => ['p256dh' => 'test-public-key', 'auth' => 'test-auth-token'],
+        'endpoint' => 'https://fcm.googleapis.com/fcm/send/' . bin2hex(random_bytes(8)),
+        'keys' => [
+            'p256dh' => $base64Url("\x04" . str_repeat("\x01", 64)),
+            'auth' => $base64Url(str_repeat("\x02", 16)),
+        ],
     ];
-    assertResult(($push->subscribe('bilal@bigabilisim.com', $subscription)['ok'] ?? false) === true, 'Push subscribe failed.');
-    assertResult(($push->unsubscribe('bilal@bigabilisim.com', $subscription)['ok'] ?? false) === true, 'Push unsubscribe failed.');
+    assertResult(($push->subscribe('admin@example.test', $subscription)['ok'] ?? false) === true, 'Push subscribe failed.');
+    assertResult(($push->unsubscribe('admin@example.test', $subscription)['ok'] ?? false) === true, 'Push unsubscribe failed.');
 
-    $leaveUser = $directory['bilal@bigabilisim.com'];
-    $leaveUser['email'] = 'bilal@bigabilisim.com';
+    $leaveUser = $directory['admin@example.test'];
+    $leaveUser['email'] = 'admin@example.test';
+    $leaveUser['started_on'] = '2020-01-01';
+    $leaveUser['leave_opening_total_days'] = 30;
+    $leaveUser['leave_opening_used_days'] = 0;
+    $leaveUser['leave_opening_remaining_days'] = 30;
+    $leaveUser['leave_opening_snapshot_date'] = '2029-12-31';
+    assertResult($access->setDepartmentPolicy((string) ($leaveUser['department'] ?? ''), [
+        'manager_approval_count' => 1,
+        'manager_1_email' => 'admin@example.test',
+        'hr_email' => 'hr@example.test',
+    ]), 'Leave approval policy fixture could not be saved.');
     $leaveNote = 'State smoke ' . bin2hex(random_bytes(4));
     $leaveResult = $leave->create($leaveUser, [
         'starts_on' => '2030-01-07',
@@ -156,7 +174,10 @@ try {
         'day_part' => 'full',
         'note' => $leaveNote,
     ]);
-    assertResult(($leaveResult['ok'] ?? false) === true, 'Leave create failed.');
+    assertResult(
+        ($leaveResult['ok'] ?? false) === true,
+        'Leave create failed: ' . (string) ($leaveResult['message'] ?? 'unknown')
+    );
     $createdLeave = null;
 
     foreach ($leave->all() as $request) {

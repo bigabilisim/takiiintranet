@@ -25,10 +25,48 @@ foreach (file(APP_ROOT . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
 }
 
 $apply = in_array('--apply', $argv, true);
+$planPath = trim((string) (getenv('PERSONNEL_ORGANIZATION_PLAN') ?: ''));
+
+foreach ($argv as $argument) {
+    if (str_starts_with($argument, '--plan=')) {
+        $planPath = trim(substr($argument, strlen('--plan=')));
+    }
+}
+
+if ($planPath === '') {
+    fwrite(STDERR, "A confidential JSON plan is required. Set PERSONNEL_ORGANIZATION_PLAN or pass --plan=/absolute/path/plan.json.\n");
+    exit(1);
+}
+
+$resolvedPlanPath = realpath($planPath);
+
+if ($resolvedPlanPath === false || !is_file($resolvedPlanPath) || !is_readable($resolvedPlanPath)) {
+    fwrite(STDERR, "The organization plan could not be read.\n");
+    exit(1);
+}
+
+$repositoryRoot = realpath(APP_ROOT) ?: APP_ROOT;
+
+if (str_starts_with($resolvedPlanPath, $repositoryRoot . DIRECTORY_SEPARATOR)) {
+    fwrite(STDERR, "The confidential organization plan must be stored outside the repository.\n");
+    exit(1);
+}
+
+try {
+    $plan = json_decode((string) file_get_contents($resolvedPlanPath), true, 512, JSON_THROW_ON_ERROR);
+} catch (Throwable $exception) {
+    fwrite(STDERR, 'The organization plan is not valid JSON: ' . $exception->getMessage() . PHP_EOL);
+    exit(1);
+}
+
+if (!is_array($plan)) {
+    fwrite(STDERR, "The organization plan must contain a JSON object.\n");
+    exit(1);
+}
+
 $stateConfig = require APP_ROOT . '/config/state.php';
 $databaseConfig = require APP_ROOT . '/config/database.php';
 $stateStore = new StateStore($stateConfig['driver'] === 'mariadb' ? new Database($databaseConfig) : null, $stateConfig);
-$plan = require APP_ROOT . '/resources/data/personnel-organization-2026-07-14.php';
 
 try {
     $report = (new PersonnelOrganizationSync($stateStore))->synchronize($plan, $apply);

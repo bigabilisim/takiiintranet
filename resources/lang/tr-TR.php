@@ -580,6 +580,7 @@ return [
     'leave.flash.half_day_single_date' => 'Yarım gün izin için başlangıç ve bitiş tarihi aynı olmalı.',
     'leave.flash.no_working_day' => 'Seçilen tarihlerde çalışma günü bulunmuyor.',
     'leave.flash.insufficient_balance' => 'Talep edilen gün sayısı kalan yıllık izin bakiyesini aşıyor.',
+    'leave.flash.approver_missing' => 'Departman yöneticisi ve İK onaycısı tanımlanmadan izin talebi oluşturulamaz. İzin yetkilerini kontrol edin.',
     'leave.flash.invalid_decision' => 'Onay kararı geçersiz.',
     'leave.flash.reject_reason_required' => 'Ret işlemi için neden yazmanız gerekir.',
     'leave.flash.not_allowed' => 'Bu aşamada işlem yapma yetkiniz yok.',

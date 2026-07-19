@@ -16,6 +16,7 @@ use App\Controllers\TemplatesController;
 use App\Core\AccessControl;
 use App\Core\AuditLogStore;
 use App\Core\Auth;
+use App\Core\CanonicalUrlEnforcer;
 use App\Core\Database;
 use App\Core\LocalizedDateFormatter;
 use App\Core\RateLimiter;
@@ -186,6 +187,7 @@ spl_autoload_register(function (string $class): void {
     }
 }, true, true);
 
+CanonicalUrlEnforcer::enforceFromEnvironment();
 Session::start();
 
 $appConfig = require APP_ROOT . '/config/app.php';

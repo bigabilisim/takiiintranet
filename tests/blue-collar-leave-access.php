@@ -96,6 +96,11 @@ try {
     unset($accessGuard);
 
     $access = new AccessControl($profiles->users(), $modules, $stateStore);
+    blueCollarAssert($access->setDepartmentPolicy((string) ($profile['department'] ?? ''), [
+        'manager_approval_count' => 1,
+        'manager_1_email' => 'admin@example.test',
+        'hr_email' => 'hr@example.test',
+    ]), 'Blue-collar approval policy fixture could not be saved.');
     $permissions = $access->permissionsFor($profileKey);
     blueCollarAssert(in_array('module.leave.access', $permissions, true), 'Existing no-email profile leave module permission was not migrated.');
     blueCollarAssert(in_array('leave.request.create', $permissions, true), 'Existing no-email profile leave request permission was not migrated.');

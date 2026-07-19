@@ -81,26 +81,26 @@ try {
     $resets = new PasswordResetStore($profiles, $mailer, $stateStore);
     $credentials = new PersonnelCredentialService($profiles, $resets, $mailer);
 
-    $yesim = $profiles->createProfile([
-        'new_email' => 'yesim@example.test',
-        'first_name' => 'Yeşim',
-        'last_name' => 'Dingil Ekici',
+    $emailProfile = $profiles->createProfile([
+        'new_email' => 'deniz@example.test',
+        'first_name' => 'Deniz',
+        'last_name' => 'Örnek',
         'role' => 'HR Specialist',
         'department' => 'İnsan Kaynakları',
         'password' => 'Initial-1234',
         'password_confirmation' => 'Initial-1234',
     ]);
-    credentialAssert(($yesim['ok'] ?? false) === true, 'Email profile could not be created.');
-    credentialAssert(($yesim['username'] ?? '') === 'yesimdingilekici', 'Turkish username was not generated as isimsoyisim.');
+    credentialAssert(($emailProfile['ok'] ?? false) === true, 'Email profile could not be created.');
+    credentialAssert(($emailProfile['username'] ?? '') === 'denizornek', 'Turkish username was not generated as isimsoyisim.');
 
     $duplicateName = $profiles->createProfile([
-        'first_name' => 'Yeşim',
-        'last_name' => 'Dingil Ekici',
+        'first_name' => 'Deniz',
+        'last_name' => 'Örnek',
         'role' => 'HR Assistant',
         'department' => 'İnsan Kaynakları',
     ]);
     credentialAssert(($duplicateName['ok'] ?? false) === true, 'Duplicate-name profile could not be created.');
-    credentialAssert(($duplicateName['username'] ?? '') === 'yesimdingilekici2', 'Duplicate username suffix was not generated.');
+    credentialAssert(($duplicateName['username'] ?? '') === 'denizornek2', 'Duplicate username suffix was not generated.');
 
     $ibrahim = $profiles->createProfile([
         'first_name' => 'İbrahim',
@@ -112,9 +112,9 @@ try {
     credentialAssert(($ibrahim['username'] ?? '') === 'ibrahimgurbuz', 'No-email username was not generated correctly.');
 
     $duplicateUpdate = $profiles->updateProfile((string) $duplicateName['profile_key'], [
-        'username' => 'yesimdingilekici',
-        'first_name' => 'Yeşim',
-        'last_name' => 'Dingil Ekici',
+        'username' => 'denizornek',
+        'first_name' => 'Deniz',
+        'last_name' => 'Örnek',
         'role' => 'HR Assistant',
         'department' => 'İnsan Kaynakları',
     ]);
@@ -122,23 +122,23 @@ try {
     credentialAssert(($duplicateUpdate['message'] ?? '') === 'personnel.flash.username_duplicate', 'Duplicate username error was not returned.');
 
     $customUpdate = $profiles->updateProfile((string) $duplicateName['profile_key'], [
-        'username' => 'yesimekici',
-        'first_name' => 'Yeşim',
-        'last_name' => 'Dingil Ekici',
+        'username' => 'deniztest',
+        'first_name' => 'Deniz',
+        'last_name' => 'Örnek',
         'role' => 'HR Assistant',
         'department' => 'İnsan Kaynakları',
     ]);
     credentialAssert(($customUpdate['ok'] ?? false) === true, 'Editable username could not be saved.');
 
-    $resets->request('yesim@example.test', 'https://takii.example.test');
-    $emailReset = $credentials->reset((string) $yesim['profile_key']);
+    $resets->request('deniz@example.test', 'https://intranet.example.test');
+    $emailReset = $credentials->reset((string) $emailProfile['profile_key']);
     credentialAssert(($emailReset['ok'] ?? false) === true, 'Email credential reset failed.');
     credentialAssert(($emailReset['delivery'] ?? '') === 'email', 'Email credential was not marked as emailed.');
     credentialAssert(($emailReset['password'] ?? '') === '', 'Emailed password leaked through the service result.');
     $emailedCredential = $mailer->credentials[array_key_last($mailer->credentials)] ?? [];
-    credentialAssert(($emailedCredential['username'] ?? '') === 'yesimdingilekici', 'Username was not included in the credential email.');
+    credentialAssert(($emailedCredential['username'] ?? '') === 'denizornek', 'Username was not included in the credential email.');
     credentialAssert(
-        $profiles->verifyCredentials('yesimdingilekici', (string) ($emailedCredential['password'] ?? '')) !== null,
+        $profiles->verifyCredentials('denizornek', (string) ($emailedCredential['password'] ?? '')) !== null,
         'Username login failed after email credential reset.'
     );
 
@@ -155,7 +155,7 @@ try {
     );
 
     $mailer->shouldSend = false;
-    $fallbackReset = $credentials->reset((string) $yesim['profile_key']);
+    $fallbackReset = $credentials->reset((string) $emailProfile['profile_key']);
     credentialAssert(($fallbackReset['delivery'] ?? '') === 'screen_fallback', 'Mail failure did not fall back to one-time screen delivery.');
     credentialAssert((string) ($fallbackReset['password'] ?? '') !== '', 'Fallback password was not returned for one-time display.');
 

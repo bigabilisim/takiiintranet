@@ -58,6 +58,7 @@ $locationOptions = is_array($locationOptions ?? null) ? $locationOptions : [];
 $shiftTemplates = is_array($shiftTemplates ?? null) ? $shiftTemplates : [];
 $shiftOptions = is_array($shiftOptions ?? null) ? $shiftOptions : [];
 $temporaryCredential = is_array($temporaryCredential ?? null) ? $temporaryCredential : [];
+$canViewSensitivePersonnelData = ($canViewSensitivePersonnelData ?? false) === true;
 $shiftOptionKeys = array_map(static fn (array $shiftOption): string => (string) ($shiftOption['key'] ?? ''), $shiftOptions);
 $shiftMap = [];
 
@@ -580,14 +581,16 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                                 <span><?= htmlspecialchars($t('admin.profile.phone'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <input type="text" name="phone" maxlength="40" value="<?= htmlspecialchars((string) ($profile['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('phone') ?>>
                             </label>
-                            <label>
-                                <span><?= htmlspecialchars($t('admin.profile.personal_phone'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <input type="text" name="personal_phone" maxlength="40" value="<?= htmlspecialchars((string) ($profile['personal_phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('personal_phone') ?>>
-                            </label>
-                            <label>
-                                <span><?= htmlspecialchars($t('admin.profile.birth_date'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <input type="date" name="birth_date" value="<?= htmlspecialchars((string) ($profile['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('birth_date') ?>>
-                            </label>
+                            <?php if ($canViewSensitivePersonnelData): ?>
+                                <label>
+                                    <span><?= htmlspecialchars($t('admin.profile.personal_phone'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <input type="text" name="personal_phone" maxlength="40" value="<?= htmlspecialchars((string) ($profile['personal_phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('personal_phone') ?>>
+                                </label>
+                                <label>
+                                    <span><?= htmlspecialchars($t('admin.profile.birth_date'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <input type="date" name="birth_date" value="<?= htmlspecialchars((string) ($profile['birth_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('birth_date') ?>>
+                                </label>
+                            <?php endif; ?>
                             <label>
                                 <span><?= htmlspecialchars($t('admin.profile.leave_opening_total_days'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <input type="number" name="leave_opening_total_days" min="0" step="0.5" value="<?= htmlspecialchars((string) ($profile['leave_opening_total_days'] ?? 0), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('leave_opening_total_days') ?>>
@@ -604,26 +607,28 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                                 <span><?= htmlspecialchars($t('admin.profile.leave_opening_snapshot_date'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <input type="date" name="leave_opening_snapshot_date" value="<?= htmlspecialchars((string) ($profile['leave_opening_snapshot_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('leave_opening_snapshot_date') ?>>
                             </label>
-                            <label>
-                                <span><?= htmlspecialchars($t('admin.profile.leave_opening_source'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <input type="text" name="leave_opening_source" maxlength="120" value="<?= htmlspecialchars((string) ($profile['leave_opening_source'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('leave_opening_source') ?>>
-                            </label>
-                            <label>
-                                <span><?= htmlspecialchars($t('admin.profile.national_id'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <input type="text" name="national_id" maxlength="40" value="<?= htmlspecialchars((string) ($profile['national_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('national_id') ?>>
-                            </label>
-                            <label>
-                                <span><?= htmlspecialchars($t('admin.profile.emergency_contact_name'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <input type="text" name="emergency_contact_name" maxlength="120" value="<?= htmlspecialchars((string) ($profile['emergency_contact_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('emergency_contact_name') ?>>
-                            </label>
-                            <label>
-                                <span><?= htmlspecialchars($t('admin.profile.emergency_contact_phone'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <input type="text" name="emergency_contact_phone" maxlength="40" value="<?= htmlspecialchars((string) ($profile['emergency_contact_phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('emergency_contact_phone') ?>>
-                            </label>
-                            <label class="profile-field-wide">
-                                <span><?= htmlspecialchars($t('admin.profile.address'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <textarea name="address" rows="2" maxlength="400"<?= $fieldDisabled('address') ?>><?= htmlspecialchars((string) ($profile['address'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                            </label>
+                            <?php if ($canViewSensitivePersonnelData): ?>
+                                <label>
+                                    <span><?= htmlspecialchars($t('admin.profile.leave_opening_source'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <input type="text" name="leave_opening_source" maxlength="120" value="<?= htmlspecialchars((string) ($profile['leave_opening_source'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('leave_opening_source') ?>>
+                                </label>
+                                <label>
+                                    <span><?= htmlspecialchars($t('admin.profile.national_id'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <input type="text" name="national_id" maxlength="40" value="<?= htmlspecialchars((string) ($profile['national_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('national_id') ?>>
+                                </label>
+                                <label>
+                                    <span><?= htmlspecialchars($t('admin.profile.emergency_contact_name'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <input type="text" name="emergency_contact_name" maxlength="120" value="<?= htmlspecialchars((string) ($profile['emergency_contact_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('emergency_contact_name') ?>>
+                                </label>
+                                <label>
+                                    <span><?= htmlspecialchars($t('admin.profile.emergency_contact_phone'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <input type="text" name="emergency_contact_phone" maxlength="40" value="<?= htmlspecialchars((string) ($profile['emergency_contact_phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('emergency_contact_phone') ?>>
+                                </label>
+                                <label class="profile-field-wide">
+                                    <span><?= htmlspecialchars($t('admin.profile.address'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <textarea name="address" rows="2" maxlength="400"<?= $fieldDisabled('address') ?>><?= htmlspecialchars((string) ($profile['address'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                                </label>
+                            <?php endif; ?>
                         </div>
 
                         <strong class="profile-section-title"><?= htmlspecialchars($t('admin.profile_education'), ENT_QUOTES, 'UTF-8') ?></strong>
@@ -650,10 +655,12 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                                 <span><?= htmlspecialchars($t('admin.profile.graduation_year'), ENT_QUOTES, 'UTF-8') ?></span>
                                 <input type="number" name="graduation_year" min="1900" max="2099" value="<?= htmlspecialchars((string) ($profile['graduation_year'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= $fieldDisabled('graduation_year') ?>>
                             </label>
-                            <label class="profile-field-wide">
-                                <span><?= htmlspecialchars($t('admin.profile.hr_notes'), ENT_QUOTES, 'UTF-8') ?></span>
-                                <textarea name="hr_notes" rows="2" maxlength="600"<?= $fieldDisabled('hr_notes') ?>><?= htmlspecialchars((string) ($profile['hr_notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
-                            </label>
+                            <?php if ($canViewSensitivePersonnelData): ?>
+                                <label class="profile-field-wide">
+                                    <span><?= htmlspecialchars($t('admin.profile.hr_notes'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    <textarea name="hr_notes" rows="2" maxlength="600"<?= $fieldDisabled('hr_notes') ?>><?= htmlspecialchars((string) ($profile['hr_notes'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+                                </label>
+                            <?php endif; ?>
                         </div>
 
                         <div class="personnel-actions">

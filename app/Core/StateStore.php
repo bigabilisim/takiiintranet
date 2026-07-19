@@ -35,6 +35,7 @@ final class StateStore
     private int $activeGuardCount = 0;
     private bool $schemaReady = false;
     private bool $sessionConfigured = false;
+    private readonly StatePayloadCipher $payloadCipher;
 
     public function __construct(
         private readonly ?Database $database,
@@ -47,6 +48,19 @@ final class StateStore
         if ($this->driver() === 'mariadb' && $this->database === null) {
             throw new RuntimeException('MariaDB state storage requires a database connection.');
         }
+
+        $encryptionKey = $this->config['encryption_key'] ?? getenv('APP_DATA_ENCRYPTION_KEY');
+        $previousEncryptionKeys = $this->config['previous_encryption_keys']
+            ?? getenv('APP_DATA_ENCRYPTION_PREVIOUS_KEYS');
+        $this->payloadCipher = $this->driver() === 'mariadb'
+            ? StatePayloadCipher::fromEncodedKeys(
+                is_string($encryptionKey) ? $encryptionKey : '',
+                is_array($previousEncryptionKeys) || is_string($previousEncryptionKeys)
+                    ? $previousEncryptionKeys
+                    : '',
+                true
+            )
+            : StatePayloadCipher::disabled();
     }
 
     public function driver(): string
@@ -337,7 +351,7 @@ final class StateStore
 
     private function writeMariaDb(string $documentKey, array $payload): void
     {
-        $encoded = $this->encodePayload($payload);
+        $encoded = $this->encodePayload($payload, $documentKey);
         $revision = (int) $this->contexts[$documentKey]['revision'];
         $statement = $this->connection()->prepare(
             'UPDATE ' . self::TABLE . ' SET payload = :payload, checksum = :checksum, revision = revision + 1, updated_at = CURRENT_TIMESTAMP '
@@ -391,7 +405,7 @@ final class StateStore
         }
 
         $payload = $this->readLegacyFile($legacyPath, $default);
-        $encoded = $this->encodePayload($payload);
+        $encoded = $this->encodePayload($payload, $documentKey);
         $statement = $this->connection()->prepare(
             'INSERT INTO ' . self::TABLE . ' (document_key, payload, checksum, revision, created_at, updated_at) '
             . 'VALUES (:document_key, :payload, :checksum, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) '
@@ -581,6 +595,7 @@ final class StateStore
                 throw new RuntimeException('State storage schema is missing. Run scripts/migrate-state-to-mariadb.php.');
             }
 
+            $this->migratePayloadEncryption();
             $this->schemaReady = true;
 
             return;
@@ -596,6 +611,7 @@ final class StateStore
             . 'updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
             . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
+        $this->migratePayloadEncryption();
         $this->schemaReady = true;
     }
 
@@ -616,17 +632,24 @@ final class StateStore
         return $connection;
     }
 
-    private function encodePayload(array $payload): string
+    private function encodePayload(array $payload, string $documentKey): string
     {
-        return json_encode(
+        $encoded = json_encode(
             $payload,
             JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
         );
+
+        return $this->driver() === 'mariadb'
+            ? $this->payloadCipher->encrypt($documentKey, $encoded)
+            : $encoded;
     }
 
     private function rememberPayload(string $documentKey, array $payload): void
     {
-        $encoded = $this->encodePayload($payload);
+        $encoded = json_encode(
+            $payload,
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+        );
         $this->readCache[$documentKey] = $this->decodePayload($encoded, $documentKey);
     }
 
@@ -651,7 +674,72 @@ final class StateStore
             throw new RuntimeException(sprintf('Checksum verification failed for state document "%s".', $documentKey));
         }
 
-        return $this->decodePayload($payload, $documentKey);
+        return $this->decodePayload($this->payloadCipher->decrypt($documentKey, $payload), $documentKey);
+    }
+
+    private function migratePayloadEncryption(): void
+    {
+        if (!$this->payloadCipher->enabled()) {
+            return;
+        }
+
+        $connection = $this->connection();
+
+        $preflight = $connection->prepare(
+            'SELECT 1 FROM ' . self::TABLE . ' WHERE payload NOT LIKE :current_prefix LIMIT 1'
+        );
+        $preflight->execute(['current_prefix' => $this->payloadCipher->currentPrefix() . '%']);
+
+        if ($preflight->fetchColumn() === false) {
+            return;
+        }
+
+        if ($connection->inTransaction()) {
+            throw new RuntimeException('State encryption migration cannot run inside an existing transaction.');
+        }
+
+        $connection->beginTransaction();
+
+        try {
+            $statement = $connection->prepare(
+                'SELECT document_key, payload, checksum FROM ' . self::TABLE
+                . ' WHERE payload NOT LIKE :current_prefix FOR UPDATE'
+            );
+            $statement->execute(['current_prefix' => $this->payloadCipher->currentPrefix() . '%']);
+            $rows = $statement->fetchAll();
+            $update = $connection->prepare(
+                'UPDATE ' . self::TABLE
+                . ' SET payload = :payload, checksum = :checksum, revision = revision + 1, updated_at = CURRENT_TIMESTAMP'
+                . ' WHERE document_key = :document_key'
+            );
+
+            foreach (is_array($rows) ? $rows : [] as $row) {
+                $documentKey = $this->normalizeKey((string) ($row['document_key'] ?? ''));
+                $payload = (string) ($row['payload'] ?? '');
+                $checksum = (string) ($row['checksum'] ?? '');
+
+                if (!hash_equals($checksum, hash('sha256', $payload))) {
+                    throw new RuntimeException(sprintf('Checksum verification failed for state document "%s".', $documentKey));
+                }
+
+                $plaintext = $this->payloadCipher->decrypt($documentKey, $payload);
+                $this->decodePayload($plaintext, $documentKey);
+                $encrypted = $this->payloadCipher->encrypt($documentKey, $plaintext);
+                $update->execute([
+                    'payload' => $encrypted,
+                    'checksum' => hash('sha256', $encrypted),
+                    'document_key' => $documentKey,
+                ]);
+            }
+
+            $connection->commit();
+        } catch (Throwable $exception) {
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+
+            throw $exception;
+        }
     }
 
     private function normalizeKey(string $documentKey): string

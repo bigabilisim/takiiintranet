@@ -81,8 +81,9 @@ try {
         }
     }
 
-    $state = $store->read($documentKey, $legacyPath);
-    $metadata = $store->metadata($documentKey);
+    $verificationStore = new StateStore(new Database($databaseConfig), $stateConfig);
+    $state = $verificationStore->read($documentKey, $legacyPath);
+    $metadata = $verificationStore->metadata($documentKey);
     $expected = $workers * $iterations;
     $counter = (int) ($state['counter'] ?? -1);
     $events = is_array($state['events'] ?? null) ? $state['events'] : [];
@@ -98,6 +99,16 @@ try {
         ));
     }
 
+    $rawPayloadStatement = $connection->prepare(
+        'SELECT payload FROM app_state_documents WHERE document_key = :document_key'
+    );
+    $rawPayloadStatement->execute(['document_key' => $documentKey]);
+    $rawPayload = (string) $rawPayloadStatement->fetchColumn();
+
+    if (!str_starts_with($rawPayload, 'enc:v1:') || str_contains($rawPayload, 'counter')) {
+        throw new RuntimeException('MariaDB state payload was not encrypted at rest.');
+    }
+
     $tamper = $connection->prepare(
         'UPDATE app_state_documents SET payload = :payload WHERE document_key = :document_key'
     );
@@ -108,7 +119,7 @@ try {
     $checksumRejected = false;
 
     try {
-        $store->read($documentKey, $legacyPath);
+        (new StateStore(new Database($databaseConfig), $stateConfig))->read($documentKey, $legacyPath);
     } catch (RuntimeException $exception) {
         $checksumRejected = str_contains($exception->getMessage(), 'Checksum verification failed');
     }

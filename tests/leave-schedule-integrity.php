@@ -113,7 +113,7 @@ try {
 
     $profiles = new UserProfileStore($appConfig['demo_users'], $stateStore);
     $created = $profiles->createProfile([
-        'new_email' => 'schedule.integrity@takii.com.tr',
+        'new_email' => 'schedule.integrity@example.test',
         'first_name' => 'Schedule',
         'last_name' => 'Integrity',
         'role' => 'Weekend Duty Specialist',
@@ -132,7 +132,7 @@ try {
         'password_confirmation' => 'schedule-test-123',
     ]);
     scheduleAssert(!empty($created['ok']), 'Schedule fixture profile could not be created.');
-    $profile = $profiles->find('schedule.integrity@takii.com.tr');
+    $profile = $profiles->find('schedule.integrity@example.test');
     scheduleAssert(is_array($profile), 'Schedule fixture profile could not be loaded.');
     $personnelId = (string) ($profile['personnel_id'] ?? '');
     scheduleAssert(preg_match('/^PER-[A-F0-9]{16}$/', $personnelId) === 1, 'Stable personnel ID was not generated.');
@@ -151,7 +151,7 @@ try {
             '2029-11-schedule-integrity-takii-com-tr' => [
                 'key' => '2029-11-schedule-integrity-takii-com-tr',
                 'month' => '2029-11',
-                'profile_key' => 'schedule.integrity@takii.com.tr',
+                'profile_key' => 'schedule.integrity@example.test',
                 'shift_key' => 'gunduz-shift',
                 'working_days' => ['sat'],
                 'note' => 'Legacy recurring plan',
@@ -171,7 +171,7 @@ try {
 
     scheduleAssert(!empty($shifts->saveWeekendPlan([
         'month' => '2030-03',
-        'profile_key' => 'schedule.integrity@takii.com.tr',
+        'profile_key' => 'schedule.integrity@example.test',
         'shift_key' => 'gunduz-shift',
         'working_dates' => ['2030-03-02', '2030-03-06'],
         'note' => 'Exact-date duty plan',
@@ -245,18 +245,18 @@ try {
 
     $pendingBeforeRename = (float) ($leave->balanceForUser($profile)['pending_days'] ?? 0);
     $renamed = $profiles->updateProfile(
-        'schedule.integrity@takii.com.tr',
+        'schedule.integrity@example.test',
         profileUpdatePayload($profile, 'Renamed', 'Employee')
     );
     scheduleAssert(!empty($renamed['ok']), 'Profile name change failed.');
-    $renamedProfile = $profiles->find('schedule.integrity@takii.com.tr');
+    $renamedProfile = $profiles->find('schedule.integrity@example.test');
     scheduleAssert(is_array($renamedProfile), 'Renamed profile could not be loaded.');
     scheduleAssert((string) ($renamedProfile['personnel_id'] ?? '') === $personnelId, 'Personnel ID changed with the name.');
     $pendingAfterRename = (float) ($leave->balanceForUser($renamedProfile)['pending_days'] ?? 0);
     scheduleAssert(abs($pendingBeforeRename - $pendingAfterRename) < 0.001, 'Existing leave stopped affecting the balance after the name change.');
 
     $privacyViewerCreated = $profiles->createProfile([
-        'new_email' => 'calendar.viewer@takii.com.tr',
+        'new_email' => 'calendar.viewer@example.test',
         'first_name' => 'Calendar',
         'last_name' => 'Viewer',
         'role' => 'Finance Specialist',
@@ -269,7 +269,7 @@ try {
         'password_confirmation' => 'calendar-test-123',
     ]);
     scheduleAssert(!empty($privacyViewerCreated['ok']), 'Calendar privacy viewer could not be created.');
-    $privacyViewer = $profiles->find('calendar.viewer@takii.com.tr');
+    $privacyViewer = $profiles->find('calendar.viewer@example.test');
     scheduleAssert(is_array($privacyViewer), 'Calendar privacy viewer could not be loaded.');
 
     $privateActor = 'PRIVATE-CALENDAR-DECISION-MAKER';

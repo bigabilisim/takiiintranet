@@ -7,6 +7,8 @@ tasarlanmistir.
 
 Canli ortam: `https://mytakii.com`
 
+Guncel guvenlik tabani ve surum: `v1.00.0`
+
 ## Urun Ozeti
 
 - Uluslararasi firmalara beyaz etiketli olarak sunulabilecek intranet urunu
@@ -134,12 +136,36 @@ Onemli yetkiler:
   uygulama ve statik dosyalarda etkindir.
 - Sifre sifirlama ve izin tokenlari outbox, audit veya API yanitlarinda acik
   metin olarak saklanmaz. Teslim edilmeyen reset tokeni aninda iptal edilir.
+- `APP_URL` HTTPS ise HTTP ve farkli host istekleri uygulama baslamadan kanonik
+  HTTPS alan adina `308` ile yonlendirilir. `TRUST_PROXY` yalniz guvenilen bir
+  ters vekil gercekten kullaniliyorsa acilmalidir.
+- MariaDB durum belgeleri XChaCha20-Poly1305 ile uygulama katmaninda sifrelenir.
+  Sifreli veri belge anahtarina baglidir; bir satirin baska belge anahtarina
+  tasinmasi kimlik dogrulamasini gecemez.
+- Web Push abonelikleri yalniz bilinen tarayici push saglayicilarinin HTTPS
+  adresleri, gecerli Web Push anahtarlari ve genel IP cozumlemesiyle kabul edilir.
+- Yonetici personel ekraninda kimlik numarasi, dogum tarihi, adres, kisisel telefon,
+  acil durum bilgisi ve IK notlari HTML'e dahil edilmez. Bu alanlar yalniz Admin,
+  IK ve bolgesel IK asistani rollerine sunulur.
+- Izin talebi, departman yoneticisi ve IK onaycisi eksik veya gecersizse acilmaz;
+  mevcut bir talep de bos onayci uzerinden yetki kazanamaz.
 
 Yerel veya canli ortam icin secret uretimi:
 
 ```bash
 php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
 ```
+
+MariaDB belge sifreleme anahtari farkli formatta uretilir:
+
+```bash
+php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'
+```
+
+Bu deger `APP_DATA_ENCRYPTION_KEY` olarak kaynak kod disinda saklanir ve guvenli
+bir yedegi alinir. Anahtar kaybi MariaDB belgelerinin geri getirilememesine yol
+acar. Ayrintili kurulum ve rotasyon adimlari
+[`docs/security-baseline.md`](docs/security-baseline.md) belgesindedir.
 
 ## Transactional State Store
 
@@ -149,7 +175,9 @@ denetim loglari, sablonlar, hiz sinirlari ve izin defteri zamanlayicisi `app_sta
 tablosunda saklanir. Her degisiklik InnoDB
 transaction'i ve `SELECT ... FOR UPDATE` satir
 kilidi altinda yapilir. Ayni anda gelen iki onay veya mesaj birbirinin verisini
-ezemez.
+ezemez. MariaDB `payload` degeri sifreli tutulur; `checksum` sifreli metni
+dogrular ve anahtar rotasyonu onceki anahtarlar tanimli kaldigi surece otomatik
+olarak uygulanir.
 
 Eski `storage/*.json` dosyalari ilk migrasyonda veri kaynagi olarak okunur ve
 sonrasinda cekirdek kayitlar icin yazma hedefi olmaz. Migrasyon idempotenttir;
@@ -217,6 +245,8 @@ degistirilebilir:
 - `STATE_STORE_DRIVER` (`mariadb` olmali)
 - `STATE_STORE_AUTO_MIGRATE`
 - `STATE_STORE_LOCK_TIMEOUT`
+- `APP_DATA_ENCRYPTION_KEY` (zorunlu, base64 kodlu 32 bayt)
+- `APP_DATA_ENCRYPTION_PREVIOUS_KEYS` (yalniz anahtar rotasyonu sirasinda)
 
 İlk veri aktarımı `php scripts/migrate-state-to-mariadb.php` ile yapılır. Şema
 oluşturulduktan sonra üretimde `STATE_STORE_AUTO_MIGRATE=false` kullanılmalıdır;
@@ -285,6 +315,11 @@ composer verify:release:record
 composer release:assert
 ```
 
+Surumleme `v1.00.0` tabanindan SemVer mantigiyla devam eder: guvenli hata
+duzeltmeleri `v1.00.1`, geriye uyumlu ozellikler `v1.01.0`, kirici degisiklikler
+`v2.00.0` olur. Canli paket yalniz SFTP, FTPS veya HTTPS tabanli hosting paneli
+gibi sifreli bir kanaldan aktarilir; duz FTP yayin kanali olarak kullanilmaz.
+
 Detayli sistem agaci, buyume sinirlari ve asamali kapasite plani
 [`docs/architecture-tree.md`](docs/architecture-tree.md) belgesindedir. Temel
 canli smoke testinde su ekranlar kontrol edilir:
@@ -307,3 +342,4 @@ canli smoke testinde su ekranlar kontrol edilir:
 - [Admin yetki merkezi](docs/admin-access-control.md)
 - [Ic mesajlasma](docs/internal-messaging.md)
 - [PWA ve Web Push](docs/pwa-web-push.md)
+- [Guvenlik tabani ve canliya gecis](docs/security-baseline.md)

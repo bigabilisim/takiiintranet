@@ -9,3 +9,5 @@
 !/storage/templates.json
 !/storage/logs/.gitkeep
 !/storage/uploads/.gitkeep
+/resources/data/*
+!/resources/data/.gitkeep

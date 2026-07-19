@@ -191,7 +191,10 @@ return [
         'notifications' => [
             'description' => 'Web Push yapılandırması, abonelik ve test bildirimi.',
             'controllers' => ['app/Controllers/PushController.php'],
-            'domain_files' => ['app/Modules/Notifications/PushNotificationStore.php'],
+            'domain_files' => [
+                'app/Modules/Notifications/PushNotificationStore.php',
+                'app/Modules/Notifications/PushSubscriptionValidator.php',
+            ],
             'views' => [],
             'routes' => [
                 'GET /push/config',

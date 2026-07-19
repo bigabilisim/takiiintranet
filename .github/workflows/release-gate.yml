@@ -55,3 +55,4 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: test-password
           STATE_STORE_AUTO_MIGRATE: 'true'
+          APP_DATA_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY='

@@ -1,8 +1,8 @@
 <?php
 
-$adminEmail = strtolower(trim((string) (getenv('APP_ADMIN_EMAIL') ?: 'bilal@bigabilisim.com')));
+$adminEmail = strtolower(trim((string) (getenv('APP_ADMIN_EMAIL') ?: 'admin@example.test')));
 $adminPassword = (string) (getenv('APP_ADMIN_PASSWORD') ?: '');
-$hrEmail = strtolower(trim((string) (getenv('APP_HR_EMAIL') ?: 'y.ekici@takii.com.tr')));
+$hrEmail = strtolower(trim((string) (getenv('APP_HR_EMAIL') ?: 'hr@example.test')));
 $hrPassword = (string) (getenv('APP_HR_PASSWORD') ?: '');
 
 return [
@@ -18,18 +18,19 @@ return [
     'demo_users' => [
         $adminEmail => [
             'password' => $adminPassword,
-            'name' => 'Bilal Bozduman',
-            'role' => 'System Admin',
-            'department' => 'Operations',
-            'started_on' => '2021-05-20',
+            'name' => trim((string) (getenv('APP_ADMIN_NAME') ?: 'Company Administrator')),
+            'role' => trim((string) (getenv('APP_ADMIN_ROLE') ?: 'System Administrator')),
+            'department' => trim((string) (getenv('APP_ADMIN_DEPARTMENT') ?: 'Administration')),
+            'started_on' => trim((string) (getenv('APP_ADMIN_STARTED_ON') ?: '')),
             'permissions' => ['*'],
         ],
         $hrEmail => [
             'password' => $hrPassword,
-            'name' => 'Yeşim Dingil Ekici',
-            'role' => 'HR Specialist',
-            'department' => 'IK',
-            'started_on' => '2022-11-03',
+            'name' => trim((string) (getenv('APP_HR_NAME') ?: 'Human Resources')),
+            'role' => trim((string) (getenv('APP_HR_ROLE') ?: 'HR Manager')),
+            'department' => trim((string) (getenv('APP_HR_DEPARTMENT') ?: 'HR')),
+            'started_on' => trim((string) (getenv('APP_HR_STARTED_ON') ?: '')),
+            'workforce_roles' => ['hr'],
             'permissions' => [
                 'module.announcements.access',
                 'module.leave.access',

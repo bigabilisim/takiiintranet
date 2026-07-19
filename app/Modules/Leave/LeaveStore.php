@@ -188,6 +188,24 @@ class LeaveStore
         $policy = $this->accessControl?->departmentPolicy($user['department'] ?? 'General') ?? [];
         $managerCount = (int) ($policy['manager_approval_count'] ?? ($input['manager_count'] ?? 1));
         $managerCount = $managerCount === 2 ? 2 : 1;
+        $manager1Email = strtolower(trim((string) ($policy['manager_1_email'] ?? '')));
+        $manager2Email = $managerCount === 2
+            ? strtolower(trim((string) ($policy['manager_2_email'] ?? '')))
+            : '';
+        $hrEmail = strtolower(trim((string) ($policy['hr_email'] ?? '')));
+
+        if (!$this->validApproverEmail($manager1Email)
+            || ($managerCount === 2 && !$this->validApproverEmail($manager2Email))
+            || !$this->validApproverEmail($hrEmail)
+        ) {
+            return ['ok' => false, 'message' => 'leave.flash.approver_missing'];
+        }
+
+        $policy = array_merge($policy, [
+            'manager_1_email' => $manager1Email,
+            'manager_2_email' => $manager2Email,
+            'hr_email' => $hrEmail,
+        ]);
 
         $request = [
             'id' => $this->nextId($requests),
@@ -203,9 +221,9 @@ class LeaveStore
             'total_days' => $totalDays,
             'manager_count' => $managerCount,
             'approval_policy' => [
-                'manager_1_email' => $policy['manager_1_email'] ?? '',
-                'manager_2_email' => $managerCount === 2 ? ($policy['manager_2_email'] ?? '') : '',
-                'hr_email' => $policy['hr_email'] ?? '',
+                'manager_1_email' => $manager1Email,
+                'manager_2_email' => $manager2Email,
+                'hr_email' => $hrEmail,
             ],
             'status' => 'waiting_manager_1',
             'calendar_state' => 'tentative',
@@ -1516,13 +1534,15 @@ class LeaveStore
             return false;
         }
 
-        $userEmail = $user['email'] ?? '';
-        $policy = $request['approval_policy'] ?? $this->accessControl?->departmentPolicy($request['department'] ?? '') ?? [];
+        $userEmail = strtolower(trim((string) ($user['email'] ?? '')));
+        $policy = $this->approvalPolicyForRequest($request);
 
         if ($stage === self::CANCELLATION_STAGE) {
             $managerEmail = $policy['manager_1_email'] ?? '';
 
-            return $auth->can('leave.request.approve.department') && ($managerEmail === '' || $userEmail === $managerEmail);
+            return $managerEmail !== ''
+                && $auth->can('leave.request.approve.department')
+                && $userEmail === $managerEmail;
         }
 
         if ($stage === 'hr') {
@@ -1530,18 +1550,24 @@ class LeaveStore
                 return false;
             }
 
+            $hrEmail = $policy['hr_email'] ?? '';
+
+            if ($hrEmail === '') {
+                return false;
+            }
+
             if ($this->isRegionalHrAssistant($user)) {
                 return true;
             }
 
-            $hrEmail = $policy['hr_email'] ?? '';
-
-            return $hrEmail === '' || $userEmail === $hrEmail;
+            return $userEmail === $hrEmail;
         }
 
         $managerEmail = $policy[$stage . '_email'] ?? '';
 
-        return $auth->can('leave.request.approve.department') && ($managerEmail === '' || $userEmail === $managerEmail);
+        return $managerEmail !== ''
+            && $auth->can('leave.request.approve.department')
+            && $userEmail === $managerEmail;
     }
 
     private function isRegionalHrAssistant(array $user): bool
@@ -2393,13 +2419,34 @@ class LeaveStore
 
     private function assigneeEmailForStage(array $request, string $stage): string
     {
-        $policy = $request['approval_policy'] ?? [];
+        $policy = $this->approvalPolicyForRequest($request);
 
         if ($stage === self::CANCELLATION_STAGE) {
             return (string) ($policy['manager_1_email'] ?? '');
         }
 
         return (string) ($policy[$stage . '_email'] ?? ($stage === 'hr' ? ($policy['hr_email'] ?? '') : ''));
+    }
+
+    private function approvalPolicyForRequest(array $request): array
+    {
+        $storedPolicy = is_array($request['approval_policy'] ?? null) ? $request['approval_policy'] : [];
+        $currentPolicy = $this->accessControl?->departmentPolicy((string) ($request['department'] ?? '')) ?? [];
+        $policy = [];
+
+        foreach (['manager_1_email', 'manager_2_email', 'hr_email'] as $key) {
+            $storedValue = strtolower(trim((string) ($storedPolicy[$key] ?? '')));
+            $policy[$key] = $storedValue !== ''
+                ? $storedValue
+                : strtolower(trim((string) ($currentPolicy[$key] ?? '')));
+        }
+
+        return $policy;
+    }
+
+    private function validApproverEmail(string $email): bool
+    {
+        return $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
     }
 
     private function assigneeCanViewRequest(array $request, string $stage): bool

@@ -580,6 +580,7 @@ return [
     'leave.flash.half_day_single_date' => 'Bei halbtägigem Urlaub müssen Beginn und Ende am selben Datum liegen.',
     'leave.flash.no_working_day' => 'Im ausgewählten Zeitraum gibt es keinen Arbeitstag.',
     'leave.flash.insufficient_balance' => 'Die beantragten Tage übersteigen den verbleibenden Jahresurlaub.',
+    'leave.flash.approver_missing' => 'Ein Urlaubsantrag kann erst erstellt werden, wenn Abteilungsleitung und HR-Freigabe zugewiesen sind. Prüfen Sie die Urlaubsberechtigungen.',
     'leave.flash.invalid_decision' => 'Die Freigabeentscheidung ist ungültig.',
     'leave.flash.reject_reason_required' => 'Für die Ablehnung muss ein Grund angegeben werden.',
     'leave.flash.not_allowed' => 'Sie sind nicht berechtigt, in dieser Stufe eine Aktion auszuführen.',

@@ -7,6 +7,7 @@ use App\Core\AuditLogStore;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\LocationScope;
+use App\Core\PersonnelDataPolicy;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
@@ -118,6 +119,13 @@ class PersonnelController
             $editableProfileFields[$profileKey] = $this->editableFieldsForProfile($profile);
         }
 
+        $viewer = $this->auth->user() ?? [];
+        $canViewSensitivePersonnelData = PersonnelDataPolicy::canViewSensitive($viewer);
+        $personnelForView = array_map(
+            static fn (array $profile): array => PersonnelDataPolicy::project($profile, $viewer),
+            $personnel
+        );
+
         $temporaryCredential = Session::pullFlash('personnel_credential', []);
         $headers = is_array($temporaryCredential) && (string) ($temporaryCredential['password'] ?? '') !== ''
             ? ['Cache-Control' => 'no-store, no-cache, must-revalidate', 'Pragma' => 'no-cache']
@@ -125,7 +133,7 @@ class PersonnelController
 
         return new Response($this->view->render('personnel/index', [
             'title' => 'module.personnel.title',
-            'personnel' => $personnel,
+            'personnel' => $personnelForView,
             'departments' => $this->visibleDepartmentNames(),
             'departmentOptions' => $this->visibleDepartmentOptions(),
             'locationOptions' => LocationScope::visibleOptions($this->auth->user() ?? []),
@@ -138,6 +146,7 @@ class PersonnelController
             'temporaryCredential' => $temporaryCredential,
             'deletableEmails' => $this->deletableEmails(),
             'editableProfileFields' => $editableProfileFields,
+            'canViewSensitivePersonnelData' => $canViewSensitivePersonnelData,
             'personnelGroupCounts' => $this->personnelGroupCounts($personnel),
             'shiftOptions' => $this->shiftStore->enabledTemplates(),
             'shiftTemplates' => $this->shiftStore->templates(),
@@ -154,7 +163,7 @@ class PersonnelController
             return new Response($this->view->render('errors/404', ['title' => '404']), 404);
         }
 
-        $profiles = $this->sortedProfiles();
+        $profiles = $this->profilesForViewer($this->sortedProfiles());
         $this->auditLog->record($this->auth->user() ?? [], 'personnel.exported', 'personnel', 'csv', [
             'record_count' => (string) count($profiles),
         ]);
@@ -176,7 +185,7 @@ class PersonnelController
             return new Response($this->view->render('errors/404', ['title' => '404']), 404);
         }
 
-        $profiles = $this->sortedProfiles();
+        $profiles = $this->profilesForViewer($this->sortedProfiles());
         $content = $this->userProfiles->exportProfilesXlsx($profiles);
 
         if ($content === '') {
@@ -448,6 +457,16 @@ class PersonnelController
         });
 
         return $profiles;
+    }
+
+    private function profilesForViewer(array $profiles): array
+    {
+        $viewer = $this->auth->user() ?? [];
+
+        return array_map(
+            static fn (array $profile): array => PersonnelDataPolicy::project($profile, $viewer),
+            $profiles
+        );
     }
 
     private function canViewProfile(array $profile): bool

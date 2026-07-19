@@ -6,11 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.100.0';
-    private const MAIL_RECIPIENTS = [
-        'bilal@bigabilisim.com',
-        'y.ekici@takii.com.tr',
-    ];
+    private const CURRENT_RELEASE = 'v1.00.0';
 
     public function __construct(private readonly StateStore $stateStore)
     {
@@ -77,7 +73,12 @@ class ReleaseNoteStore
 
     public function mailRecipients(): array
     {
-        return self::MAIL_RECIPIENTS;
+        $recipients = preg_split('/\s*,\s*/', trim((string) (getenv('RELEASE_NOTE_RECIPIENTS') ?: '')), -1, PREG_SPLIT_NO_EMPTY);
+
+        return array_values(array_unique(array_filter(
+            is_array($recipients) ? $recipients : [],
+            static fn (string $email): bool => filter_var($email, FILTER_VALIDATE_EMAIL) !== false
+        )));
     }
 
     private function data(): array
@@ -141,6 +142,18 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v1.00.0',
+                'title' => 'Yüksek riskli güvenlik bulguları kapatıldı',
+                'released_at' => '2026-07-19 18:38',
+                'status' => 'completed',
+                'changes' => [
+                    'MariaDB durum belgeleri XChaCha20-Poly1305 ile uygulama katmanında şifrelendi; mevcut düz metin satırlar işlem içinde otomatik dönüştürülür hale getirildi.',
+                    'HTTP istekleri kanonik HTTPS alan adına yönlendirildi ve Web Push uçları sağlayıcı, anahtar ve genel IP doğrulamasına bağlandı.',
+                    'Yönetici personel görünümünden hassas İK alanları sunucu tarafında çıkarıldı; boş departman veya İK onaycısıyla izin talebi ve onay işlemi engellendi.',
+                    'Gizli organizasyon planı kaynak koddan çıkarıldı; örnek kimlikler ve yapılandırma değerleri anonimleştirildi.',
+                ],
+            ],
             [
                 'version' => 'v0.100.0',
                 'title' => 'Mobil arayüz ve erişilebilir gezinme yenilendi',
@@ -529,7 +542,7 @@ class ReleaseNoteStore
                 'released_at' => '2026-07-14 10:41',
                 'status' => 'completed',
                 'changes' => [
-                    'Giris formunda otomatik gelen bilal@bigabilisim.com adresi kaldirildi.',
+                    'Giris formunda otomatik gelen admin@example.test adresi kaldirildi.',
                     'Kullanici adi alani her yeni oturumda uygulama tarafindan bos gosterilecek hale getirildi.',
                     'Tarayicilarin standart parola yoneticisi destegi icin autocomplete username davranisi korundu.',
                 ],
@@ -607,7 +620,7 @@ class ReleaseNoteStore
                     'Personel gorevlerine Hafta sonu nobetcisi isareti eklendi.',
                     'Aylik hafta sonu nobet plani formu yalnizca Hafta sonu nobetcisi olarak isaretlenen personelleri listeleyecek sekilde sinirlandi.',
                     'Backend tarafinda da kapsam disi personel icin nobet plani kaydi engellendi.',
-                    'Sultan ve Burak gibi Shift planlayici yetkili kisilerin sadece ozel hafta sonu nobetcilerini planlamasi icin arayuz ve hata mesajlari guncellendi.',
+                    'vardiya planlayicilari gibi Shift planlayici yetkili kisilerin sadece ozel hafta sonu nobetcilerini planlamasi icin arayuz ve hata mesajlari guncellendi.',
                 ],
             ],
             [
@@ -621,18 +634,18 @@ class ReleaseNoteStore
                     'Personel ve izin takvimi gorunurlugu admin/IK, departman yoneticisi ve mavi yaka/beyaz yaka kapsamlarina gore filtrelenecek sekilde guclendirildi.',
                     'Mail adresi olmayan mavi yaka kullanicilarin PDKS ID veya kullanici adi ile giris yapabilmesi icin login kimligi esnetildi.',
                     'Shift ekranina aylik hafta sonu nobet plani eklendi; planlanan calisma gunleri izin gun sayisi hesabinda dikkate alinacak hale getirildi.',
-                    'Personel gorevlerine Shift planlayici rolu eklendi; Sultan/Burak gibi kisilere yalnizca aylik nobet plani giris yetkisi verilebilir.',
+                    'Personel gorevlerine Shift planlayici rolu eklendi; vardiya planlayicilari gibi kisilere yalnizca aylik nobet plani giris yetkisi verilebilir.',
                 ],
             ],
             [
                 'version' => 'v0.66.0',
-                'title' => 'Surum mail alicilarina Yesim Ekici eklendi',
+                'title' => 'Surum mail alicilarina IK eklendi',
                 'released_at' => '2026-06-24 09:20',
                 'status' => 'completed',
                 'changes' => [
-                    'Yeni surum ve islem aciklamasi maillerinin Bilal Bozduman ile birlikte Yesim Dingil Ekici adresine de gitmesi icin surum mail alici listesi guncellendi.',
+                    'Yeni surum ve islem aciklamasi maillerinin sistem yoneticisi ile birlikte IK kullanicisi adresine de gitmesi icin surum mail alici listesi guncellendi.',
                     'Admin > Surumler ekranindaki mail ozetine alici listesi eklendi.',
-                    'Bu surumden itibaren surum notu gonderimleri bilal@bigabilisim.com ve y.ekici@takii.com.tr adreslerine birlikte yapilacak.',
+                    'Bu surumden itibaren surum notu gonderimleri admin@example.test ve hr@example.test adreslerine birlikte yapilacak.',
                 ],
             ],
             [
@@ -731,11 +744,11 @@ class ReleaseNoteStore
             ],
             [
                 'version' => 'v0.57.0',
-                'title' => 'Mail sunucusu alarmbigabilisim SMTPye tasindi',
+                'title' => 'Mail sunucusu kurumsal SMTPye tasindi',
                 'released_at' => '2026-06-21 17:45',
                 'status' => 'completed',
                 'changes' => [
-                    'Canli mail gonderimleri yeni alarmbigabilisim SMTP sunucusuna tasindi.',
+                    'Canli mail gonderimleri yeni kurumsal SMTP sunucusuna tasindi.',
                     'Bilgilendirme gonderici adresi ve SMTP port/encryption ayarlari yeni sunucuya gore guncellendi.',
                     'Izin onayi, sifremi unuttum, test mail ve surum notu gonderimleri ortak SMTP ayarlariyla calisacak sekilde korundu.',
                     'Yeni mail sunucusu uzerinden test maili gonderimi dogrulandi.',
@@ -850,11 +863,11 @@ class ReleaseNoteStore
             ],
             [
                 'version' => 'v0.47.0',
-                'title' => 'Aylin Kulali bekleyen izin kaydi temizlendi',
+                'title' => 'ornek personel bekleyen izin kaydi temizlendi',
                 'released_at' => '2026-05-14 16:29',
                 'status' => 'completed',
                 'changes' => [
-                    'Aylin Kulali icin 1. yonetici onayinda bekleyen LV-2026-1004 izin talebi aktif izin kayitlarindan kaldirildi.',
+                    'ornek personel icin 1. yonetici onayinda bekleyen LV-2026-1004 izin talebi aktif izin kayitlarindan kaldirildi.',
                     'Silme islemi audit log kaydina leave.request_deleted aksiyonu olarak islendi.',
                     'Izin takviminde ve panel onay kuyrugunda bu eski bekleyen talep artik gorunmeyecek hale getirildi.',
                 ],
@@ -890,7 +903,7 @@ class ReleaseNoteStore
                 'changes' => [
                     'Izin onay maili artik sadece outbox kaydina dusmekle kalmayip canli SMTP tasiyicisi uzerinden gonderilecek hale getirildi.',
                     'Izin mail kayitlarina queued, sent, failed/invalid recipient durumlari ve tasiyici bilgisi eklendi.',
-                    'Aylin Kulali izin talebi icin bekleyen departman onay maili yeniden gonderilecek sekilde hazirlandi.',
+                    'ornek personel izin talebi icin bekleyen departman onay maili yeniden gonderilecek sekilde hazirlandi.',
                 ],
             ],
             [
@@ -943,7 +956,7 @@ class ReleaseNoteStore
                 'released_at' => '2026-05-14 08:23',
                 'status' => 'completed',
                 'changes' => [
-                    'Bilal Bozduman System Admin hesabi bilal@bigabilisim.com e-posta adresine tasindi.',
+                    'sistem yoneticisi System Admin hesabi admin@example.test e-posta adresine tasindi.',
                     'Eski admin e-posta referanslari aktif veri kayitlarinda yeni adrese esitlendi.',
                     'Departman onay yoneticisi ve varsayilan giris e-posta alanlari yeni admin adresini kullanacak hale getirildi.',
                 ],
@@ -994,11 +1007,11 @@ class ReleaseNoteStore
             ],
             [
                 'version' => 'v0.34.0',
-                'title' => 'Aylin Kulali giris bilgileri gonderildi',
+                'title' => 'ornek personel giris bilgileri gonderildi',
                 'released_at' => '2026-05-13 15:58',
                 'status' => 'completed',
                 'changes' => [
-                    'Aylin Kulali kullanicisi icin yeni gecici sifre olusturuldu.',
+                    'ornek personel kullanicisi icin yeni gecici sifre olusturuldu.',
                     'Yeni sifre personel kaydina hashli olarak islendi; duz metin sifre storage dosyalarina yazilmadi.',
                     'Kullanici adi ve gecici sifre Outlook uzerinden ilgili kullaniciya mail olarak iletildi.',
                 ],
@@ -1009,7 +1022,7 @@ class ReleaseNoteStore
                 'released_at' => '2026-05-12 10:41',
                 'status' => 'completed',
                 'changes' => [
-                    'Yesim Dingil Ekici ana giris e-posta adresi y.ekici@takii.com.tr olarak guncellendi.',
+                    'IK kullanicisi ana giris e-posta adresi hr@example.test olarak guncellendi.',
                     'Personel profili, yetki kaydi, departman onay semalari ve bekleyen izin atamalari yeni adrese tasindi.',
                     'Mevcut sifre hash kaydi korunarak eski e-posta anahtari sistemden temizlendi.',
                 ],
@@ -1031,7 +1044,7 @@ class ReleaseNoteStore
                 'released_at' => '2026-05-12 10:24',
                 'status' => 'completed',
                 'changes' => [
-                    'Yesim Dingil Ekici kullanicisi icin yeni gecici sifre olusturuldu.',
+                    'IK kullanicisi kullanicisi icin yeni gecici sifre olusturuldu.',
                     'Yeni sifre personel kaydina hashli olarak islendi; duz metin sifre storage dosyalarina yazilmadi.',
                     'Giris bilgisi Outlook uzerinden ilgili kullaniciya mail olarak iletildi.',
                 ],
@@ -1053,7 +1066,7 @@ class ReleaseNoteStore
                 'released_at' => '2026-05-06 19:09',
                 'status' => 'completed',
                 'changes' => [
-                    'Eski HR ornek e-postasiyla tanimli Yesim Dingil Ekici profil kaydi sistemden kaldirildi.',
+                    'Eski HR ornek e-postasiyla tanimli IK kullanicisi profil kaydi sistemden kaldirildi.',
                     'HR cekirdek kullanicisi ve izin onay politikasi aktif HR e-posta adresine tasindi.',
                     'Bekleyen izin onaylari, mesaj alicilari ve yetki kayitlari yeni HR e-posta adresiyle esitlendi.',
                 ],
@@ -1066,7 +1079,7 @@ class ReleaseNoteStore
                 'changes' => [
                     'Outlook uzerinden gelen dogumgunu tablosu Excel eki sisteme alindi.',
                     'Exceldeki 78 dogum tarihi satiri personel profilleriyle eslestirildi ve 79 profil kaydina dogum tarihi islendi.',
-                    'Yaklasik isim farklari ve Yesim Dingil Ekici icin bulunan cift profil anahtari kontrollu sekilde eslestirildi.',
+                    'Yaklasik isim farklari ve IK kullanicisi icin bulunan cift profil anahtari kontrollu sekilde eslestirildi.',
                 ],
             ],
             [
@@ -1086,7 +1099,7 @@ class ReleaseNoteStore
                 'released_at' => '2026-05-06 17:37',
                 'status' => 'completed',
                 'changes' => [
-                    'Yesim Dingil Ekici HR profiline personel okuma, duzenleme, silme ve export yetkileri kalici olarak sabitlendi.',
+                    'IK kullanicisi HR profiline personel okuma, duzenleme, silme ve export yetkileri kalici olarak sabitlendi.',
                     'Yetki ekrani kaydinda HR profilinden personel tam yetkileri yanlislikla dusurulse bile sistem bu yetkileri otomatik geri ekleyecek hale getirildi.',
                     'Canli yetki storage dosyasi yeni AccessControl surumune tasindi.',
                 ],
@@ -1130,7 +1143,7 @@ class ReleaseNoteStore
                 'released_at' => '2026-05-06 10:17',
                 'status' => 'completed',
                 'changes' => [
-                    'Mavi yaka disindaki personel e-postalari ilkharf.soyad@takii.com.tr formatina toplu olarak tasindi.',
+                    'Mavi yaka disindaki personel e-postalari kurumsal ilkharf.soyad formatina toplu olarak tasindi.',
                     'Ayni soyad/ad kombinasyonlarinda cakisma olmamasi icin tekrar eden adreslere sirali ek kullanildi.',
                     'Personel profil anahtarlari ve yetki kayitlari yeni e-posta standardiyla esitlendi.',
                     'Personel listesinde artik bulunmayan eski yetki e-posta anahtarlari otomatik temizlenecek hale getirildi.',
@@ -1138,11 +1151,11 @@ class ReleaseNoteStore
             ],
             [
                 'version' => 'v0.21.0',
-                'title' => 'Aytug Devren e-posta adresi guncellendi',
+                'title' => 'Personel e-posta adresi guncellendi',
                 'released_at' => '2026-05-06 10:16',
                 'status' => 'completed',
                 'changes' => [
-                    'AYTUG DEVREN personel kaydi aytug.devren@takii.com.tr adresinden a.devren@takii.com.tr adresine tasindi.',
+                    'ornek personel personel kaydi employee.old@example.test adresinden employee.new@example.test adresine tasindi.',
                     'Personel profilindeki gorunen e-posta alani yeni standart adrese guncellendi.',
                     'Yetki kaydi yeni e-posta anahtariyla esitlendi.',
                 ],
@@ -1155,7 +1168,7 @@ class ReleaseNoteStore
                 'changes' => [
                     'Personel kartlarina duzenlenebilir e-posta alani eklendi.',
                     'Mavi yaka olarak degerlendirilen BC departmanlarindaki personellerin e-posta alanlari bosaltildi.',
-                    'Beyaz yaka personel e-postalari ad.soyad@takii.com.tr standardina gore yeniden duzenlendi.',
+                    'Beyaz yaka personel e-postalari kurumsal ad.soyad standardina gore yeniden duzenlendi.',
                     'Sistem kullanicilari eski giris adresleri korunarak standart personel e-postalariyla da gorunur hale getirildi.',
                 ],
             ],
@@ -1166,18 +1179,18 @@ class ReleaseNoteStore
                 'status' => 'completed',
                 'changes' => [
                     'Personel ekranina yetkili HR kullanicilarinin CSV indirebilecegi export butonu eklendi.',
-                    'Yeni personnel.export yetkisi tanimlandi ve Yesim Dingil Ekici HR profiline verildi.',
+                    'Yeni personnel.export yetkisi tanimlandi ve IK kullanicisi HR profiline verildi.',
                     'Export islemi audit log tarafinda personnel.exported aksiyonu ile kayda alinmaya baslandi.',
                 ],
             ],
             [
                 'version' => 'v0.18.0',
-                'title' => 'Mina Demir personel kaydi silindi',
+                'title' => 'demo personel personel kaydi silindi',
                 'released_at' => '2026-05-06 08:26',
                 'status' => 'completed',
                 'changes' => [
-                    'Mina Demir / employee@example.com demo kullanicisi ve personel kaydi sistemden kaldirildi.',
-                    'Mina Demir referansli izin, mesaj ve mail outbox kayitlari temizlendi.',
+                    'demo personel / employee@example.com demo kullanicisi ve personel kaydi sistemden kaldirildi.',
+                    'demo personel referansli izin, mesaj ve mail outbox kayitlari temizlendi.',
                     'Config demo kullanicilarindan employee@example.com cikarilarak kaydin yeniden olusmasi engellendi.',
                 ],
             ],
@@ -1194,11 +1207,11 @@ class ReleaseNoteStore
             ],
             [
                 'version' => 'v0.16.0',
-                'title' => 'Dingil Ekici personel yonetim yetkileri',
+                'title' => 'IK personel yonetim yetkileri',
                 'released_at' => '2026-05-05 19:25',
                 'status' => 'completed',
                 'changes' => [
-                    'Yesim Dingil Ekici profiline Personel modulu erisimi sabitlendi.',
+                    'IK kullanicisi profiline Personel modulu erisimi sabitlendi.',
                     'Personel duzenleme yetkisi personnel.write aktif hale getirildi.',
                     'Personel silme yetkisi personnel.delete aktif hale getirildi.',
                 ],
@@ -1222,7 +1235,7 @@ class ReleaseNoteStore
                 'changes' => [
                     'Mevcut Excel kaynakli personel kayitlari silindi ve yeni parolali Excel dosyasindan 91 personel yeniden olusturuldu.',
                     'Cekirdek sistem kullanicilari korunarak toplam profil sayisi 95 olarak guncellendi.',
-                    'Yeni personel e-postalari @takii.com.tr domainiyle uretildi ve yetki kayitlari yeni listeye gore temizlendi.',
+                    'Yeni personel e-postalari kurumsal alan adiyla uretildi ve yetki kayitlari yeni listeye gore temizlendi.',
                 ],
             ],
             [
@@ -1242,7 +1255,7 @@ class ReleaseNoteStore
                 'released_at' => '2026-05-05 18:45',
                 'status' => 'completed',
                 'changes' => [
-                    '125 personel e-posta adresindeki eski internal domain @takii.com.tr olarak degistirildi.',
+                    '125 personel e-posta adresindeki eski dahili alan adi kurumsal alan adiyla degistirildi.',
                     'Personel storage anahtarlari ve email alanlari yeni domainle esitlendi.',
                     'Yetki storage kayitlari yeni e-posta adresleriyle uyumlu hale getirildi.',
                 ],
