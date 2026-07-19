@@ -220,6 +220,10 @@ degistirilebilir:
 - `STATE_STORE_AUTO_MIGRATE`
 - `STATE_STORE_LOCK_TIMEOUT`
 
+İlk veri aktarımı `php scripts/migrate-state-to-mariadb.php` ile yapılır. Şema
+oluşturulduktan sonra üretimde `STATE_STORE_AUTO_MIGRATE=false` kullanılmalıdır;
+böylece her web isteğinde gereksiz DDL ve metadata kilidi çalıştırılmaz.
+
 ## PWA ve Web Push
 
 Eklenen ana dosyalar:

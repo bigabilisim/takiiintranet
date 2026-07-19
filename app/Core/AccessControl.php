@@ -67,6 +67,7 @@ class AccessControl
         ],
     ];
     private array $demoUsers;
+    private ?array $cachedData = null;
 
     public function __construct(
         array $demoUsers,
@@ -74,7 +75,7 @@ class AccessControl
         private readonly StateStore $stateStore,
     ) {
         $this->demoUsers = $demoUsers;
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $this->ensureSeeded();
     }
 
@@ -104,6 +105,7 @@ class AccessControl
     public function replaceDirectoryUsers(array $users): void
     {
         $this->demoUsers = $users;
+        $this->cachedData = null;
     }
 
     public function isApprovalAssignee(string $identity): bool
@@ -132,7 +134,7 @@ class AccessControl
             return ['permission_keys' => 0, 'approval_references' => 0];
         }
 
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $data = $this->loadData();
         $permissions = is_array($data['user_permissions'] ?? null) ? $data['user_permissions'] : [];
 
@@ -226,7 +228,7 @@ class AccessControl
 
     public function setUserPermissions(string $email, array $permissions): void
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
 
         if (!isset($this->demoUsers[$email])) {
             return;
@@ -331,7 +333,7 @@ class AccessControl
 
     public function setDepartmentPolicy(string $department, array $policy): bool
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $department = $this->cleanDepartmentName($department);
 
         if (!in_array($department, $this->departments(), true)) {
@@ -358,7 +360,7 @@ class AccessControl
 
     public function createDepartment(string $name, string $parent = ''): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $name = $this->cleanDepartmentName($name);
         $parent = $this->cleanDepartmentName($parent);
 
@@ -392,7 +394,7 @@ class AccessControl
 
     public function deleteDepartment(string $name): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $name = $this->cleanDepartmentName($name);
         $data = $this->data();
 
@@ -420,7 +422,7 @@ class AccessControl
 
     public function setDepartmentParent(string $department, string $parent): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $department = $this->cleanDepartmentName($department);
         $parent = $this->cleanDepartmentName($parent);
         $data = $this->data();
@@ -480,6 +482,10 @@ class AccessControl
 
     private function data(): array
     {
+        if ($this->cachedData !== null && !$this->stateStore->hasActiveWrite(self::STATE_KEY)) {
+            return $this->cachedData;
+        }
+
         $data = $this->loadData();
 
         if (!isset($data['user_permissions']) || !is_array($data['user_permissions'])) {
@@ -577,6 +583,10 @@ class AccessControl
 
         if ($dirty) {
             $this->saveData($data);
+        }
+
+        if (!$this->stateStore->hasActiveWrite(self::STATE_KEY)) {
+            $this->cachedData = $data;
         }
 
         return $data;
@@ -847,6 +857,14 @@ class AccessControl
     private function saveData(array $data): void
     {
         $this->stateStore->write(self::STATE_KEY, $this->dataPath(), $data);
+        $this->cachedData = null;
+    }
+
+    private function writeGuard(): StateWriteGuard
+    {
+        $this->cachedData = null;
+
+        return $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
     }
 
     private function dataPath(): string

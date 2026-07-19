@@ -59,12 +59,13 @@ class UserProfileStore
         'leave.request.create',
         'content.announcement.view',
     ];
+    private ?array $cachedData = null;
 
     public function __construct(
         private readonly array $baseUsers,
         private readonly StateStore $stateStore,
     ) {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $this->ensureSeeded();
     }
 
@@ -215,7 +216,7 @@ class UserProfileStore
 
     public function setPasswordForProfileKey(string $profileKey, string $password): bool
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
 
         if (strlen($password) < self::MIN_PASSWORD_LENGTH || strlen($password) > 4096) {
             return false;
@@ -265,7 +266,7 @@ class UserProfileStore
 
     public function setShiftForProfiles(array $profileKeys, string $shiftKey): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $profileKeys = array_values(array_unique(array_filter(array_map('strval', $profileKeys))));
         $shiftKey = $this->cleanText($shiftKey, 80);
         $users = $this->users();
@@ -307,7 +308,7 @@ class UserProfileStore
 
     public function createProfile(array $input): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $emailInput = array_key_exists('new_email', $input)
             ? trim((string) $input['new_email'])
             : trim((string) ($input['email'] ?? ''));
@@ -429,7 +430,7 @@ class UserProfileStore
 
     public function updateProfile(string $email, array $input, bool $syncSession = true): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
         $users = $this->users();
 
         if (!isset($users[$email])) {
@@ -596,7 +597,7 @@ class UserProfileStore
 
     public function deleteProfile(string $email): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
 
         if (!$this->canDeleteProfile($email)) {
             return ['ok' => false, 'message' => 'personnel.flash.delete_blocked'];
@@ -677,7 +678,7 @@ class UserProfileStore
 
     public function importProfilesCsv(string $path): array
     {
-        $writeGuard = $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
+        $writeGuard = $this->writeGuard();
 
         if (!is_file($path) || !is_readable($path)) {
             return ['ok' => false, 'message' => 'admin.flash.personnel_import_failed'];
@@ -869,6 +870,10 @@ class UserProfileStore
 
     private function data(): array
     {
+        if ($this->cachedData !== null && !$this->stateStore->hasActiveWrite(self::STATE_KEY)) {
+            return $this->cachedData;
+        }
+
         $data = $this->loadWritableData();
         $dirty = false;
 
@@ -934,7 +939,13 @@ class UserProfileStore
             $profiles[$email] = $this->mergeProfile($email, $baseUser, $stored);
         }
 
-        return ['version' => self::VERSION, 'profiles' => $profiles];
+        $data = ['version' => self::VERSION, 'profiles' => $profiles];
+
+        if (!$this->stateStore->hasActiveWrite(self::STATE_KEY)) {
+            $this->cachedData = $data;
+        }
+
+        return $data;
     }
 
     private function mergeProfile(string $email, array $baseUser, array $stored): array
@@ -1344,6 +1355,14 @@ class UserProfileStore
     private function saveData(array $data): void
     {
         $this->stateStore->write(self::STATE_KEY, $this->dataPath(), $data);
+        $this->cachedData = null;
+    }
+
+    private function writeGuard(): StateWriteGuard
+    {
+        $this->cachedData = null;
+
+        return $this->stateStore->beginWrite(self::STATE_KEY, $this->dataPath());
     }
 
     private function dataPath(): string

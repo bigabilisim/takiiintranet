@@ -31,6 +31,7 @@ final class StateStore
     ];
 
     private array $contexts = [];
+    private array $readCache = [];
     private int $activeGuardCount = 0;
     private bool $schemaReady = false;
     private bool $sessionConfigured = false;
@@ -53,6 +54,11 @@ final class StateStore
         return strtolower(trim((string) ($this->config['driver'] ?? 'mariadb')));
     }
 
+    public function hasActiveWrite(string $documentKey): bool
+    {
+        return isset($this->contexts[$this->normalizeKey($documentKey)]);
+    }
+
     public function read(string $documentKey, string $legacyPath, array $default = []): array
     {
         $documentKey = $this->normalizeKey($documentKey);
@@ -61,9 +67,17 @@ final class StateStore
             return $this->contexts[$documentKey]['payload'];
         }
 
-        return $this->driver() === 'mariadb'
+        if (array_key_exists($documentKey, $this->readCache)) {
+            return $this->readCache[$documentKey];
+        }
+
+        $payload = $this->driver() === 'mariadb'
             ? $this->readMariaDb($documentKey, $legacyPath, $default)
             : $this->readLegacyFile($legacyPath, $default);
+
+        $this->readCache[$documentKey] = $payload;
+
+        return $payload;
     }
 
     public function beginWrite(string $documentKey, string $legacyPath, array $default = []): StateWriteGuard
@@ -76,6 +90,8 @@ final class StateStore
 
             return new StateWriteGuard($this, $documentKey);
         }
+
+        unset($this->readCache[$documentKey]);
 
         if ($this->driver() === 'mariadb') {
             $this->beginMariaDbWrite($documentKey, $legacyPath, $default);
@@ -202,6 +218,8 @@ final class StateStore
         if ($this->driver() === 'file') {
             $lock = $this->contexts[$documentKey]['lock'] ?? null;
 
+            $this->rememberPayload($documentKey, $this->contexts[$documentKey]['payload']);
+
             if (is_resource($lock)) {
                 flock($lock, LOCK_UN);
                 fclose($lock);
@@ -227,8 +245,16 @@ final class StateStore
                 $connection->rollBack();
             }
 
+            foreach (array_keys($this->contexts) as $key) {
+                unset($this->readCache[$key]);
+            }
+
             $this->contexts = [];
             throw $exception;
+        }
+
+        foreach ($this->contexts as $key => $context) {
+            $this->rememberPayload($key, $context['payload']);
         }
 
         $this->contexts = [];
@@ -490,6 +516,10 @@ final class StateStore
                 $rollbackFailure = $exception;
             }
 
+            foreach (array_keys($this->contexts) as $documentKey) {
+                unset($this->readCache[$documentKey]);
+            }
+
             $this->contexts = [];
             $this->activeGuardCount = 0;
 
@@ -499,16 +529,22 @@ final class StateStore
         foreach ($snapshots as $documentKey => $snapshot) {
             try {
                 if (!empty($snapshot['existed'])) {
+                    $payload = is_array($snapshot['payload'] ?? null) ? $snapshot['payload'] : [];
                     $this->writeFile(
                         (string) $documentKey,
                         (string) ($snapshot['path'] ?? ''),
-                        is_array($snapshot['payload'] ?? null) ? $snapshot['payload'] : []
+                        $payload
                     );
-                } elseif (is_file((string) ($snapshot['path'] ?? '')) && !unlink((string) $snapshot['path'])) {
-                    throw new RuntimeException(sprintf(
-                        'Unable to remove rolled-back state file "%s".',
-                        (string) $snapshot['path']
-                    ));
+                    $this->rememberPayload((string) $documentKey, $payload);
+                } else {
+                    if (is_file((string) ($snapshot['path'] ?? '')) && !unlink((string) $snapshot['path'])) {
+                        throw new RuntimeException(sprintf(
+                            'Unable to remove rolled-back state file "%s".',
+                            (string) $snapshot['path']
+                        ));
+                    }
+
+                    unset($this->readCache[$documentKey]);
                 }
             } catch (Throwable $exception) {
                 $rollbackFailure ??= $exception;
@@ -586,6 +622,12 @@ final class StateStore
             $payload,
             JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
         );
+    }
+
+    private function rememberPayload(string $documentKey, array $payload): void
+    {
+        $encoded = $this->encodePayload($payload);
+        $this->readCache[$documentKey] = $this->decodePayload($encoded, $documentKey);
     }
 
     private function decodePayload(string $payload, string $documentKey): array

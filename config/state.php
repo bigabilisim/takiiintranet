@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$autoMigrate = filter_var(getenv('STATE_STORE_AUTO_MIGRATE') ?: 'true', FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+$autoMigrate = filter_var(getenv('STATE_STORE_AUTO_MIGRATE') ?: 'false', FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
 
 return [
     'driver' => getenv('STATE_STORE_DRIVER') ?: 'mariadb',

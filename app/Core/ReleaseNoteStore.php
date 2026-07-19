@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.98.0';
+    private const CURRENT_RELEASE = 'v0.98.1';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.98.1',
+                'title' => 'MariaDB istek performansı iyileştirildi',
+                'released_at' => '2026-07-19 10:42',
+                'status' => 'completed',
+                'changes' => [
+                    'Aynı istek içinde tekrar kullanılan personel, yetki, izin ve diğer durum belgeleri için transaction güvenli istek önbelleği eklendi.',
+                    'Önbellek yazma, commit ve rollback sonrasında kalıcı JSON biçimiyle yeniden eşitlenerek eş zamanlı işlem ve geri dönüş davranışı korundu.',
+                    'Üretimde her istekte CREATE TABLE sorgusu çalıştıran otomatik şema migrasyonu kapatıldı; ilk kurulum migrasyon betiğine bırakıldı.',
+                ],
+            ],
             [
                 'version' => 'v0.98.0',
                 'title' => 'Canlı durum deposu ilişkisel veritabanına taşındı',
