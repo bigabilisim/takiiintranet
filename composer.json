@@ -30,6 +30,7 @@
     "test:personnel-organization": "php tests/personnel-organization-sync.php",
     "test:i18n": "php tests/i18n-regression.php",
     "test:branding": "php tests/branding-regression.php",
+    "test:mobile-ux": "php tests/mobile-ux-regression.php",
     "test:security": "php tests/security-regression.php",
     "verify:release": "php scripts/verify-release.php",
     "verify:release:record": "php scripts/verify-release.php --record",

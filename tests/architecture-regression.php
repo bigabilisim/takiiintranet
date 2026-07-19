@@ -119,6 +119,10 @@ if ($bootstrap === false) {
     $bootstrap = '';
 }
 
+if (!str_contains($bootstrap, '}, true, true);')) {
+    $fail('The application autoloader must be prepended so immutable releases cannot load stale Composer classes.');
+}
+
 preg_match_all(
     '/\$router->(get|post)\(\s*[\'\"]([^\'\"]+)[\'\"]/i',
     $bootstrap,

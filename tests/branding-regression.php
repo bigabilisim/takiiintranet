@@ -104,7 +104,7 @@ try {
     brandingAssert(str_contains($offline, '/assets/takii-logo-borderless.png'), 'Offline page does not use the borderless TAKII logo.');
     brandingAssert(str_contains($offline, '/assets/takii-icon-64.png'), 'Offline page does not use the current TAKII favicon.');
     brandingAssert(str_contains($offline, 'class="brand-name">MyTakii</strong>'), 'Offline page does not show the MyTakii brand name.');
-    brandingAssert(str_contains($serviceWorker, "mytakii-intranet-v52"), 'Service Worker cache version was not updated.');
+    brandingAssert(str_contains($serviceWorker, "mytakii-intranet-v53"), 'Service Worker cache version was not updated.');
     brandingAssert(!str_contains($login, 'login-status'), 'Login status cards are still rendered.');
     brandingAssert(!str_contains($login, 'auth.metric.'), 'Removed login metrics are still referenced.');
     brandingAssert(str_contains($login, 'login-surface-compact'), 'Login page does not use its compact centered layout.');

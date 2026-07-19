@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "current_version": "v0.97.4",
+    "current_version": "v0.100.0",
     "entries": [
         {
             "version": "v0.97.4",
@@ -1179,6 +1179,53 @@
                 "Slogan Turkce, Ingilizce, Almanca ve Japonca arayuzlerde dogal karsiliklariyla tanimlandi.",
                 "Giris ekrani, sol marka alani, sayfa meta aciklamasi, PWA manifesti ve cevrim disi ekran ayni marka mesajina baglandi.",
                 "Servis calisani onbellegi yeni dijital kimlik metinleri icin yenilendi."
+            ]
+        },
+        {
+            "version": "v0.99.0",
+            "title": "Mimari sahiplik ve zorunlu yayın kapısı kuruldu",
+            "released_at": "2026-07-19 11:53",
+            "status": "completed",
+            "changes": [
+                "On bir modül, altmış yedi rota, on yedi durum belgesi ve tüm controller/domain/view dosyaları için makine tarafından doğrulanan mimari sahiplik haritası eklendi.",
+                "Katman ihlallerini, kayıtsız rota veya dosyaları, sahipliği bulunmayan durum belgelerini ve izinsiz modüller arası bağımlılıkları yakalayan mimari regresyon testi kuruldu.",
+                "PHP ve JavaScript sözdizimiyle on iki regresyon testini tek komutta çalıştıran yayın kapısı, GitHub Actions kontrolü ve temiz etiketli commit doğrulama kaydı eklendi.",
+                "Mevcut kapasite sınırları ile ilişkisel tablo, çoklu şirket, kuyruk, Redis ve yatay büyüme adımlarını içeren kontrollü ölçeklenme planı belgelendi."
+            ]
+        },
+        {
+            "version": "v0.98.1",
+            "title": "MariaDB istek performansı iyileştirildi",
+            "released_at": "2026-07-19 10:42",
+            "status": "completed",
+            "changes": [
+                "Aynı istek içinde tekrar kullanılan personel, yetki, izin ve diğer durum belgeleri için transaction güvenli istek önbelleği eklendi.",
+                "Önbellek yazma, commit ve rollback sonrasında kalıcı JSON biçimiyle yeniden eşitlenerek eş zamanlı işlem ve geri dönüş davranışı korundu.",
+                "Üretimde her istekte CREATE TABLE sorgusu çalıştıran otomatik şema migrasyonu kapatıldı; ilk kurulum migrasyon betiğine bırakıldı."
+            ]
+        },
+        {
+            "version": "v0.98.0",
+            "title": "Canlı durum deposu ilişkisel veritabanına taşındı",
+            "released_at": "2026-07-19 10:15",
+            "status": "completed",
+            "changes": [
+                "Personel, yetki, departman, izin, mesaj, push, shift, audit ve diğer uygulama durum belgeleri hosting üzerindeki MySQL/MariaDB uyumlu veritabanına kayıpsız taşındı.",
+                "On altı durum belgesinin kaynak JSON verileriyle checksum ve kayıt adedi eşleşmesi doğrulandı; canlı StateStore sürücüsü transaction ve satır kilidi kullanan mariadb moduna geçirildi.",
+                "Geçiş öncesi tam durum ve yapılandırma yedeği alındı; SSL, güvenlik başlıkları, PWA, şifre sıfırlama ve korumalı modül yönlendirmeleri yeni veri kaynağıyla yeniden doğrulandı."
+            ]
+        },
+        {
+            "version": "v0.100.0",
+            "title": "Mobil arayüz ve erişilebilir gezinme yenilendi",
+            "released_at": "2026-07-19 15:07",
+            "status": "completed",
+            "changes": [
+                "Telefonlarda masaüstü menüsünün içeriği aşağı itmesi kaldırıldı; odak yönetimli yan çekmece, sabit uygulama çubuğu, aktif sayfa vurgusu ve başparmak erişimli alt menü eklendi.",
+                "Panel ve izin aylık takvimleri tek sütunlu uzun listeler yerine yatay kaydırılabilen yedi sütunlu düzende tutuldu; boş onay kuyrukları, izin sekmeleri ve takvim bilgi penceresi mobil kullanıma uyarlandı.",
+                "Mesaj yazma alanı, hızlı kişiler, personel arama ve özet kartları ile form ve işlem kontrolleri küçük ekranlarda daha sıkı, okunabilir ve en az kırk dört piksellik dokunma hedeflerine geçirildi.",
+                "Vardiya yönetimi mobil akordeona, yüz altı kayıtlık sürüm geçmişi kontrollü gösterime alındı; giriş dahil tüm erişilebilir modüller 360 ve 390 piksel telefonlarda ve masaüstünde regresyon testleriyle doğrulandı.",
+                "Değiştirilemez canlı sürümlerde Composer önbelleğinden eski sınıf yüklenmesini engelleyen sınıf yükleyici önceliği yayın regresyonuyla güvence altına alındı."
             ]
         }
     ]

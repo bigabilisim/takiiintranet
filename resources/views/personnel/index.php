@@ -421,7 +421,7 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                 data-personnel-search="<?= htmlspecialchars($searchText, ENT_QUOTES, 'UTF-8') ?>"
             >
                 <summary>
-                    <span>
+                    <span class="personnel-summary-person">
                         <em class="personnel-group-chip personnel-group-chip--<?= htmlspecialchars($profileGroupClass, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($profileGroupLabel, ENT_QUOTES, 'UTF-8') ?></em>
                         <strong><?= htmlspecialchars((string) ($profile['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong>
                         <small>@<?= htmlspecialchars($username, ENT_QUOTES, 'UTF-8') ?></small>
@@ -434,14 +434,27 @@ $shiftLabel = static function (string $shiftKey) use ($shiftMap, $t): string {
                             </span>
                         <?php endif; ?>
                     </span>
-                    <span>
-                        <?= htmlspecialchars((string) ($profile['department'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+                    <span class="personnel-summary-cell personnel-summary-department">
+                        <small class="personnel-mobile-label"><?= htmlspecialchars($t('admin.profile.department'), ENT_QUOTES, 'UTF-8') ?></small>
+                        <span><?= htmlspecialchars((string) ($profile['department'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
                         <small><?= htmlspecialchars($profileLocationLabel, ENT_QUOTES, 'UTF-8') ?></small>
                     </span>
-                    <span><?= htmlspecialchars((string) ($profile['role'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                    <span><?= htmlspecialchars($profileShiftLabel, ENT_QUOTES, 'UTF-8') ?></span>
-                    <span><?= htmlspecialchars((string) ($profile['pdks_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-                    <span><?= htmlspecialchars($formatDays($profile['leave_opening_remaining_days'] ?? 0), ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="personnel-summary-cell personnel-summary-role">
+                        <small class="personnel-mobile-label"><?= htmlspecialchars($t('admin.profile.role'), ENT_QUOTES, 'UTF-8') ?></small>
+                        <span><?= htmlspecialchars((string) ($profile['role'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                    </span>
+                    <span class="personnel-summary-cell personnel-summary-shift">
+                        <small class="personnel-mobile-label"><?= htmlspecialchars($t('personnel.column.shift'), ENT_QUOTES, 'UTF-8') ?></small>
+                        <span><?= htmlspecialchars($profileShiftLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                    </span>
+                    <span class="personnel-summary-cell personnel-summary-pdks">
+                        <small class="personnel-mobile-label"><?= htmlspecialchars($t('admin.profile.pdks_id'), ENT_QUOTES, 'UTF-8') ?></small>
+                        <span><?= htmlspecialchars((string) ($profile['pdks_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+                    </span>
+                    <span class="personnel-summary-cell personnel-summary-remaining">
+                        <small class="personnel-mobile-label"><?= htmlspecialchars($t('leave.balance.remaining'), ENT_QUOTES, 'UTF-8') ?></small>
+                        <span><?= htmlspecialchars($formatDays($profile['leave_opening_remaining_days'] ?? 0), ENT_QUOTES, 'UTF-8') ?></span>
+                    </span>
                 </summary>
 
                 <?php if ($canEditThisProfile): ?>

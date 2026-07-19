@@ -256,6 +256,7 @@ return [
             'tests/personnel-organization-sync.php',
             'tests/i18n-regression.php',
             'tests/branding-regression.php',
+            'tests/mobile-ux-regression.php',
             'tests/security-regression.php',
         ],
         'mariadb_tests' => [

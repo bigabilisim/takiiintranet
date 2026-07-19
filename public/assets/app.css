@@ -9,6 +9,7 @@
     --rust: #b0643c;
     --mauve: #8c4f6f;
     --shadow: 0 18px 50px rgba(31, 36, 40, 0.08);
+    --mobile-nav-height: 68px;
 }
 
 * {
@@ -54,6 +55,49 @@ textarea {
     padding: 24px;
     border-right: 1px solid var(--line);
     background: #e8ede8;
+}
+
+.sidebar-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.mobile-appbar,
+.mobile-bottom-nav,
+.mobile-menu-overlay,
+.mobile-drawer-close,
+.mobile-sidebar-user {
+    display: none;
+}
+
+.mobile-icon-button {
+    position: relative;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.mobile-menu-icon {
+    display: grid;
+    gap: 4px;
+    width: 18px;
+}
+
+.mobile-menu-icon i {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
 }
 
 .brand {
@@ -173,6 +217,18 @@ textarea {
 .nav-item:hover,
 .locale-switcher a:hover {
     background: rgba(255, 255, 255, 0.72);
+}
+
+.nav-item.is-active {
+    background: #ffffff;
+    color: #174b34;
+    box-shadow: inset 3px 0 0 var(--green);
+}
+
+.nav-item.is-active .nav-code {
+    border-color: rgba(47, 111, 98, 0.32);
+    background: #e5f2e9;
+    color: #174b34;
 }
 
 .nav-code {
@@ -888,6 +944,10 @@ textarea {
     white-space: nowrap;
 }
 
+.personnel-mobile-label {
+    display: none !important;
+}
+
 .personnel-group-chip {
     display: inline-flex;
     align-items: center;
@@ -969,6 +1029,36 @@ textarea {
     border-radius: 8px;
     background: var(--panel);
     box-shadow: var(--shadow);
+}
+
+.shift-collapsible > summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.shift-collapsible > summary::-webkit-details-marker,
+.version-card > summary::-webkit-details-marker,
+.version-mail-panel > summary::-webkit-details-marker {
+    display: none;
+}
+
+.shift-collapsible > summary::after {
+    content: "+";
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #ffffff;
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.shift-collapsible[open] > summary::after {
+    content: "-";
 }
 
 .shift-panel-header {
@@ -3409,6 +3499,11 @@ th {
     top: 18px;
 }
 
+.version-mail-panel > summary {
+    cursor: pointer;
+    list-style: none;
+}
+
 .version-mail-panel label {
     display: grid;
     gap: 6px;
@@ -3449,6 +3544,53 @@ th {
     border-radius: 8px;
     background: var(--panel);
     box-shadow: var(--shadow);
+}
+
+.version-card[hidden] {
+    display: none;
+}
+
+.version-card > summary {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+    cursor: pointer;
+    list-style: none;
+}
+
+.version-card > summary::after {
+    content: "+";
+    grid-row: 1;
+    grid-column: 1;
+    justify-self: end;
+    align-self: center;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #f7f9f7;
+    color: var(--muted);
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.version-card[open] > summary::after {
+    content: "-";
+}
+
+.version-card > summary header {
+    padding-right: 38px;
+}
+
+.version-card[open] > summary {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.version-load-more {
+    width: 100%;
 }
 
 .version-card header {
@@ -4757,14 +4899,270 @@ th {
         grid-template-columns: 1fr;
     }
 
-    .sidebar {
+    .app-shell.is-guest .sidebar {
         position: static;
         border-right: 0;
         border-bottom: 1px solid var(--line);
     }
 
-    .nav-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .app-shell.is-guest {
+        grid-template-rows: auto 1fr;
+    }
+
+    .app-shell.is-guest .locale-switcher {
+        margin-top: 0;
+    }
+
+    .app-shell.is-authenticated {
+        display: block;
+    }
+
+    .app-shell.is-authenticated .sidebar {
+        position: fixed;
+        z-index: 100;
+        inset: 0 auto 0 0;
+        width: min(86vw, 340px);
+        height: 100dvh;
+        gap: 18px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        border-right: 1px solid var(--line);
+        background: #edf1ed;
+        box-shadow: 18px 0 48px rgba(31, 36, 40, 0.2);
+        transform: translateX(-105%);
+        visibility: hidden;
+        transition: transform 180ms ease, visibility 180ms ease;
+    }
+
+    body.mobile-menu-open {
+        overflow: hidden;
+    }
+
+    body.mobile-menu-open .app-shell.is-authenticated .sidebar {
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    .mobile-menu-overlay {
+        position: fixed;
+        z-index: 90;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: rgba(18, 25, 23, 0.48);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    body.mobile-menu-open .mobile-menu-overlay {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .mobile-drawer-close {
+        display: grid;
+        flex: 0 0 auto;
+    }
+
+    .mobile-sidebar-user {
+        display: grid;
+        gap: 3px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72);
+    }
+
+    .mobile-sidebar-user small {
+        color: var(--muted);
+        font-size: 12px;
+    }
+
+    .mobile-sidebar-user strong {
+        overflow-wrap: anywhere;
+        font-size: 14px;
+    }
+
+    .app-shell.is-authenticated .nav-list {
+        grid-template-columns: 1fr;
+    }
+
+    .app-shell.is-authenticated .nav-item {
+        min-height: 48px;
+        padding: 8px 10px;
+    }
+
+    .app-shell.is-authenticated .locale-switcher {
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+
+    .mobile-appbar {
+        position: sticky;
+        z-index: 50;
+        top: 0;
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+        align-items: center;
+        gap: 10px;
+        min-height: calc(60px + env(safe-area-inset-top));
+        margin: -24px -24px 14px;
+        padding: max(8px, env(safe-area-inset-top)) 16px 8px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(245, 246, 243, 0.96);
+        box-shadow: 0 8px 24px rgba(31, 36, 40, 0.08);
+        backdrop-filter: blur(14px);
+    }
+
+    .mobile-appbar .mobile-icon-button {
+        display: grid;
+    }
+
+    .mobile-wordmark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-width: 0;
+    }
+
+    .mobile-wordmark img {
+        display: block;
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+    }
+
+    .mobile-wordmark strong {
+        overflow: hidden;
+        color: #050509;
+        font-size: 18px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mobile-appbar-spacer {
+        display: block;
+        width: 44px;
+        height: 44px;
+    }
+
+    .mobile-message-button.is-active {
+        border-color: rgba(47, 111, 98, 0.4);
+        background: #e5f2e9;
+        color: #174b34;
+    }
+
+    .mobile-message-button .nav-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 5px;
+        font-size: 10px;
+    }
+
+    .mobile-bottom-nav {
+        position: fixed;
+        z-index: 70;
+        inset: auto 0 0;
+        display: flex;
+        align-items: stretch;
+        justify-content: space-around;
+        min-height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+        padding: 6px max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+        border-top: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.97);
+        box-shadow: 0 -10px 28px rgba(31, 36, 40, 0.12);
+        backdrop-filter: blur(14px);
+    }
+
+    .mobile-bottom-link {
+        position: relative;
+        display: grid;
+        flex: 1 1 0;
+        place-items: center;
+        align-content: center;
+        gap: 3px;
+        min-width: 0;
+        min-height: 54px;
+        max-width: 96px;
+        padding: 3px 2px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font: inherit;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.1;
+        text-align: center;
+    }
+
+    .mobile-bottom-link > span:last-of-type {
+        max-width: 100%;
+        max-height: 23px;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
+    .mobile-bottom-link.is-active {
+        background: #e8f3eb;
+        color: #174b34;
+    }
+
+    .mobile-bottom-code {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 25px;
+        border: 1px solid currentColor;
+        border-radius: 6px;
+        font-size: 9px;
+        font-weight: 900;
+    }
+
+    .mobile-bottom-link .nav-badge {
+        position: absolute;
+        top: 1px;
+        left: calc(50% + 8px);
+        min-width: 19px;
+        height: 19px;
+        padding: 0 5px;
+        font-size: 9px;
+    }
+
+    .app-shell.is-authenticated .main-panel {
+        padding-bottom: calc(24px + var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    }
+
+    .app-shell.is-authenticated .topbar {
+        justify-content: flex-end;
+        margin-bottom: 18px;
+    }
+
+    .app-shell.is-authenticated .topbar > div:first-child {
+        display: none;
+    }
+
+    .app-shell.is-authenticated .topbar-actions {
+        width: 100%;
+    }
+
+    .app-shell.is-authenticated .pwa-control [data-pwa-status] {
+        display: none;
+    }
+
+    .login-surface {
+        min-height: auto;
+        padding-block: 24px;
     }
 
     .dashboard-grid,
@@ -4823,8 +5221,16 @@ th {
 
 @media (max-width: 640px) {
     .main-panel,
-    .sidebar {
+    .app-shell.is-guest .sidebar {
         padding: 16px;
+    }
+
+    .app-shell.is-authenticated .main-panel {
+        padding-bottom: calc(16px + var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    }
+
+    .mobile-appbar {
+        margin: -16px -16px 12px;
     }
 
     .page-header,
@@ -4843,9 +5249,23 @@ th {
     }
 
     .leave-self-service-tabs {
-        grid-template-columns: repeat(3, minmax(180px, 1fr));
-        overflow-x: auto;
-        padding-bottom: 4px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        overflow: visible;
+        padding-bottom: 0;
+    }
+
+    .leave-self-service-tabs button {
+        min-height: 62px;
+        padding: 8px 5px;
+    }
+
+    .leave-self-service-tabs button span {
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    .leave-self-service-tabs button strong {
+        font-size: 12px;
     }
 
     .topbar-actions,
@@ -4857,7 +5277,36 @@ th {
     }
 
     .button {
+        min-height: 44px;
         white-space: normal;
+    }
+
+    .button.compact,
+    form button {
+        min-height: 44px;
+    }
+
+    form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    form select {
+        min-height: 44px;
+    }
+
+    details > summary,
+    .view-tabs a,
+    .mobile-wordmark,
+    .section-title a {
+        min-height: 44px;
+    }
+
+    .section-title a {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    input,
+    select,
+    textarea {
+        font-size: 16px;
     }
 
     .personnel-credential-reveal,
@@ -4902,11 +5351,7 @@ th {
     .module-grid,
     .nav-list,
     .login-status,
-    .view-tabs,
-    .personnel-table-head,
-    .personnel-table-row summary,
     .personnel-readonly,
-    .compact-calendar-grid,
     .weather-grid,
     .form-pair,
     .requester-request-form,
@@ -4929,6 +5374,10 @@ th {
     .permission-grid,
     .department-policy-grid {
         grid-template-columns: 1fr;
+    }
+
+    .leave-action-panel.is-clear {
+        display: none;
     }
 
     .leave-history-open-label {
@@ -4967,12 +5416,118 @@ th {
         grid-column: auto;
     }
 
+    .personnel-panel {
+        padding: 14px;
+    }
+
+    .personnel-toolbar,
+    .personnel-toolbar > .personnel-toolbar-actions {
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .personnel-toolbar > .personnel-toolbar-actions,
+    .personnel-search {
+        width: 100%;
+    }
+
+    .personnel-group-filters {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 2px 0 6px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .personnel-group-filter {
+        flex: 0 0 auto;
+        min-height: 42px;
+        scroll-snap-align: start;
+    }
+
+    .personnel-table-head {
+        display: none;
+    }
+
+    .personnel-table-row summary {
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) 58px;
+        gap: 10px 14px;
+        min-height: 88px;
+    }
+
+    .personnel-summary-person {
+        grid-column: 1 / -1;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .personnel-summary-cell {
+        display: grid !important;
+        align-content: start;
+        gap: 3px;
+        min-height: 38px;
+        white-space: normal !important;
+    }
+
+    .personnel-summary-shift,
+    .personnel-summary-pdks {
+        display: none !important;
+    }
+
+    .personnel-summary-remaining {
+        text-align: right;
+    }
+
+    .personnel-summary-cell > span,
+    .personnel-summary-cell > small:not(.personnel-mobile-label) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .personnel-mobile-label {
+        display: block !important;
+        color: var(--muted);
+        font-size: 10px !important;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
     .template-meta-grid {
         grid-template-columns: 1fr;
     }
 
     .template-test-mail-form {
         grid-template-columns: 1fr;
+    }
+
+    .shift-panel-header {
+        padding: 13px 14px;
+    }
+
+    .shift-collapsible:not([open]) .shift-panel-header {
+        border-bottom: 0;
+    }
+
+    .version-mail-panel {
+        padding: 14px;
+    }
+
+    .version-mail-panel:not([open]) > summary {
+        margin: 0;
+    }
+
+    .version-mail-panel textarea {
+        height: 220px;
+        min-height: 220px;
+    }
+
+    .version-card {
+        padding: 13px;
+    }
+
+    .version-card h2 {
+        font-size: 16px;
     }
 
     .calendar-header {
@@ -4982,25 +5537,42 @@ th {
 
     .calendar-grid.is-month,
     .calendar-grid.is-week {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(7, minmax(112px, 1fr));
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        padding-bottom: 8px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
     }
 
     .calendar-day {
-        grid-template-rows: auto;
-        min-height: auto;
+        grid-template-rows: auto minmax(78px, 1fr);
+        min-height: 126px;
+        padding: 8px;
+        scroll-snap-align: start;
     }
 
-    .calendar-event small,
-    .calendar-event em,
-    .calendar-event b,
-    .calendar-event-title,
-    .compact-leave-event,
+    .compact-calendar-grid {
+        grid-template-columns: repeat(7, minmax(76px, 1fr));
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        padding-bottom: 8px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .compact-calendar-day {
+        min-height: 78px;
+        padding: 6px;
+        scroll-snap-align: start;
+    }
+
+    .compact-leave-event {
+        min-height: 32px;
+    }
+
     .compact-leave-event small {
-        overflow: visible;
-        text-overflow: clip;
-        overflow-wrap: anywhere;
-        white-space: normal;
-        word-break: normal;
+        display: none;
     }
 
     .weather-days {
@@ -5015,8 +5587,22 @@ th {
         grid-template-columns: 1fr;
     }
 
+    .calendar-popover {
+        inset: auto 0 0 !important;
+        width: 100%;
+        max-height: min(82dvh, 720px);
+        padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+        border-width: 1px 0 0;
+        border-radius: 8px 8px 0 0;
+        transform: translateY(18px);
+    }
+
+    .calendar-popover.is-open {
+        transform: translateY(0);
+    }
+
     .conversation-card {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) auto;
     }
 
     .conversation-copy strong,
@@ -5028,7 +5614,40 @@ th {
     }
 
     .conversation-actions {
-        justify-content: start;
+        justify-content: end;
+    }
+
+    .message-form textarea {
+        height: 112px;
+        min-height: 112px;
+    }
+
+    .quick-contact-list {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .quick-contact {
+        flex: 0 0 min(280px, calc(100vw - 64px));
+        min-height: 62px;
+        scroll-snap-align: start;
+    }
+
+    .message-insights div {
+        min-height: 76px;
+        padding: 11px;
+    }
+
+    .message-insights strong {
+        font-size: 22px;
+    }
+
+    .thread-reply-form textarea {
+        min-height: 86px;
     }
 
     .thread-panel > header {
@@ -5075,8 +5694,17 @@ th {
 
 @media (max-width: 480px) {
     .main-panel,
-    .sidebar {
+    .app-shell.is-guest .sidebar {
         padding: 12px;
+    }
+
+    .app-shell.is-authenticated .main-panel {
+        padding-bottom: calc(12px + var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    }
+
+    .mobile-appbar {
+        margin: -12px -12px 12px;
+        padding-inline: 12px;
     }
 
     .home-panel,
@@ -5120,7 +5748,8 @@ th {
     }
 
     .message-insights {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
     }
 
     th,

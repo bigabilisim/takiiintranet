@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.99.0';
+    private const CURRENT_RELEASE = 'v0.100.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,19 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.100.0',
+                'title' => 'Mobil arayüz ve erişilebilir gezinme yenilendi',
+                'released_at' => '2026-07-19 15:07',
+                'status' => 'completed',
+                'changes' => [
+                    'Telefonlarda masaüstü menüsünün içeriği aşağı itmesi kaldırıldı; odak yönetimli yan çekmece, sabit uygulama çubuğu, aktif sayfa vurgusu ve başparmak erişimli alt menü eklendi.',
+                    'Panel ve izin aylık takvimleri tek sütunlu uzun listeler yerine yatay kaydırılabilen yedi sütunlu düzende tutuldu; boş onay kuyrukları, izin sekmeleri ve takvim bilgi penceresi mobil kullanıma uyarlandı.',
+                    'Mesaj yazma alanı, hızlı kişiler, personel arama ve özet kartları ile form ve işlem kontrolleri küçük ekranlarda daha sıkı, okunabilir ve en az kırk dört piksellik dokunma hedeflerine geçirildi.',
+                    'Vardiya yönetimi mobil akordeona, yüz altı kayıtlık sürüm geçmişi kontrollü gösterime alındı; giriş dahil tüm erişilebilir modüller 360 ve 390 piksel telefonlarda ve masaüstünde regresyon testleriyle doğrulandı.',
+                    'Değiştirilemez canlı sürümlerde Composer önbelleğinden eski sınıf yüklenmesini engelleyen sınıf yükleyici önceliği yayın regresyonuyla güvence altına alındı.',
+                ],
+            ],
             [
                 'version' => 'v0.99.0',
                 'title' => 'Mimari sahiplik ve zorunlu yayın kapısı kuruldu',

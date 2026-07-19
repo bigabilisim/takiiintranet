@@ -184,7 +184,7 @@ spl_autoload_register(function (string $class): void {
     if (is_file($path)) {
         require $path;
     }
-});
+}, true, true);
 
 Session::start();
 

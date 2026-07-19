@@ -101,13 +101,13 @@ $patternFor = static function (array $days): string {
 
 <section class="shift-layout">
     <div class="shift-main">
-        <article class="shift-panel">
-            <header class="shift-panel-header">
+        <details class="shift-panel shift-collapsible" open data-mobile-collapsible data-mobile-default-open>
+            <summary class="shift-panel-header">
                 <div>
                     <strong><?= htmlspecialchars($t('shift.create_title'), ENT_QUOTES, 'UTF-8') ?></strong>
                     <span><?= htmlspecialchars($t('shift.create_hint'), ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
-            </header>
+            </summary>
 
             <?php if ($canManageShift): ?>
                 <form class="shift-form" method="post" action="/shift/templates" data-shift-template-form>
@@ -161,15 +161,15 @@ $patternFor = static function (array $days): string {
             <?php else: ?>
                 <p class="personnel-readonly"><?= htmlspecialchars($t('shift.readonly_notice'), ENT_QUOTES, 'UTF-8') ?></p>
             <?php endif; ?>
-        </article>
+        </details>
 
-        <article class="shift-panel">
-            <header class="shift-panel-header">
+        <details class="shift-panel shift-collapsible" open data-mobile-collapsible>
+            <summary class="shift-panel-header">
                 <div>
                     <strong><?= htmlspecialchars($t('shift.templates_title'), ENT_QUOTES, 'UTF-8') ?></strong>
                     <span><?= htmlspecialchars($t('shift.templates_hint'), ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
-            </header>
+            </summary>
 
             <div class="shift-template-grid">
                 <?php foreach ($templates as $template): ?>
@@ -267,15 +267,15 @@ $patternFor = static function (array $days): string {
                     </article>
                 <?php endforeach; ?>
             </div>
-        </article>
+        </details>
 
-        <article class="shift-panel">
-            <header class="shift-panel-header">
+        <details class="shift-panel shift-collapsible" open data-mobile-collapsible>
+            <summary class="shift-panel-header">
                 <div>
                     <strong><?= htmlspecialchars($t('shift.weekend_title'), ENT_QUOTES, 'UTF-8') ?></strong>
                     <span><?= htmlspecialchars($t('shift.weekend_hint'), ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
-            </header>
+            </summary>
 
             <?php if ($canManageShift): ?>
                 <form class="shift-form" method="post" action="/shift/weekend-plans">
@@ -385,15 +385,15 @@ $patternFor = static function (array $days): string {
                     </article>
                 <?php endforeach; ?>
             </div>
-        </article>
+        </details>
 
-        <article class="shift-panel">
-            <header class="shift-panel-header">
+        <details class="shift-panel shift-collapsible" open data-mobile-collapsible>
+            <summary class="shift-panel-header">
                 <div>
                     <strong><?= htmlspecialchars($t('shift.holiday.title'), ENT_QUOTES, 'UTF-8') ?></strong>
                     <span><?= htmlspecialchars($t('shift.holiday.summary', ['count' => count($holidays)]), ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
-            </header>
+            </summary>
 
             <?php if ($canManageShift): ?>
                 <form class="shift-form" method="post" action="/shift/holidays">
@@ -453,16 +453,16 @@ $patternFor = static function (array $days): string {
                     </details>
                 <?php endforeach; ?>
             </div>
-        </article>
+        </details>
     </div>
 
-    <aside class="shift-panel shift-assign-panel">
-        <header class="shift-panel-header">
+    <details class="shift-panel shift-assign-panel shift-collapsible" open data-mobile-collapsible>
+        <summary class="shift-panel-header">
             <div>
                 <strong><?= htmlspecialchars($t('shift.assign_title'), ENT_QUOTES, 'UTF-8') ?></strong>
                 <span><?= htmlspecialchars($t('shift.assign_hint'), ENT_QUOTES, 'UTF-8') ?></span>
             </div>
-        </header>
+        </summary>
 
         <form method="post" action="/shift/assign" class="shift-assign-form">
             <?= $csrf() ?>
@@ -506,5 +506,5 @@ $patternFor = static function (array $days): string {
                 </button>
             </div>
         </form>
-    </aside>
+    </details>
 </section>

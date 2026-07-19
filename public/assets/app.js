@@ -12,38 +12,231 @@
 })();
 
 (function () {
-  const messagesNav = document.querySelector('[data-module-nav="messages"][data-badge-template]');
+  const drawer = document.querySelector('[data-mobile-drawer]');
+  const toggles = Array.from(document.querySelectorAll('[data-mobile-menu-toggle]'));
+  const closeButton = document.querySelector('[data-mobile-menu-close]');
+  const overlay = document.querySelector('[data-mobile-menu-overlay]');
+  const mainPanel = document.querySelector('.main-panel');
+  const bottomNav = document.querySelector('.mobile-bottom-nav');
 
-  if (!messagesNav) {
+  if (!drawer || toggles.length === 0 || !overlay) {
     return;
   }
 
-  const badgeTemplate = messagesNav.dataset.badgeTemplate || '__count__ unread';
+  const mobileQuery = window.matchMedia('(max-width: 980px)');
+  const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  let lastTrigger = null;
+
+  function isOpen() {
+    return document.body.classList.contains('mobile-menu-open');
+  }
+
+  function setExpanded(expanded) {
+    toggles.forEach((toggle) => toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false'));
+  }
+
+  function setInert(element, inert) {
+    if (!element) {
+      return;
+    }
+
+    element.toggleAttribute('inert', inert);
+  }
+
+  function setDrawerState(open, restoreFocus = true) {
+    const shouldOpen = open && mobileQuery.matches;
+    document.body.classList.toggle('mobile-menu-open', shouldOpen);
+    setExpanded(shouldOpen);
+    setInert(drawer, mobileQuery.matches && !shouldOpen);
+    setInert(mainPanel, shouldOpen);
+    setInert(bottomNav, shouldOpen);
+
+    if (shouldOpen) {
+      window.setTimeout(() => (closeButton || drawer).focus(), 30);
+    } else if (restoreFocus && lastTrigger && document.contains(lastTrigger)) {
+      lastTrigger.focus();
+    }
+  }
+
+  toggles.forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      lastTrigger = toggle;
+      setDrawerState(!isOpen());
+    });
+  });
+
+  if (closeButton) {
+    closeButton.addEventListener('click', () => setDrawerState(false));
+  }
+
+  overlay.addEventListener('click', () => setDrawerState(false));
+
+  drawer.addEventListener('click', (event) => {
+    if (event.target.closest('a[href]')) {
+      setDrawerState(false, false);
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (!isOpen()) {
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setDrawerState(false);
+      return;
+    }
+
+    if (event.key !== 'Tab') {
+      return;
+    }
+
+    const focusable = Array.from(drawer.querySelectorAll(focusableSelector)).filter((element) => element.offsetParent !== null);
+
+    if (focusable.length === 0) {
+      event.preventDefault();
+      drawer.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  const syncResponsiveState = () => {
+    if (!mobileQuery.matches) {
+      document.body.classList.remove('mobile-menu-open');
+      setExpanded(false);
+      setInert(drawer, false);
+      setInert(mainPanel, false);
+      setInert(bottomNav, false);
+      return;
+    }
+
+    setDrawerState(false, false);
+  };
+
+  if (typeof mobileQuery.addEventListener === 'function') {
+    mobileQuery.addEventListener('change', syncResponsiveState);
+  } else {
+    mobileQuery.addListener(syncResponsiveState);
+  }
+
+  syncResponsiveState();
+})();
+
+(function () {
+  const responsiveDetails = Array.from(document.querySelectorAll('details[data-mobile-collapsible]'));
+
+  if (responsiveDetails.length === 0) {
+    return;
+  }
+
+  const mobileQuery = window.matchMedia('(max-width: 640px)');
+
+  function syncDetails() {
+    responsiveDetails.forEach((details) => {
+      details.open = mobileQuery.matches ? details.hasAttribute('data-mobile-default-open') : true;
+    });
+  }
+
+  if (typeof mobileQuery.addEventListener === 'function') {
+    mobileQuery.addEventListener('change', syncDetails);
+  } else {
+    mobileQuery.addListener(syncDetails);
+  }
+
+  syncDetails();
+})();
+
+(function () {
+  const versionList = document.querySelector('[data-version-list]');
+
+  if (!versionList) {
+    return;
+  }
+
+  const cards = Array.from(versionList.querySelectorAll('[data-version-card]'));
+  const loadMore = versionList.querySelector('[data-version-load-more]');
+  const initialLimit = 10;
+
+  if (!loadMore || cards.length <= initialLimit) {
+    return;
+  }
+
+  const showLabel = versionList.dataset.showLabel || 'Show __count__ older versions';
+  const hideLabel = versionList.dataset.hideLabel || 'Show fewer versions';
+  const hiddenCount = cards.length - initialLimit;
+  let expanded = false;
+
+  function render() {
+    cards.forEach((card, index) => {
+      card.hidden = !expanded && index >= initialLimit;
+    });
+    loadMore.hidden = false;
+    loadMore.textContent = expanded ? hideLabel : showLabel.replace('__count__', String(hiddenCount));
+    loadMore.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  }
+
+  loadMore.addEventListener('click', () => {
+    expanded = !expanded;
+    render();
+
+    if (!expanded) {
+      versionList.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start'
+      });
+    }
+  });
+
+  render();
+})();
+
+(function () {
+  const messagesNavItems = Array.from(document.querySelectorAll('[data-module-nav="messages"][data-badge-template]'));
+
+  if (messagesNavItems.length === 0) {
+    return;
+  }
+
+  const badgeTemplate = messagesNavItems[0].dataset.badgeTemplate || '__count__ unread';
 
   function badgeLabel(count) {
     return badgeTemplate.replace('__count__', String(count));
   }
 
   function updateBadge(count) {
-    let badge = messagesNav.querySelector('[data-module-badge="messages"]');
+    messagesNavItems.forEach((messagesNav) => {
+      let badge = messagesNav.querySelector('[data-module-badge="messages"]');
 
-    if (count < 1) {
-      if (badge) {
-        badge.remove();
+      if (count < 1) {
+        if (badge) {
+          badge.remove();
+        }
+
+        return;
       }
 
-      return;
-    }
+      if (!badge) {
+        badge = document.createElement('strong');
+        badge.className = 'nav-badge';
+        badge.dataset.moduleBadge = 'messages';
+        messagesNav.appendChild(badge);
+      }
 
-    if (!badge) {
-      badge = document.createElement('strong');
-      badge.className = 'nav-badge';
-      badge.dataset.moduleBadge = 'messages';
-      messagesNav.appendChild(badge);
-    }
-
-    badge.textContent = String(count);
-    badge.setAttribute('aria-label', badgeLabel(count));
+      badge.textContent = String(count);
+      badge.setAttribute('aria-label', badgeLabel(count));
+    });
   }
 
   async function refreshMessageBadge() {
