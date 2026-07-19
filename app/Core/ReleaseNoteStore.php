@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.97.4';
+    private const CURRENT_RELEASE = 'v0.98.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,17 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.98.0',
+                'title' => 'Canlı durum deposu ilişkisel veritabanına taşındı',
+                'released_at' => '2026-07-19 10:15',
+                'status' => 'completed',
+                'changes' => [
+                    'Personel, yetki, departman, izin, mesaj, push, shift, audit ve diğer uygulama durum belgeleri hosting üzerindeki MySQL/MariaDB uyumlu veritabanına kayıpsız taşındı.',
+                    'On altı durum belgesinin kaynak JSON verileriyle checksum ve kayıt adedi eşleşmesi doğrulandı; canlı StateStore sürücüsü transaction ve satır kilidi kullanan mariadb moduna geçirildi.',
+                    'Geçiş öncesi tam durum ve yapılandırma yedeği alındı; SSL, güvenlik başlıkları, PWA, şifre sıfırlama ve korumalı modül yönlendirmeleri yeni veri kaynağıyla yeniden doğrulandı.',
+                ],
+            ],
             [
                 'version' => 'v0.97.4',
                 'title' => 'Giriş ekranındaki gösterge kutuları kaldırıldı',
