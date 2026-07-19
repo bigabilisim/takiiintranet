@@ -51,6 +51,7 @@ $documents = [
     'leave_signature_scheduler' => 'leave-book-signature-followup-scheduler.json',
     'password_resets' => 'password-resets.json',
     'password_reset_mail_outbox' => 'password-reset-mail-outbox.json',
+    'rate_limits' => 'rate-limits.json',
     'push_subscriptions' => 'push-subscriptions.json',
     'shifts' => 'shifts.json',
     'procurement' => 'procurement.json',

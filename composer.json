@@ -15,6 +15,7 @@
   "scripts": {
     "serve": "php -S 127.0.0.1:8080 -t public",
     "migrate:state": "php scripts/migrate-state-to-mariadb.php",
+    "test:architecture": "php tests/architecture-regression.php",
     "test:state": "php tests/state-store-concurrency.php",
     "test:state:mariadb": "php tests/state-store-mariadb-concurrency.php",
     "test:stores": "php tests/core-store-smoke.php",
@@ -26,8 +27,12 @@
     "test:location": "php tests/location-visibility.php",
     "test:blue-collar-leave": "php tests/blue-collar-leave-access.php",
     "test:personnel-credentials": "php tests/personnel-credentials.php",
+    "test:personnel-organization": "php tests/personnel-organization-sync.php",
     "test:i18n": "php tests/i18n-regression.php",
     "test:branding": "php tests/branding-regression.php",
-    "test:security": "php tests/security-regression.php"
+    "test:security": "php tests/security-regression.php",
+    "verify:release": "php scripts/verify-release.php",
+    "verify:release:record": "php scripts/verify-release.php --record",
+    "release:assert": "php scripts/assert-release-ready.php"
   }
 }

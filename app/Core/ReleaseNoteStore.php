@@ -6,7 +6,7 @@ class ReleaseNoteStore
 {
     private const STATE_KEY = 'release_notes';
     private const VERSION = 1;
-    private const CURRENT_RELEASE = 'v0.98.1';
+    private const CURRENT_RELEASE = 'v0.99.0';
     private const MAIL_RECIPIENTS = [
         'bilal@bigabilisim.com',
         'y.ekici@takii.com.tr',
@@ -141,6 +141,18 @@ class ReleaseNoteStore
     private function seedEntries(): array
     {
         return [
+            [
+                'version' => 'v0.99.0',
+                'title' => 'Mimari sahiplik ve zorunlu yayın kapısı kuruldu',
+                'released_at' => '2026-07-19 11:53',
+                'status' => 'completed',
+                'changes' => [
+                    'On bir modül, altmış yedi rota, on yedi durum belgesi ve tüm controller/domain/view dosyaları için makine tarafından doğrulanan mimari sahiplik haritası eklendi.',
+                    'Katman ihlallerini, kayıtsız rota veya dosyaları, sahipliği bulunmayan durum belgelerini ve izinsiz modüller arası bağımlılıkları yakalayan mimari regresyon testi kuruldu.',
+                    'PHP ve JavaScript sözdizimiyle on iki regresyon testini tek komutta çalıştıran yayın kapısı, GitHub Actions kontrolü ve temiz etiketli commit doğrulama kaydı eklendi.',
+                    'Mevcut kapasite sınırları ile ilişkisel tablo, çoklu şirket, kuyruk, Redis ve yatay büyüme adımlarını içeren kontrollü ölçeklenme planı belgelendi.',
+                ],
+            ],
             [
                 'version' => 'v0.98.1',
                 'title' => 'MariaDB istek performansı iyileştirildi',

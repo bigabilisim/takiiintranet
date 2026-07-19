@@ -1,0 +1,57 @@
+name: Release Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: mytakii_test
+          MARIADB_ROOT_PASSWORD: test-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run complete release gate
+        run: composer verify:release
+        env:
+          RELEASE_VERIFY_MARIADB: '1'
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+          DB_DATABASE: mytakii_test
+          DB_USERNAME: root
+          DB_PASSWORD: test-password
+          STATE_STORE_AUTO_MIGRATE: 'true'

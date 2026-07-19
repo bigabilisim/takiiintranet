@@ -1,7 +1,5 @@
 # MyTakii Intranet Platform
 
-> Insanlar. Surecler. Tek merkez.
-
 PHP ve MariaDB altyapisi uzerinde gelistirilen, cok dilli ve moduler kurumsal
 intranet platformu. Sistem; izin, duyuru, mesajlasma, satin alma, butce,
 belge, PWA bildirimleri, rapor ve mail sablonlarini tek merkezden yonetmek icin
@@ -12,7 +10,7 @@ Canli ortam: `https://mytakii.com`
 ## Urun Ozeti
 
 - Uluslararasi firmalara beyaz etiketli olarak sunulabilecek intranet urunu
-- Turkce, Ingilizce ve Japonca arayuz destegi
+- Turkce, Ingilizce, Almanca ve Japonca arayuz destegi
 - Admin tarafindan kisi bazli modul ve surec yetkisi yonetimi
 - Departman bazli izin onay semasi: tek yonetici / IK veya iki yonetici / IK onayi
 - PWA uyumlulugu, offline sayfasi ve Web Push bildirim altyapisi
@@ -20,7 +18,7 @@ Canli ortam: `https://mytakii.com`
 
 ## Guncel Moduller
 
-- **Operasyon paneli:** Haberler, duyurular, izin takvimi, hava durumu ve is kuyrugu.
+- **Panel:** Izin takvimi, hava durumu ve kullaniciya ait hizli is ozeti.
 - **Izin yonetimi:** Izin talebi, aylik/haftalik/gunluk takvim, bakiye karti, 60 gun icinde yeni izin hakki uyarisi; Taleplerim, Izin islem tarihcem ve Iptal Talebi sekmeleri.
 - **Guvenli izin sahipligi:** Izinler ve bakiyeler, ad-soyad veya e-posta degisse de korunan sabit personel kimligiyle eslestirilir.
 - **Tatil ve nobet takvimi:** Turkiye resmi tatilleri, yarim gunler, sirket tatilleri ve tarih bazli aylik ozel nobet planlari izin hesabina katilir.
@@ -147,7 +145,7 @@ php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
 
 Izinler, personeller, mesajlar, yetkiler, shift planlari, satin alma talepleri,
 parola sifirlama kayitlari, guvenli mail metadatasi, Web Push abonelikleri,
-denetim loglari, sablonlar ve izin defteri zamanlayicisi `app_state_documents`
+denetim loglari, sablonlar, hiz sinirlari ve izin defteri zamanlayicisi `app_state_documents`
 tablosunda saklanir. Her degisiklik InnoDB
 transaction'i ve `SELECT ... FOR UPDATE` satir
 kilidi altinda yapilir. Ayni anda gelen iki onay veya mesaj birbirinin verisini
@@ -253,6 +251,7 @@ tanimlanmalidir:
 app/Core/                 Router, auth, session, view, translator, access control
 app/Controllers/          HTTP controller katmani
 app/Modules/              Leave, Messaging, Procurement, Templates, Push, Weather
+config/architecture.php   Makine tarafindan dogrulanan mimari sahiplik haritasi
 config/                   Uygulama, veritabani ve modul konfigurasyonu
 database/migrations/      MariaDB sema taslaklari
 public/                   Web root, PWA, CSS ve JS assetleri
@@ -262,39 +261,33 @@ storage/                  Demo verileri, cache, push anahtarlari ve loglar
 docs/                     Urun, mimari ve modul dokumantasyonu
 ```
 
-## Dogrulama
+## Dogrulama ve Yayin Kapisi
 
-PHP syntax kontrolu:
-
-```bash
-find app bootstrap config public resources -name '*.php' -print0 | xargs -0 -n1 php -l
-```
-
-JavaScript syntax kontrolu:
+Her degisiklikten sonra mimari sahiplik, katman bagimliliklari, PHP/JavaScript
+sozdizimi ve tum zorunlu regresyon testleri tek komutla calistirilir:
 
 ```bash
-node --check public/assets/app.js
-node --check public/assets/pwa.js
-node --check public/assets/templates-editor.js
-node --check public/service-worker.js
+composer verify:release
 ```
 
-Es zamanli yazma testi:
+MariaDB entegrasyon testleri uretimden tamamen ayri ve adinda `test` bulunan bir
+veritabaninda calistirilir:
 
 ```bash
-php tests/state-store-concurrency.php
-php tests/core-store-smoke.php
-php tests/user-identity-migration.php
-php tests/leave-schedule-integrity.php
-php tests/i18n-regression.php
-php tests/branding-regression.php
-DB_DATABASE=kanso_intranet php tests/state-store-mariadb-concurrency.php
-DB_DATABASE=kanso_intranet composer test:stores:mariadb
-DB_DATABASE=kanso_intranet composer test:identity:mariadb
-DB_DATABASE=kanso_intranet composer test:leave-schedule:mariadb
+DB_DATABASE=mytakii_test RELEASE_VERIFY_MARIADB=1 composer verify:release
 ```
 
-Temel smoke test icin admin oturumuyla su ekranlar kontrol edilebilir:
+Canli paket yalniz temiz ve etiketli commit icin kaydedilmis dogrulamadan sonra
+hazirlanabilir:
+
+```bash
+composer verify:release:record
+composer release:assert
+```
+
+Detayli sistem agaci, buyume sinirlari ve asamali kapasite plani
+[`docs/architecture-tree.md`](docs/architecture-tree.md) belgesindedir. Temel
+canli smoke testinde su ekranlar kontrol edilir:
 
 - `/`
 - `/admin/access`
@@ -307,6 +300,7 @@ Temel smoke test icin admin oturumuyla su ekranlar kontrol edilebilir:
 ## Baslangic Belgeleri
 
 - [Urun vizyonu](docs/product-vision.md)
+- [Mimari agac ve buyume plani](docs/architecture-tree.md)
 - [Teknik mimari](docs/technical-architecture.md)
 - [MVP yol haritasi](docs/mvp-roadmap.md)
 - [Izin akisi](docs/leave-workflow.md)
